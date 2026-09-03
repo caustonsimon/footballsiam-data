@@ -25,11 +25,38 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import logging
+import os
 import sys
+from pathlib import Path
 from typing import Any
 
-from footystats_client import FootyStatsClient, FootyStatsError
-from wp_client import WPClient, WPError
+
+def _load_dotenv(path: Path) -> None:
+    """Populate os.environ from a local .env file (KEY=VALUE per line).
+
+    Never overrides a variable that is already set, so exported shell vars
+    and GitHub Actions secrets always win. No-op if the file is absent.
+    """
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        key = key.strip()
+        val = val.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = val
+
+
+# repo root == parent of src/ ; load .env there before the clients read the env
+_load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+from footystats_client import FootyStatsClient, FootyStatsError  # noqa: E402
+from wp_client import WPClient, WPError  # noqa: E402
 
 # --------------------------------------------------------------------------
 # Config - mirrors README.md "What was imported" + "Club ID mapping"
