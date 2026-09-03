@@ -117,18 +117,17 @@ initial import. Two things must be true on the site:
    `home_score`, `away_score`, `date`, `kick_off_time`, `match_week`, `season`,
    `footystats_match_id`, `home_team`, `away_team` — must be registered with
    `show_in_rest => true` and a write-capable `auth_callback` on the `matches`
-   post type (via `register_post_meta`, or a plugin such as ACF with REST enabled).
-   Without this, `meta` reads back empty and writes are silently dropped.
+   post type. Without this, `meta` reads back empty and writes are silently dropped.
 
-   Quick check once the Application Password is set:
+   **Install `wordpress/register-match-meta.php`** on the site (Code Snippets
+   plugin / child-theme `functions.php` / mu-plugin — see the file header). It
+   registers all 9 keys as `string`, which is how the data is already stored and
+   how the theme's `fs_get_matches()` reads it.
 
-   ```bash
-   curl -s -u "$WP_APP_USERNAME:$WP_APP_PASSWORD" \
-     "https://footballsiam.com/wp-json/wp/v2/match?per_page=1&_fields=id,meta" | python3 -m json.tool
-   ```
-
-   If the `meta` object comes back populated (with `footystats_match_id` etc.), the
-   sync will work as-is. If it's empty or missing, the meta needs registering first.
+   `sync_matches.py` has a hard guard: if it indexes 0 posts by
+   `footystats_match_id` while the CPT is non-empty, it aborts instead of creating
+   duplicates. A clean dry run once the snippet is active looks like
+   `checked 546 / created 0 / scores updated 0 / skipped(not complete) 546`.
 
 ## API reference
 

@@ -137,22 +137,28 @@ def build_create_payload(
     home_title = wp.get_club_title(home_wp) or str(match.get("home_name", "")).strip()
     away_title = wp.get_club_title(away_wp) or str(match.get("away_name", "")).strip()
 
+    # All meta is registered as `string` on the site (see README) and the existing
+    # data is stored as strings, so every value goes out as a string.
     payload: dict[str, Any] = {
         "title": f"{home_title} vs {away_title}",
         "status": "publish",
         "meta": {
-            "home_team": home_wp,
-            "away_team": away_wp,
+            "home_team": str(home_wp),
+            "away_team": str(away_wp),
             "home_score": "",
             "away_score": "",
             "date": ymd,                       # YYYYMMDD - required by fs_get_matches()
             "kick_off_time": kickoff,          # H:i, 24h, Asia/Bangkok
-            "match_week": match_week_of(match),
+            "match_week": str(match_week_of(match)),
             "season": SEASON_LABEL,
-            "footystats_match_id": int(match["id"]),
+            "footystats_match_id": str(int(match["id"])),
         },
     }
     payload.update(league["taxonomies"])       # competition / categories / season
+    # the built-in category taxonomy's REST field is "categories" on most setups
+    # but "category" on some; send both, WP ignores whichever isn't registered.
+    if "categories" in league["taxonomies"]:
+        payload["category"] = league["taxonomies"]["categories"]
     return payload
 
 
@@ -246,7 +252,7 @@ def sync(
                 new_meta = {
                     "home_score": str(int(match.get("homeGoalCount", 0) or 0)),
                     "away_score": str(int(match.get("awayGoalCount", 0) or 0)),
-                    "match_week": match_week_of(match),
+                    "match_week": str(match_week_of(match)),
                 }
                 wp.update_match_meta(existing["id"], new_meta)
                 stats["scores_updated"] += 1
