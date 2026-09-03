@@ -1,0 +1,62 @@
+name: daily-sync
+
+on:
+  schedule:
+    - cron: '15 15 * * *'   # 22:15 Asia/Bangkok
+    - cron: '0 20 * * *'    # 03:00 Asia/Bangkok
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no writes to WordPress)'
+        type: boolean
+        default: false
+      league:
+        description: 'Restrict to one league'
+        type: choice
+        default: both
+        options:
+          - both
+          - Thai League 1
+          - Thai League 2
+
+concurrency:
+  group: daily-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run match sync
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_LEAGUE: ${{ inputs.league }}
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            [ "$INPUT_DRY_RUN" = "true" ] || ARGS+=(--live)
+            [ "$INPUT_LEAGUE" = "both" ] || ARGS+=(--league "$INPUT_LEAGUE")
+          else
+            ARGS+=(--live)
+          fi
+          echo "Running: sync_matches.py ${ARGS[*]}"
+          python src/sync_matches.py "${ARGS[@]}"

@@ -59,7 +59,79 @@ All 546 posts: `post_type=matches`, `post_status=publish`, `season` term `172` (
 | `resume_creates.json` | 254 create payloads used for the resume pass, `date` already in `YYYYMMDD` |
 | `date_fixes.json` | 292 `{post_id, ymd}` corrections applied via `ewpa/update-post-meta` |
 
-## API
+## Daily sync automation
 
-- FootyStats: `https://api.football-data-api.com/` — endpoints `/league-list`, `/league-teams`, `/league-matches`
-- WordPress: footballsiam connector, `ewpa/get-cpt-items`, `ewpa/create-cpt-item`, `ewpa/update-post-meta`, `ewpa/get-cpt-taxonomies`
+`src/` holds the ongoing sync that keeps the `matches` CPT in step with FootyStats.
+
+| file | role |
+|---|---|
+| `src/footystats_client.py` | thin FootyStats API wrapper; `get_league_matches(season_id)` |
+| `src/wp_client.py` | WordPress REST client (Application Passwords / HTTP Basic) |
+| `src/sync_matches.py` | orchestration + CLI |
+| `.github/workflows/daily-sync.yml` | runs it on schedule |
+
+### What the sync does per run
+
+For TL1 (`17367`) and TL2 (`17896`), every FootyStats match is matched to the WP
+post whose `footystats_match_id` meta equals its id:
+
+- **no post** → create it (same field + club-ID mapping as the initial import;
+  `date` as `YYYYMMDD`, `season` `"2026/2027"`, taxonomy terms as in the table above)
+- **post exists, FootyStats status `complete`, WP `home_score` still empty** →
+  write `home_score`, `away_score`, `match_week`
+- **post already has a score** → left untouched, always
+- **team id not in the mapping** → skipped and logged, never guessed
+
+Ends with a one-line summary: checked / scores updated / created / skipped / errors.
+
+### Running it
+
+```bash
+pip install -r requirements.txt
+export FOOTYSTATS_API_KEY=...  WP_APP_USERNAME=...  WP_APP_PASSWORD=...
+
+python src/sync_matches.py            # DRY RUN (reads only, no writes)
+python src/sync_matches.py --check    # verify connectivity + credentials
+python src/sync_matches.py --live     # actually write
+python src/sync_matches.py --league "Thai League 2" --limit 5   # scoped test
+```
+
+### Schedule (GitHub Actions)
+
+- `15 15 * * *` → 22:15 Asia/Bangkok
+- `0 20 * * *` → 03:00 Asia/Bangkok
+- `workflow_dispatch` for manual runs (with an optional `dry_run` toggle and league filter)
+
+Secrets required on the repo: `FOOTYSTATS_API_KEY`, `WP_APP_USERNAME`, `WP_APP_PASSWORD`.
+
+## WordPress REST prerequisites
+
+The sync talks to the plain `wp-json` REST API, not the connector used for the
+initial import. Two things must be true on the site:
+
+1. **Application Password** for a user who can edit `matches` posts
+   (Users → Profile → Application Passwords in wp-admin). Username = that user's
+   `user_login`; password = the generated 24-char string (spaces are fine).
+
+2. **Custom-field meta exposed to REST.** Each meta key the sync reads or writes —
+   `home_score`, `away_score`, `date`, `kick_off_time`, `match_week`, `season`,
+   `footystats_match_id`, `home_team`, `away_team` — must be registered with
+   `show_in_rest => true` and a write-capable `auth_callback` on the `matches`
+   post type (via `register_post_meta`, or a plugin such as ACF with REST enabled).
+   Without this, `meta` reads back empty and writes are silently dropped.
+
+   Quick check once the Application Password is set:
+
+   ```bash
+   curl -s -u "$WP_APP_USERNAME:$WP_APP_PASSWORD" \
+     "https://footballsiam.com/wp-json/wp/v2/match?per_page=1&_fields=id,meta" | python3 -m json.tool
+   ```
+
+   If the `meta` object comes back populated (with `footystats_match_id` etc.), the
+   sync will work as-is. If it's empty or missing, the meta needs registering first.
+
+## API reference
+
+- FootyStats: `https://api.football-data-api.com/` — `/league-list`, `/league-teams`, `/league-matches`
+- WordPress (sync): `https://footballsiam.com/wp-json/wp/v2/` — `match`, `club`, `users/me`
+- WordPress (initial import): footballsiam connector — `ewpa/get-cpt-items`, `ewpa/create-cpt-item`, `ewpa/update-post-meta`, `ewpa/get-cpt-taxonomies`
