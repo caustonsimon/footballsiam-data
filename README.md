@@ -129,8 +129,66 @@ initial import. Two things must be true on the site:
    duplicates. A clean dry run once the snippet is active looks like
    `checked 546 / created 0 / scores updated 0 / skipped(not complete) 546`.
 
+## Sync automation — Part A (match enrichment) and Part B (club reassignment)
+
+### Part A — full enrichment on result
+
+Folded into the twice-daily `sync_matches.py` run (`src/enrich.py`). When a
+`matches` post is `complete` in FootyStats **and still has no `raw_match_data`**,
+the sync fetches `/match` detail and writes, in one REST call:
+
+- team stats — `home/away_` × `corners, offsides, on_target, off_target,
+  attempts, fouls, possession` (`team_a_*` / `team_b_*`)
+- `home_xg` / `away_xg` (ACF) and `home_xg_prematch` / `away_xg_prematch` (meta)
+- `raw_match_data` — base64 JSON: `player_stats[]` with `wp_id` + `position`,
+  `match_events[]` with `p1_wp_id`; own-goal detection cross-checks the goal
+  minute against that team's own goal-timing array
+
+Missing players are auto-created from `/player-stats` using the approved
+position map (`GK/DF/MF/FW`), with `last_confirmed_club` + `last_confirmed_date`
+and **no `current_club`**. The `footystats_id → WP` lookup is rebuilt fresh
+every run and grown in-memory as players are created. Every write emits an
+`AUDIT | …` log line. Idempotent: `raw_match_data` present ⇒ skip.
+
+Disable with `--no-enrich`. Guard test: `--enrich-test <post_id,post_id>`.
+
+### Part B — `current_club` reassignment (`--club-sync`, weekly)
+
+`weekly-club-sync.yml` (Mondays). Full pass over every `player` with
+`fs_advanced_stats_json`. Reads `all_seasons_metrics`, drops
+`league_type == "International"` rows, takes the most recent remaining row by
+`starting_year`/`ending_year`, and **ID-matches** its `club_team_id` against the
+34-club `CLUB_MAP`:
+
+- tracked club, differs from `current_club` → set `current_club`
+- not a tracked club, `current_club` set → clear it
+- otherwise → no change
+
+Never name-matches. Runs report-only unless dispatched with `live=true`.
+
+> **Status: not live.** The dry run shows the stored `fs_advanced_stats_json`
+> is a stale snapshot (nothing refreshes it) and mixes cup / youth-national
+> competitions whose `club_team_id` is a select/national side — so the
+> "most-recent-club" heuristic misfires (see the session report). Needs either a
+> live `/player-stats` read or a `Domestic League`-only + recency filter before
+> `--live`.
+
+### New WordPress prerequisites for Part A / B
+
+Two more snippets alongside `register-match-meta.php`:
+
+- **`wordpress/register-match-stats-meta.php`** — now also registers
+  `home_xg_prematch`, `away_xg_prematch`. Re-deploy the updated file.
+- **`wordpress/register-player-meta.php`** (new) — registers
+  `last_confirmed_club`, `last_confirmed_date`, `birthday` on `player` so
+  auto-created players keep those values over REST.
+
+`home_xg` / `away_xg` and every `player` ACF field (`footystats_id`,
+`first_name`, `last_name`, `nationality`, `position`, `current_club`) are
+written through the REST `acf` object and need no snippet.
+
 ## API reference
 
-- FootyStats: `https://api.football-data-api.com/` — `/league-list`, `/league-teams`, `/league-matches`
-- WordPress (sync): `https://footballsiam.com/wp-json/wp/v2/` — `match`, `club`, `users/me`
+- FootyStats: `https://api.football-data-api.com/` — `/league-list`, `/league-teams`, `/league-matches`, `/match`, `/player-stats`
+- WordPress (sync): `https://footballsiam.com/wp-json/wp/v2/` — `match`, `club`, `player`, `users/me`
 - WordPress (initial import): footballsiam connector — `ewpa/get-cpt-items`, `ewpa/create-cpt-item`, `ewpa/update-post-meta`, `ewpa/get-cpt-taxonomies`

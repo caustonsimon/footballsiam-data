@@ -17,13 +17,14 @@
 
 add_action( 'init', function () {
 	$keys = array(
-		'home_corners',   'away_corners',
-		'home_offsides',  'away_offsides',
-		'home_on_target', 'away_on_target',
-		'home_off_target','away_off_target',
-		'home_attempts',  'away_attempts',
-		'home_fouls',     'away_fouls',
-		'home_possession','away_possession',
+		'home_corners',      'away_corners',
+		'home_offsides',     'away_offsides',
+		'home_on_target',    'away_on_target',
+		'home_off_target',   'away_off_target',
+		'home_attempts',     'away_attempts',
+		'home_fouls',        'away_fouls',
+		'home_possession',   'away_possession',
+		'home_xg_prematch',  'away_xg_prematch',  // added for the daily sync's Part A
 		'stadium',
 		'raw_match_data',
 	);

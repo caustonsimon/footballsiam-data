@@ -1,0 +1,579 @@
+#!/usr/bin/env python3
+"""Match-report enrichment (Part A) and club reassignment (Part B).
+
+Part A - enrich_match()
+    When a match first goes `complete`, fetch /match detail and write:
+      * team stats  (home/away_corners, offsides, on_target, off_target,
+        attempts, fouls, possession)
+      * home_xg / away_xg  and  home_xg_prematch / away_xg_prematch
+      * raw_match_data  (base64 JSON: player_stats[] with wp_id + position,
+        match_events[] with p1_wp_id; own-goal detection)
+    Missing players are auto-created (Part A step 5) with last_confirmed_club /
+    last_confirmed_date and NO current_club.
+    Guard: a match that already has raw_match_data is skipped.
+
+Part B - reassign_clubs()
+    Full pass over every `player` that has fs_advanced_stats_json. Reads
+    all_seasons_metrics, drops International rows, takes the most recent club
+    row, and:
+      * if that club is one of our 34 tracked clubs and differs from
+        current_club  -> set current_club to the right WP club id
+      * if that club is NOT tracked and current_club is set  -> clear it
+    ID-based only. Never name-matches.
+
+Both paths log every write so an unattended run leaves an audit trail.
+"""
+
+from __future__ import annotations
+
+import base64
+import datetime as dt
+import json
+import logging
+from typing import Any, Callable
+
+from footystats_client import FootyStatsClient, FootyStatsError
+from wp_client import WPClient, WPError
+
+log = logging.getLogger("enrich")
+
+BANGKOK_TZ = dt.timezone(dt.timedelta(hours=7))
+
+# ACF field keys on the `player` CPT (needed only for the bare-meta companions;
+# writing through the REST `acf` object does not need them, but keeping them
+# here documents the field group).
+PLAYER_FIELD_KEYS = {
+    "footystats_id": "field_6a740e0d96d5b",
+    "first_name": "field_69c4fab23e14b",
+    "last_name": "field_69c4fadd3e14c",
+    "nationality": "field_69c4fae93e14d",
+    "position": "field_69c4fef2885f0",
+    "current_club": "field_69c4fb633e152",
+    "fs_advanced_stats_json": "field_6a7582b95f4c7",
+}
+
+# team_a_* / team_b_* FootyStats key  ->  home_* / away_* WP meta key
+TEAM_STAT_MAP = {
+    "corners": "corners",
+    "offsides": "offsides",
+    "shotsOnTarget": "on_target",
+    "shotsOffTarget": "off_target",
+    "shots": "attempts",
+    "fouls": "fouls",
+    "possession": "possession",
+}
+
+
+# --------------------------------------------------------------------------
+# Position mapping  (the approved rule - first match wins)
+# --------------------------------------------------------------------------
+
+def map_position(raw: Any) -> str:
+    """FootyStats position string -> GK / DF / MF / FW  ('' if unknowable)."""
+    s = str(raw or "").strip().lower()
+    if not s:
+        return ""
+    if "keeper" in s or s == "gk":
+        return "GK"
+    if any(w in s for w in ("back", "defender", "defence", "defense",
+                            "cb", "rb", "lb", "wb")):
+        return "DF"
+    if "midfield" in s or s in ("dm", "cm", "am", "mf"):
+        return "MF"
+    if any(w in s for w in ("forward", "striker", "winger", "wing",
+                            "attacker", "fw", "cf")):
+        return "FW"
+    return ""
+
+
+# --------------------------------------------------------------------------
+# Player lookup  (footystats_id -> {wp_id, title, position})
+# --------------------------------------------------------------------------
+
+def build_player_lookup(wp: WPClient) -> dict[str, dict[str, Any]]:
+    """Fresh every call - the table grows as players are auto-created."""
+    lut: dict[str, dict[str, Any]] = {}
+    for p in wp.iter_all_players(
+        fields="id,title,acf.footystats_id,acf.position"
+    ):
+        acf = p.get("acf") or {}
+        fid = acf.get("footystats_id")
+        if fid in (None, "", 0, "0"):
+            continue
+        lut[str(fid)] = {
+            "wp_id": p["id"],
+            "title": (p.get("title") or {}).get("rendered", ""),
+            "position": (acf.get("position") or "").strip(),
+        }
+    return lut
+
+
+# --------------------------------------------------------------------------
+# Part A helpers
+# --------------------------------------------------------------------------
+
+def _minute_variants(m: Any) -> set[str]:
+    s = str(m).strip()
+    return {s, s.split("+")[0].strip()}
+
+
+def _pick_player_row(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Best per-season row for identity fields (name / position / dob)."""
+    if not rows:
+        return {}
+    tl = [r for r in rows
+          if r.get("season") == "2025/2026" and "Thai League" in str(r.get("league", ""))]
+    if tl:
+        return tl[0]
+    s2526 = [r for r in rows if r.get("season") == "2025/2026"]
+    if s2526:
+        return s2526[0]
+    return sorted(
+        rows,
+        key=lambda r: (r.get("ending_year") or 0, r.get("last_match_timestamp") or 0),
+    )[-1]
+
+
+def ensure_player(
+    wp: WPClient,
+    fs: FootyStatsClient,
+    fs_player_id: int,
+    lookup: dict[str, dict[str, Any]],
+    *,
+    last_club_wp_id: int | None,
+    last_date_ymd: str,
+    audit: Callable[[str], None],
+) -> dict[str, Any] | None:
+    """Return the lookup entry for a FootyStats player id, creating the WP
+    `player` post first if it does not exist yet. Mutates `lookup`.
+    """
+    key = str(int(fs_player_id))
+    if key in lookup:
+        return lookup[key]
+
+    try:
+        rows = fs.get_player(fs_player_id)
+    except FootyStatsError as exc:
+        log.warning("  player %s: FootyStats lookup failed (%s) - not created",
+                    fs_player_id, exc)
+        return None
+
+    e = _pick_player_row(rows)
+    name = (e.get("known_as") or e.get("full_name")
+            or " ".join(x for x in [e.get("first_name"), e.get("last_name")] if x)).strip()
+    if not name:
+        log.warning("  player %s: FootyStats has no name - not created", fs_player_id)
+        return None
+    first = (e.get("first_name") or "").strip()
+    last = (e.get("last_name") or "").strip()
+    if not first and not last:
+        parts = name.split()
+        first, last = parts[0], " ".join(parts[1:])
+    position = map_position(e.get("position"))
+    nationality = (e.get("nationality") or "").strip()
+    birthday = e.get("birthday") or 0
+
+    acf = {
+        "footystats_id": key,
+        "first_name": first,
+        "last_name": last,
+        "nationality": nationality,
+        "position": position,
+    }
+    meta = {"last_confirmed_date": last_date_ymd}
+    if last_club_wp_id:
+        meta["last_confirmed_club"] = str(int(last_club_wp_id))
+    if birthday:
+        meta["birthday"] = str(int(birthday))
+
+    resp = wp.create_player({
+        "title": name,
+        "status": "publish",
+        "acf": acf,
+        "meta": meta,
+    })
+    new_id = None if wp.dry_run else int(resp.get("id"))
+    club_txt = str(last_club_wp_id) if last_club_wp_id else "?"
+    audit(
+        f"PLAYER CREATE  {name}  fs={key}  wp={new_id if new_id else '(dry-run)'}  "
+        f"club={club_txt}  pos={position or '(blank)'}  dob={birthday or '(none)'}"
+    )
+    entry = {"wp_id": new_id, "title": name, "position": position}
+    lookup[key] = entry
+    return entry
+
+
+def _side_of(md: dict[str, Any], fs_pid: int) -> str | None:
+    """Which side ('Home'/'Away') a FootyStats player id lined up / benched on."""
+    for side, key in (("Home", "team_a"), ("Away", "team_b")):
+        for p in (md.get("lineups") or {}).get(key, []) or []:
+            if p.get("player_id") == fs_pid:
+                return side
+        for b in (md.get("bench") or {}).get(key, []) or []:
+            if b.get("player_in_id") == fs_pid:
+                return side
+        for c in md.get(f"{key}_card_details", []) or []:
+            if c.get("player_id") == fs_pid:
+                return side
+    return None
+
+
+def _collect_player_ids(md: dict[str, Any]) -> list[int]:
+    ids: list[int] = []
+    seen: set[int] = set()
+    for key in ("team_a", "team_b"):
+        for p in (md.get("lineups") or {}).get(key, []) or []:
+            pid = p.get("player_id")
+            if isinstance(pid, int) and pid not in seen:
+                seen.add(pid); ids.append(pid)
+        for b in (md.get("bench") or {}).get(key, []) or []:
+            pid = b.get("player_in_id")
+            if isinstance(pid, int) and pid not in (-1,) and pid not in seen:
+                seen.add(pid); ids.append(pid)
+        for c in md.get(f"{key}_card_details", []) or []:
+            pid = c.get("player_id")
+            if isinstance(pid, int) and pid not in seen:
+                seen.add(pid); ids.append(pid)
+    return ids
+
+
+def _build_raw_match_data(
+    md: dict[str, Any], lookup: dict[str, dict[str, Any]]
+) -> tuple[str, int]:
+    """(base64 JSON string, own_goal_count)."""
+
+    def name_of(pid: Any) -> str:
+        e = lookup.get(str(pid)) if pid is not None else None
+        return e["title"] if e else str(pid)
+
+    def wpid_of(pid: Any) -> Any:
+        e = lookup.get(str(pid)) if pid is not None else None
+        return e["wp_id"] if e else None
+
+    def pos_of(pid: Any) -> str:
+        e = lookup.get(str(pid)) if pid is not None else None
+        return e["position"] if e else ""
+
+    player_stats: list[dict[str, Any]] = []
+    for side, key in (("Home", "team_a"), ("Away", "team_b")):
+        for p in (md.get("lineups") or {}).get(key, []) or []:
+            pid = p.get("player_id")
+            player_stats.append({
+                "player_id": pid, "wp_id": wpid_of(pid), "team": side,
+                "player_name": name_of(pid), "position": pos_of(pid),
+                "is_starter": True,
+            })
+        for b in (md.get("bench") or {}).get(key, []) or []:
+            pid = b.get("player_in_id")
+            if pid in (None, -1):
+                continue
+            player_stats.append({
+                "player_id": pid, "wp_id": wpid_of(pid), "team": side,
+                "player_name": name_of(pid), "position": pos_of(pid),
+                "is_starter": False,
+            })
+
+    home_goal_mins: set[str] = set()
+    for g in md.get("homeGoals", []) or []:
+        home_goal_mins |= _minute_variants(g)
+    away_goal_mins: set[str] = set()
+    for g in md.get("awayGoals", []) or []:
+        away_goal_mins |= _minute_variants(g)
+
+    events: list[dict[str, Any]] = []
+    dedupe: set[tuple[str, str, str]] = set()
+    own_goals = 0
+
+    def add_event(etype: Any, minute: Any, pid: Any, team: str, detail: str = "") -> None:
+        et = str(etype)
+        mn = str(minute)
+        k = (et, str(pid), mn.split("+")[0].strip())
+        if k in dedupe:
+            return
+        dedupe.add(k)
+        events.append({
+            "event_type": et, "event_detail": detail, "event_minute": mn,
+            "p1_id": pid, "p1_wp_id": wpid_of(pid), "p1_name": name_of(pid),
+            "event_team": team,
+        })
+
+    def handle(pid: Any, ev: dict[str, Any], team: str) -> None:
+        nonlocal own_goals
+        etype = ev.get("event_type")
+        minute = ev.get("event_time")
+        detail = ""
+        et = team
+        if etype == "Goal":
+            mv = _minute_variants(minute)
+            own = home_goal_mins if team == "Home" else away_goal_mins
+            opp = away_goal_mins if team == "Home" else home_goal_mins
+            if not (mv & own) and (mv & opp):
+                detail = "own goal"
+                et = "Away" if team == "Home" else "Home"
+                own_goals += 1
+        add_event(etype, minute, pid, et, detail)
+
+    for side, key in (("Home", "team_a"), ("Away", "team_b")):
+        for p in (md.get("lineups") or {}).get(key, []) or []:
+            for ev in p.get("player_events", []) or []:
+                handle(p.get("player_id"), ev, side)
+        for b in (md.get("bench") or {}).get(key, []) or []:
+            for ev in b.get("player_in_events", []) or []:
+                handle(b.get("player_in_id"), ev, side)
+    for key, side in (("team_a_card_details", "Home"), ("team_b_card_details", "Away")):
+        for c in md.get(key, []) or []:
+            add_event(c.get("card_type"), c.get("time"), c.get("player_id"), side)
+
+    blob = json.dumps(
+        {"player_stats": player_stats, "match_events": events},
+        separators=(",", ":"), ensure_ascii=False,
+    ).encode("utf-8")
+    return base64.b64encode(blob).decode("ascii"), own_goals
+
+
+def enrich_match(
+    wp: WPClient,
+    fs: FootyStatsClient,
+    fs_match: dict[str, Any],
+    wp_post: dict[str, Any],
+    club_map: dict[int, int],
+    lookup: dict[str, dict[str, Any]],
+    *,
+    audit: Callable[[str], None],
+) -> str:
+    """Enrich one match. Returns one of: 'skipped_has_data', 'enriched',
+    'error'. `wp_post` is the indexed post dict (needs id + meta).
+    """
+    post_id = int(wp_post["id"])
+    fs_id = int(fs_match["id"])
+    meta_now = wp_post.get("meta") or {}
+
+    # -- Part A guard: already enriched (this sync or the historical backfill)
+    if str(meta_now.get("raw_match_data") or "").strip():
+        audit(f"ENRICH SKIP  post {post_id}  fs {fs_id}  (raw_match_data already set)")
+        return "skipped_has_data"
+
+    try:
+        md = fs.get_match(fs_id)
+    except FootyStatsError as exc:
+        log.error("  ENRICH post %s fs %s: /match fetch failed: %s", post_id, fs_id, exc)
+        return "error"
+
+    # -- team stats -----------------------------------------------------
+    stat_meta: dict[str, str] = {}
+    for fs_key, wp_suffix in TEAM_STAT_MAP.items():
+        for pfx, side in (("team_a_", "home_"), ("team_b_", "away_")):
+            v = md.get(pfx + fs_key)
+            if v is not None:
+                stat_meta[side + wp_suffix] = str(v)
+
+    # -- xG -----------------------------------------------------------
+    xg_acf: dict[str, Any] = {}
+    if md.get("team_a_xg") is not None:
+        xg_acf["home_xg"] = md["team_a_xg"]
+    if md.get("team_b_xg") is not None:
+        xg_acf["away_xg"] = md["team_b_xg"]
+    xg_meta: dict[str, str] = {}
+    if md.get("team_a_xg_prematch") is not None:
+        xg_meta["home_xg_prematch"] = str(md["team_a_xg_prematch"])
+    if md.get("team_b_xg_prematch") is not None:
+        xg_meta["away_xg_prematch"] = str(md["team_b_xg_prematch"])
+
+    # -- auto-create any missing players ------------------------------
+    ymd = _bangkok_ymd(md.get("date_unix") or fs_match.get("date_unix"))
+    home_club_wp = club_map.get(int(md.get("homeID", 0) or 0))
+    away_club_wp = club_map.get(int(md.get("awayID", 0) or 0))
+    for pid in _collect_player_ids(md):
+        if str(pid) in lookup:
+            continue
+        side = _side_of(md, pid)
+        club_wp = home_club_wp if side == "Home" else away_club_wp if side == "Away" else None
+        ensure_player(
+            wp, fs, pid, lookup,
+            last_club_wp_id=club_wp, last_date_ymd=ymd, audit=audit,
+        )
+
+    # -- raw_match_data --------------------------------------------
+    rmd, own_goals = _build_raw_match_data(md, lookup)
+
+    meta = {**stat_meta, **xg_meta, "raw_match_data": rmd}
+    try:
+        wp.update_match(post_id, meta=meta, acf=xg_acf or None)
+    except WPError as exc:
+        log.error("  ENRICH post %s fs %s: write failed: %s", post_id, fs_id, exc)
+        return "error"
+
+    n_players = rmd and len(json.loads(base64.b64decode(rmd)).get("player_stats", []))
+    audit(
+        f"ENRICH  post {post_id}  fs {fs_id}  "
+        f"stats={len(stat_meta)}  xg={xg_acf.get('home_xg')}-{xg_acf.get('away_xg')}  "
+        f"xg_pre={xg_meta.get('home_xg_prematch')}-{xg_meta.get('away_xg_prematch')}  "
+        f"players={n_players}  own_goals={own_goals}"
+    )
+
+    if not wp.dry_run:
+        _verify_enrich_write(wp, post_id, meta, xg_acf)
+    return "enriched"
+
+
+def _bangkok_ymd(unix_ts: Any) -> str:
+    try:
+        return dt.datetime.fromtimestamp(int(unix_ts), BANGKOK_TZ).strftime("%Y%m%d")
+    except (TypeError, ValueError, OSError):
+        return ""
+
+
+def _verify_enrich_write(
+    wp: WPClient, post_id: int, meta: dict[str, Any], acf: dict[str, Any]
+) -> None:
+    """Read the post back and warn loudly if a key did not persist - catches a
+    missing register_post_meta() snippet before it hides a whole season of gaps.
+    """
+    try:
+        back = wp.get_match(
+            post_id,
+            fields="id,meta.raw_match_data,meta.home_xg_prematch,meta.home_corners,acf.home_xg",
+        )
+    except WPError as exc:
+        log.warning("  verify post %s: read-back failed: %s", post_id, exc)
+        return
+    bmeta = back.get("meta") or {}
+    bacf = back.get("acf") or {}
+    problems = []
+    if meta.get("raw_match_data") and not bmeta.get("raw_match_data"):
+        problems.append("raw_match_data")
+    if "home_xg_prematch" in meta and not bmeta.get("home_xg_prematch"):
+        problems.append("home_xg_prematch (register-match-stats-meta.php not updated?)")
+    if "home_corners" in meta and not bmeta.get("home_corners"):
+        problems.append("home_corners")
+    if acf.get("home_xg") is not None and bacf.get("home_xg") in (None, "", False):
+        problems.append("home_xg")
+    if problems:
+        log.warning("  VERIFY post %s: these keys did NOT persist -> %s",
+                    post_id, ", ".join(problems))
+
+
+# --------------------------------------------------------------------------
+# Part B  -  club reassignment / clearing
+# --------------------------------------------------------------------------
+
+def _first_club_id(v: Any) -> int | None:
+    """Normalise an acf.current_club value to a single int WP post id."""
+    if not v:
+        return None
+    x = v[0] if isinstance(v, list) else v
+    if isinstance(x, dict):
+        x = x.get("id") or x.get("ID")
+    try:
+        return int(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def _current_club_row(blob: str) -> dict[str, Any] | None:
+    """Most recent real (non-International, valid club_team_id) season row from
+    an fs_advanced_stats_json string. None if there is nothing usable.
+    """
+    try:
+        data = json.loads(blob)
+    except (TypeError, ValueError):
+        return None
+    seasons = data.get("all_seasons_metrics")
+    if not isinstance(seasons, dict):
+        return None
+    rows = []
+    for r in seasons.values():
+        if not isinstance(r, dict):
+            continue
+        if str(r.get("league_type", "")) == "International":
+            continue
+        try:
+            cid = int(r.get("club_team_id"))
+        except (TypeError, ValueError):
+            continue
+        if cid <= 0:
+            continue
+        rows.append(r)
+    if not rows:
+        return None
+    return sorted(
+        rows,
+        key=lambda r: (r.get("starting_year") or 0, r.get("ending_year") or 0),
+    )[-1]
+
+
+def reassign_clubs(
+    wp: WPClient,
+    club_map: dict[int, int],
+    *,
+    audit: Callable[[str], None],
+    sample_limit: int = 10,
+) -> dict[str, Any]:
+    """Full pass over players with fs_advanced_stats_json. Honours wp.dry_run."""
+    stats = {
+        "scanned": 0, "eligible": 0, "reassigned": 0, "cleared": 0,
+        "noop": 0, "errors": 0,
+        "reassign_sample": [], "clear_sample": [], "noop_blank_sample": [],
+    }
+
+    for p in wp.iter_all_players(
+        fields="id,title,acf.current_club,acf.fs_advanced_stats_json"
+    ):
+        stats["scanned"] += 1
+        acf = p.get("acf") or {}
+        blob = acf.get("fs_advanced_stats_json")
+        if not blob or not str(blob).strip():
+            continue
+        stats["eligible"] += 1
+
+        pid = int(p["id"])
+        name = (p.get("title") or {}).get("rendered", "") or f"player {pid}"
+        row = _current_club_row(blob)
+        if row is None:
+            continue
+
+        fs_club = int(row["club_team_id"])
+        mapped_wp = club_map.get(fs_club)
+        cur_wp = _first_club_id(acf.get("current_club"))
+
+        try:
+            if mapped_wp is not None:
+                if cur_wp == mapped_wp:
+                    stats["noop"] += 1
+                    continue
+                old_txt = wp.get_club_title(cur_wp) if cur_wp else "(blank)"
+                new_txt = wp.get_club_title(mapped_wp)
+                line = (f"REASSIGN  {name}  (post {pid})  "
+                        f"{old_txt} [{cur_wp}]  ->  {new_txt} [{mapped_wp}]  "
+                        f"(fs club {fs_club}, {row.get('season')} {row.get('league')})")
+                audit(line)
+                if len(stats["reassign_sample"]) < sample_limit:
+                    stats["reassign_sample"].append(line)
+                if not wp.dry_run:
+                    wp.update_player(pid, acf={"current_club": [mapped_wp]})
+                stats["reassigned"] += 1
+            else:
+                if cur_wp is None:
+                    stats["noop"] += 1
+                    if len(stats["noop_blank_sample"]) < sample_limit:
+                        stats["noop_blank_sample"].append(
+                            f"{name} (post {pid}): already blank; "
+                            f"fs club {fs_club} not tracked "
+                            f"({row.get('season')} {row.get('league')})")
+                    continue
+                old_txt = wp.get_club_title(cur_wp)
+                line = (f"CLEAR     {name}  (post {pid})  "
+                        f"was {old_txt} [{cur_wp}]  ->  (blank)  "
+                        f"(moved to untracked fs club {fs_club}, "
+                        f"{row.get('season')} {row.get('league')})")
+                audit(line)
+                if len(stats["clear_sample"]) < sample_limit:
+                    stats["clear_sample"].append(line)
+                if not wp.dry_run:
+                    wp.update_player(pid, acf={"current_club": []})
+                stats["cleared"] += 1
+        except WPError as exc:
+            stats["errors"] += 1
+            log.error("  club-sync post %s (%s): %s", pid, name, exc)
+
+    return stats

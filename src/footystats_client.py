@@ -95,6 +95,36 @@ class FootyStatsClient:
             page += 1
         return out
 
+    def get_match(self, match_id: int) -> dict[str, Any]:
+        """Full detail for one match (GET /match?match_id=...).
+
+        Returns the single match object (the endpoint wraps it in `data`, and
+        historically has sometimes returned a one-element list there).
+        """
+        payload = self._get("match", {"match_id": int(match_id)})
+        data = payload.get("data")
+        if isinstance(data, list):
+            if not data:
+                raise FootyStatsError(f"/match {match_id}: empty data")
+            return data[0]
+        if not isinstance(data, dict):
+            raise FootyStatsError(f"/match {match_id}: unexpected data shape")
+        return data
+
+    def get_player(self, player_id: int) -> list[dict[str, Any]]:
+        """All per-season/competition rows for one player (GET /player-stats).
+
+        `data` is a list (one entry per season+competition the player appears
+        in). Callers pick the row they want.
+        """
+        payload = self._get("player-stats", {"player_id": int(player_id)})
+        data = payload.get("data")
+        if isinstance(data, dict):
+            return [data]
+        if not isinstance(data, list):
+            raise FootyStatsError(f"/player-stats {player_id}: unexpected data shape")
+        return data
+
 
 def get_league_matches(season_id: int, api_key: str | None = None) -> list[dict[str, Any]]:
     """Convenience wrapper: fetch all matches for one season_id."""

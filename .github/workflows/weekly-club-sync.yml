@@ -1,0 +1,55 @@
+name: weekly-club-sync
+
+# Part B: reassign / clear `current_club` on players based on their
+# FootyStats career data. Career history changes on the order of transfer
+# windows, not match days, so this runs weekly rather than twice daily.
+#
+# Runs in DRY RUN (report only) unless dispatched manually with live=true.
+# See README > "Part B" before enabling live writes.
+
+on:
+  schedule:
+    - cron: '30 19 * * 1'   # Mondays 02:30 Asia/Bangkok
+  workflow_dispatch:
+    inputs:
+      live:
+        description: 'Write changes (unchecked = dry run / report only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: club-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  club-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run club reassignment
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          INPUT_LIVE: ${{ inputs.live }}
+        run: |
+          set -euo pipefail
+          ARGS=(--club-sync)
+          if [ "${INPUT_LIVE:-false}" = "true" ]; then
+            ARGS+=(--live)
+          fi
+          echo "Running: sync_matches.py ${ARGS[*]}"
+          python src/sync_matches.py "${ARGS[@]}"

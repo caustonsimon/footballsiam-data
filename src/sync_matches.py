@@ -5,19 +5,35 @@ For Thai League 1 (season_id 17367) and Thai League 2 (season_id 17896):
 
   * fetch every match from FootyStats
   * find the WP `matches` post whose `footystats_match_id` meta == that match id
-  * exists + FootyStats status == "complete" + WP home_score still empty
-        -> write home_score, away_score, match_week
   * no post at all
         -> create it (README field + club-ID mapping)
-  * a post that already has a score recorded is NEVER touched
+  * exists + FootyStats status == "complete" + WP home_score still empty
+        -> write home_score, away_score, match_week
+  * a post that already has a score recorded is NEVER re-scored
+
+  Part A - full enrichment (enrich.py): whenever a completed match still has no
+  raw_match_data, fetch /match detail and write team stats, home/away_xg and
+  home/away_xg_prematch, and raw_match_data (player_stats[] with wp_id +
+  position, match_events[] with p1_wp_id, own-goal detection). Missing players
+  are auto-created (last_confirmed_club / last_confirmed_date, no current_club).
+  A match that already has raw_match_data is skipped. Disable with --no-enrich.
+
+  Part B - club reassignment (--club-sync): a separate pass over every `player`
+  with fs_advanced_stats_json. Reads their most recent non-International club
+  from all_seasons_metrics and, ID-based only, either points current_club at the
+  right WP club or clears it when they have moved to a club we do not track.
+  Runs weekly (weekly-club-sync.yml), not twice daily.
 
 Safety: writes only happen with --live. Without it the run is a dry run
-(reads still hit WP so the would-be payloads are realistic).
+(reads still hit WP so the would-be payloads / changes are realistic).
 
-    python src/sync_matches.py              # dry run, both leagues
-    python src/sync_matches.py --live       # actually write
-    python src/sync_matches.py --check      # just verify credentials/connectivity
-    python src/sync_matches.py --league "Thai League 2" --limit 5
+    python src/sync_matches.py                       # dry run, match sync + enrich
+    python src/sync_matches.py --live                # actually write
+    python src/sync_matches.py --check               # credentials / connectivity
+    python src/sync_matches.py --no-enrich --live    # score updates only
+    python src/sync_matches.py --club-sync           # Part B, dry run (report)
+    python src/sync_matches.py --club-sync --live    # Part B, write
+    python src/sync_matches.py --enrich-test 25500,25739   # Part A guard test
 """
 
 from __future__ import annotations
@@ -57,6 +73,11 @@ _load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from footystats_client import FootyStatsClient, FootyStatsError  # noqa: E402
 from wp_client import WPClient, WPError  # noqa: E402
+from enrich import (  # noqa: E402
+    build_player_lookup,
+    enrich_match,
+    reassign_clubs,
+)
 
 # --------------------------------------------------------------------------
 # Config - mirrors README.md "What was imported" + "Club ID mapping"
@@ -77,6 +98,10 @@ CLUB_MAP_TL2: dict[int, int] = {
     8384: 7956, 678797: 7960, 666943: 13879, 1174: 7936, 8381: 7952, 1188: 7932,
     8371: 7947, 688234: 7958, 9889: 7954, 1023811: 9862, 21927: 7955, 666933: 9792,
 }
+
+# every FootyStats club id we can resolve to a WP `club` post (TL1 + TL2).
+# Used by Part B (club reassignment) as the set of "clubs we track".
+CLUB_MAP: dict[int, int] = {**CLUB_MAP_TL1, **CLUB_MAP_TL2}
 
 LEAGUES: list[dict[str, Any]] = [
     {
@@ -166,12 +191,18 @@ def build_create_payload(
 # Core
 # --------------------------------------------------------------------------
 
+def _audit(msg: str) -> None:
+    """One audit line, prefixed so it stands out in an unattended CI log."""
+    log.info("AUDIT | %s", msg)
+
+
 def sync(
     wp: WPClient,
     fs: FootyStatsClient,
     *,
     league_filter: str | None = None,
     limit: int | None = None,
+    enrich: bool = True,
 ) -> dict[str, int]:
     stats = {
         "checked": 0,
@@ -180,6 +211,9 @@ def sync(
         "skipped_recorded": 0,
         "skipped_incomplete": 0,
         "unmapped_team": 0,
+        "enriched": 0,
+        "enrich_skipped": 0,
+        "players_created": 0,
         "errors": 0,
     }
 
@@ -198,6 +232,11 @@ def sync(
                 "See README > 'WordPress REST prerequisites'."
             )
         log.warning("  `matches` CPT appears empty - every match will be created")
+
+    # Player lookup for Part A is built lazily and ONCE (fresh) the first time a
+    # match actually needs enriching, then reused (and grown) for the rest of the
+    # run. Never persisted between runs.
+    player_lookup: dict[str, Any] | None = None
 
     for league in LEAGUES:
         if league_filter and league["name"] != league_filter:
@@ -241,25 +280,54 @@ def sync(
                     continue
 
                 meta = existing.get("meta") or {}
-                if not is_empty_score(meta.get("home_score")):
+
+                # -- score update (unchanged trigger) ------------------
+                if is_empty_score(meta.get("home_score")):
+                    if status == "complete":
+                        new_meta = {
+                            "home_score": str(int(match.get("homeGoalCount", 0) or 0)),
+                            "away_score": str(int(match.get("awayGoalCount", 0) or 0)),
+                            "match_week": str(match_week_of(match)),
+                        }
+                        wp.update_match_meta(existing["id"], new_meta)
+                        stats["scores_updated"] += 1
+                        _audit(
+                            f"SCORE  post {existing['id']}  fs {fs_id}  "
+                            f"{new_meta['home_score']}-{new_meta['away_score']}  "
+                            f"[wk {new_meta['match_week']}]  ({match.get('home_name')} "
+                            f"v {match.get('away_name')})"
+                        )
+                    else:
+                        stats["skipped_incomplete"] += 1
+                else:
                     stats["skipped_recorded"] += 1
-                    continue
 
-                if status != "complete":
-                    stats["skipped_incomplete"] += 1
-                    continue
-
-                new_meta = {
-                    "home_score": str(int(match.get("homeGoalCount", 0) or 0)),
-                    "away_score": str(int(match.get("awayGoalCount", 0) or 0)),
-                    "match_week": str(match_week_of(match)),
-                }
-                wp.update_match_meta(existing["id"], new_meta)
-                stats["scores_updated"] += 1
-                log.info("  SCORE   %s  post %s  ->  %s-%s  [wk %s]",
-                         fs_id, existing["id"],
-                         new_meta["home_score"], new_meta["away_score"],
-                         new_meta["match_week"])
+                # -- full enrichment (Part A) ----------------------
+                # Independent of the score trigger: fires whenever a completed
+                # match still has no raw_match_data (fresh result, or an older
+                # post from before Part A existed). Idempotent - the guard in
+                # enrich_match() also re-checks raw_match_data.
+                if (
+                    enrich
+                    and status == "complete"
+                    and not str(meta.get("raw_match_data") or "").strip()
+                ):
+                    if player_lookup is None:
+                        log.info("  building fresh player lookup ...")
+                        player_lookup = build_player_lookup(wp)
+                        log.info("  %d players in lookup", len(player_lookup))
+                    before = len(player_lookup)
+                    result = enrich_match(
+                        wp, fs, match, existing, league["club_map"],
+                        player_lookup, audit=_audit,
+                    )
+                    stats["players_created"] += len(player_lookup) - before
+                    if result == "enriched":
+                        stats["enriched"] += 1
+                    elif result == "skipped_has_data":
+                        stats["enrich_skipped"] += 1
+                    else:
+                        stats["errors"] += 1
             except (WPError, KeyError) as exc:
                 stats["errors"] += 1
                 log.error("  ERROR on match %s: %s", fs_id, exc)
@@ -271,6 +339,75 @@ def sync(
 # Entry point
 # --------------------------------------------------------------------------
 
+def _run_club_sync(wp: WPClient, *, sample_limit: int = 10) -> int:
+    """Part B: full pass over players with fs_advanced_stats_json."""
+    mode = "LIVE" if not wp.dry_run else "DRY RUN (report only, no writes)"
+    log.info("Starting club reassignment (Part B) - %s", mode)
+    try:
+        st = reassign_clubs(wp, CLUB_MAP, audit=_audit, sample_limit=sample_limit)
+    except WPError as exc:
+        log.error("Club sync aborted: %s", exc)
+        return 2
+
+    log.info("---------------------------------------------")
+    log.info("Club reassignment summary (%s)", mode)
+    log.info("  players scanned              : %d", st["scanned"])
+    log.info("  eligible (has fs_advanced..) : %d", st["eligible"])
+    log.info("  would reassign / reassigned  : %d", st["reassigned"])
+    log.info("  would clear / cleared        : %d", st["cleared"])
+    log.info("  no action                    : %d", st["noop"])
+    log.info("  errors                       : %d", st["errors"])
+    if st["reassign_sample"]:
+        log.info("  --- reassign sample ---")
+        for s in st["reassign_sample"]:
+            log.info("    %s", s)
+    if st["clear_sample"]:
+        log.info("  --- clear sample ---")
+        for s in st["clear_sample"]:
+            log.info("    %s", s)
+    if wp.dry_run and st["noop_blank_sample"]:
+        log.info("  --- already-blank / untracked sample ---")
+        for s in st["noop_blank_sample"]:
+            log.info("    %s", s)
+    log.info("---------------------------------------------")
+    return 1 if st["errors"] else 0
+
+
+def _run_enrich_test(wp: WPClient, fs: FootyStatsClient, post_ids: list[int]) -> int:
+    """Part C test: run the Part A enrich path (dry run, forced) against
+    specific WP `matches` posts. Already-enriched posts hit the guard and skip.
+    """
+    wp.dry_run = True
+    log.info("Enrich guard test (Part A) on posts: %s", post_ids)
+    lookup: dict[str, Any] | None = None
+    for pid in post_ids:
+        try:
+            post = wp.get_match(
+                pid, fields="id,title,meta.footystats_match_id,meta.raw_match_data,"
+                            "meta.home_team,meta.away_team"
+            )
+        except WPError as exc:
+            log.error("  post %s: fetch failed: %s", pid, exc)
+            continue
+        meta = post.get("meta") or {}
+        fs_id = meta.get("footystats_match_id")
+        title = (post.get("title") or {}).get("rendered", "")
+        log.info("  post %s  %s  fs=%s  raw_match_data=%s",
+                 pid, title, fs_id, "SET" if str(meta.get("raw_match_data") or "").strip() else "empty")
+        if not fs_id:
+            log.warning("    no footystats_match_id - cannot test")
+            continue
+        if lookup is None:
+            lookup = build_player_lookup(wp)
+        fake_fs_match = {"id": int(fs_id), "homeID": 0, "awayID": 0}
+        result = enrich_match(
+            wp, fs, fake_fs_match, {"id": pid, "meta": meta},
+            CLUB_MAP, lookup, audit=_audit,
+        )
+        log.info("    -> %s", result)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live", action="store_true",
@@ -281,6 +418,13 @@ def main(argv: list[str] | None = None) -> int:
                         help="restrict to a single league")
     parser.add_argument("--limit", type=int, default=None,
                         help="only process the first N matches per league (testing)")
+    parser.add_argument("--no-enrich", action="store_true",
+                        help="skip Part A match enrichment (score updates only)")
+    parser.add_argument("--club-sync", action="store_true",
+                        help="run Part B (club reassignment) instead of the match sync")
+    parser.add_argument("--enrich-test", metavar="POST_IDS",
+                        help="Part C test: run the enrich path (dry) against "
+                             "these comma-separated `matches` post ids and exit")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -291,8 +435,8 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     try:
-        fs = FootyStatsClient()
         wp = WPClient(dry_run=not args.live)
+        fs = FootyStatsClient()
     except (FootyStatsError, WPError) as exc:
         log.error("Startup failed: %s", exc)
         return 2
@@ -309,23 +453,37 @@ def main(argv: list[str] | None = None) -> int:
             log.error("Check failed: %s", exc)
             return 1
 
+    if args.enrich_test:
+        ids = [int(x) for x in args.enrich_test.replace(" ", "").split(",") if x]
+        return _run_enrich_test(wp, fs, ids)
+
+    if args.club_sync:
+        return _run_club_sync(wp)
+
     mode = "LIVE" if args.live else "DRY RUN (no writes)"
-    log.info("Starting sync - %s", mode)
+    log.info("Starting match sync - %s", mode)
     try:
-        stats = sync(wp, fs, league_filter=args.league, limit=args.limit)
+        stats = sync(
+            wp, fs,
+            league_filter=args.league, limit=args.limit,
+            enrich=not args.no_enrich,
+        )
     except (WPError, FootyStatsError) as exc:
         log.error("Sync aborted: %s", exc)
         return 2
 
     log.info("---------------------------------------------")
     log.info("Summary (%s)", mode)
-    log.info("  matches checked      : %d", stats["checked"])
-    log.info("  scores updated       : %d", stats["scores_updated"])
-    log.info("  new posts created    : %d", stats["created"])
-    log.info("  skipped (has score)  : %d", stats["skipped_recorded"])
-    log.info("  skipped (not complete): %d", stats["skipped_incomplete"])
-    log.info("  unmapped team (skip) : %d", stats["unmapped_team"])
-    log.info("  errors               : %d", stats["errors"])
+    log.info("  matches checked        : %d", stats["checked"])
+    log.info("  scores updated         : %d", stats["scores_updated"])
+    log.info("  new posts created      : %d", stats["created"])
+    log.info("  matches enriched       : %d", stats["enriched"])
+    log.info("  enrich skipped (had it): %d", stats["enrich_skipped"])
+    log.info("  players auto-created   : %d", stats["players_created"])
+    log.info("  skipped (has score)    : %d", stats["skipped_recorded"])
+    log.info("  skipped (not complete) : %d", stats["skipped_incomplete"])
+    log.info("  unmapped team (skip)   : %d", stats["unmapped_team"])
+    log.info("  errors                 : %d", stats["errors"])
     log.info("---------------------------------------------")
 
     return 1 if stats["errors"] else 0

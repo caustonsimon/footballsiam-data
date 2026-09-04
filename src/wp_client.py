@@ -31,6 +31,7 @@ from requests.auth import HTTPBasicAuth
 DEFAULT_BASE = "https://footballsiam.com/wp-json/"
 CPT_REST_BASE = "wp/v2/match"      # the `matches` CPT registers rest_base "match"
 CLUB_REST_BASE = "wp/v2/club"
+PLAYER_REST_BASE = "wp/v2/player"
 DEFAULT_TIMEOUT = 30
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 5
@@ -157,6 +158,43 @@ class WPClient:
         self._club_title_cache[club_id] = title
         return title
 
+    def get_match(self, post_id: int, fields: str | None = None) -> dict[str, Any]:
+        """Full `matches` post by id (context=edit so all meta is returned)."""
+        params: dict[str, Any] = {"context": "edit"}
+        if fields:
+            params["_fields"] = fields
+        resp = self._request("GET", f"{CPT_REST_BASE}/{post_id}", params=params)
+        return self._json_or_raise(resp, f"GET {CPT_REST_BASE}/{post_id}")
+
+    def iter_all_players(self, fields: str = "id,title,acf") -> Iterator[dict[str, Any]]:
+        """Yield every published `player` post. `context=edit` for full acf."""
+        page = 1
+        while True:
+            resp = self._request(
+                "GET",
+                PLAYER_REST_BASE,
+                params={
+                    "per_page": PER_PAGE,
+                    "page": page,
+                    "status": "publish",
+                    "context": "edit",
+                    "_fields": fields,
+                    "orderby": "id",
+                    "order": "asc",
+                },
+            )
+            if resp.status_code == 400 and "rest_post_invalid_page_number" in resp.text:
+                return
+            batch = self._json_or_raise(resp, f"GET {PLAYER_REST_BASE} page {page}")
+            if not batch:
+                return
+            for post in batch:
+                yield post
+            total_pages = int(resp.headers.get("X-WP-TotalPages", "1") or "1")
+            if page >= total_pages:
+                return
+            page += 1
+
     # -- writes ------------------------------------------------------
 
     def create_match(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -172,6 +210,58 @@ class WPClient:
             return {"_dry_run": True, "would_update": post_id, "meta": meta}
         resp = self._request("POST", f"{CPT_REST_BASE}/{post_id}", json={"meta": meta})
         return self._json_or_raise(resp, f"POST {CPT_REST_BASE}/{post_id}")
+
+    def update_match(
+        self,
+        post_id: int,
+        *,
+        meta: dict[str, Any] | None = None,
+        acf: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """PATCH a `matches` post with `meta` and/or `acf` in one request.
+
+        `meta` keys must be registered with show_in_rest (register-match-meta.php
+        / register-match-stats-meta.php); `acf` keys are ACF fields exposed to
+        REST. Anything not registered is silently dropped by WordPress.
+        """
+        body: dict[str, Any] = {}
+        if meta:
+            body["meta"] = meta
+        if acf:
+            body["acf"] = acf
+        if not body:
+            return {"_noop": True}
+        if self.dry_run:
+            return {"_dry_run": True, "would_update": post_id, **body}
+        resp = self._request("POST", f"{CPT_REST_BASE}/{post_id}", json=body)
+        return self._json_or_raise(resp, f"POST {CPT_REST_BASE}/{post_id}")
+
+    def create_player(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """POST a new `player` post. Honours dry_run."""
+        if self.dry_run:
+            return {"_dry_run": True, "would_create": payload}
+        resp = self._request("POST", PLAYER_REST_BASE, json=payload)
+        return self._json_or_raise(resp, f"POST {PLAYER_REST_BASE}")
+
+    def update_player(
+        self,
+        post_id: int,
+        *,
+        meta: dict[str, Any] | None = None,
+        acf: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """PATCH a `player` post with `meta` and/or `acf`. Honours dry_run."""
+        body: dict[str, Any] = {}
+        if meta:
+            body["meta"] = meta
+        if acf:
+            body["acf"] = acf
+        if not body:
+            return {"_noop": True}
+        if self.dry_run:
+            return {"_dry_run": True, "would_update": post_id, **body}
+        resp = self._request("POST", f"{PLAYER_REST_BASE}/{post_id}", json=body)
+        return self._json_or_raise(resp, f"POST {PLAYER_REST_BASE}/{post_id}")
 
     # -- connectivity check ----------------------------------------
 
