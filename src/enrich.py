@@ -13,13 +13,21 @@ Part A - enrich_match()
     Guard: a match that already has raw_match_data is skipped.
 
 Part B - reassign_clubs()
-    Full pass over every `player` that has fs_advanced_stats_json. Reads
-    all_seasons_metrics, drops International rows, takes the most recent club
-    row, and:
-      * if that club is one of our 34 tracked clubs and differs from
-        current_club  -> set current_club to the right WP club id
-      * if that club is NOT tracked and current_club is set  -> clear it
-    ID-based only. Never name-matches.
+    Full pass over every `player`. For each, fetches the LIVE FootyStats
+    /player-stats list and finds the most recent row that is:
+      * league_type == "Domestic League"   (no cups, no internationals)
+      * club_team_id > 0
+      * appearances_overall > 0            (a played season, not a roster listing)
+    ordered by (starting_year, ending_year, last_match_timestamp). Then, ID-only:
+      * that club is one of our 34 tracked clubs, differs from current_club
+            -> set current_club to the right WP club id
+      * that club is NOT tracked, current_club is set
+            -> clear current_club
+      * no eligible row at all
+            -> no action, logged as "insufficient evidence"
+    Never name-matches. The derived structures in fs_advanced_stats_json
+    (all_seasons_metrics etc.) are NOT used - they collapse multiple
+    competitions per season and silently lose transfers.
 
 Both paths log every write so an unattended run leaves an audit trail.
 """
@@ -30,6 +38,7 @@ import base64
 import datetime as dt
 import json
 import logging
+import time
 from typing import Any, Callable
 
 from footystats_client import FootyStatsClient, FootyStatsError
@@ -470,110 +479,172 @@ def _first_club_id(v: Any) -> int | None:
         return None
 
 
-def _current_club_row(blob: str) -> dict[str, Any] | None:
-    """Most recent real (non-International, valid club_team_id) season row from
-    an fs_advanced_stats_json string. None if there is nothing usable.
-    """
+def _int_or(v: Any, default: int = 0) -> int:
     try:
-        data = json.loads(blob)
+        return int(v)
     except (TypeError, ValueError):
-        return None
-    seasons = data.get("all_seasons_metrics")
-    if not isinstance(seasons, dict):
-        return None
-    rows = []
-    for r in seasons.values():
-        if not isinstance(r, dict):
-            continue
-        if str(r.get("league_type", "")) == "International":
-            continue
-        try:
-            cid = int(r.get("club_team_id"))
-        except (TypeError, ValueError):
-            continue
-        if cid <= 0:
-            continue
-        rows.append(r)
-    if not rows:
+        return default
+
+
+def _pick_domestic_row(
+    rows: list[dict[str, Any]], *, min_end_year: int = 0
+) -> dict[str, Any] | None:
+    """From a live /player-stats list, the most recent row that is a *played*,
+    *recent* domestic-league season. None -> insufficient evidence, no action.
+
+    Filter (all hard):
+      league_type == "Domestic League"   - excludes internationals and every
+                                           cup (AFC CL, President's Cup, AFC U23
+                                           - whose club_team_id is a select side)
+      club_team_id > 0
+      appearances_overall > 0            - a roster listing with no appearances
+                                           is not confirmed evidence
+      ending_year >= min_end_year        - a 2-3-season-old appearance is not
+                                           evidence of a player's CURRENT club
+    Order: (starting_year, ending_year, last_match_timestamp) ascending; take last.
+    """
+    eligible = [
+        r for r in rows
+        if isinstance(r, dict)
+        and str(r.get("league_type", "")) == "Domestic League"
+        and _int_or(r.get("club_team_id")) > 0
+        and _int_or(r.get("appearances_overall")) > 0
+        and _int_or(r.get("ending_year")) >= min_end_year
+    ]
+    if not eligible:
         return None
     return sorted(
-        rows,
-        key=lambda r: (r.get("starting_year") or 0, r.get("ending_year") or 0),
+        eligible,
+        key=lambda r: (
+            _int_or(r.get("starting_year")),
+            _int_or(r.get("ending_year")),
+            _int_or(r.get("last_match_timestamp")),
+        ),
     )[-1]
 
 
 def reassign_clubs(
     wp: WPClient,
+    fs: FootyStatsClient,
     club_map: dict[int, int],
     *,
     audit: Callable[[str], None],
     sample_limit: int = 10,
+    pause: float = 0.1,
+    min_end_year: int | None = None,
 ) -> dict[str, Any]:
-    """Full pass over players with fs_advanced_stats_json. Honours wp.dry_run."""
-    stats = {
-        "scanned": 0, "eligible": 0, "reassigned": 0, "cleared": 0,
-        "noop": 0, "errors": 0,
-        "reassign_sample": [], "clear_sample": [], "noop_blank_sample": [],
+    """Full pass over every `player`. Fetches live /player-stats per player.
+    Honours wp.dry_run (no writes when dry).
+
+    min_end_year: ignore domestic-league rows that ended before this year.
+    Defaults to (this year - 1), so only the current and immediately previous
+    season count as evidence of a player's current club.
+    """
+    if min_end_year is None:
+        min_end_year = dt.date.today().year - 1
+    log.info("  recency floor: ending_year >= %d", min_end_year)
+    stats: dict[str, Any] = {
+        "scanned": 0, "no_footystats_id": 0,
+        "reassigned": 0, "cleared": 0, "noop": 0,
+        "insufficient": 0, "errors": 0,
+        "reassign_from_autocreated": 0, "clear_from_autocreated": 0,
+        "reassign_sample": [], "clear_sample": [],
+        "noop_untracked_sample": [], "insufficient_sample": [],
+        "decisions": [],  # one row per player, for offline analysis
     }
 
     for p in wp.iter_all_players(
-        fields="id,title,acf.current_club,acf.fs_advanced_stats_json"
+        fields="id,title,acf.footystats_id,acf.current_club,acf.fs_advanced_stats_json"
     ):
         stats["scanned"] += 1
         acf = p.get("acf") or {}
-        blob = acf.get("fs_advanced_stats_json")
-        if not blob or not str(blob).strip():
-            continue
-        stats["eligible"] += 1
-
         pid = int(p["id"])
         name = (p.get("title") or {}).get("rendered", "") or f"player {pid}"
-        row = _current_club_row(blob)
-        if row is None:
+        fs_id = acf.get("footystats_id")
+        if fs_id in (None, "", 0, "0"):
+            stats["no_footystats_id"] += 1
+            continue
+        # players created by Part A carry no fs_advanced_stats_json - flag them
+        # so the report can show how many candidates are auto-created profiles.
+        autocreated = not str(acf.get("fs_advanced_stats_json") or "").strip()
+
+        try:
+            rows = fs.get_player(int(fs_id))
+        except FootyStatsError as exc:
+            stats["errors"] += 1
+            log.error("  club-sync post %s (%s) fs=%s: /player-stats failed: %s",
+                      pid, name, fs_id, exc)
             continue
 
-        fs_club = int(row["club_team_id"])
-        mapped_wp = club_map.get(fs_club)
+        row = _pick_domestic_row(rows, min_end_year=min_end_year)
         cur_wp = _first_club_id(acf.get("current_club"))
+
+        if row is None:
+            stats["insufficient"] += 1
+            line = (f"NO-EVIDENCE  {name}  (post {pid})  fs={fs_id}  "
+                    f"current_club={cur_wp if cur_wp else '(blank)'}  "
+                    f"- no played Domestic-League season ending >= {min_end_year}; "
+                    f"no action")
+            audit(line)
+            if len(stats["insufficient_sample"]) < sample_limit:
+                stats["insufficient_sample"].append(line)
+            time.sleep(pause)
+            continue
+
+        fs_club = _int_or(row.get("club_team_id"))
+        mapped_wp = club_map.get(fs_club)
+        ctx = (f"fs club {fs_club}, {row.get('season')} {row.get('league')}, "
+               f"apps={row.get('appearances_overall')}")
+        stats["decisions"].append({
+            "post": pid, "name": name, "fs_id": fs_id, "autocreated": autocreated,
+            "cur_wp": cur_wp, "fs_club": fs_club, "mapped_wp": mapped_wp,
+            "season": row.get("season"), "league": row.get("league"),
+            "end_year": _int_or(row.get("ending_year")),
+            "apps": _int_or(row.get("appearances_overall")),
+        })
 
         try:
             if mapped_wp is not None:
                 if cur_wp == mapped_wp:
                     stats["noop"] += 1
-                    continue
-                old_txt = wp.get_club_title(cur_wp) if cur_wp else "(blank)"
-                new_txt = wp.get_club_title(mapped_wp)
-                line = (f"REASSIGN  {name}  (post {pid})  "
-                        f"{old_txt} [{cur_wp}]  ->  {new_txt} [{mapped_wp}]  "
-                        f"(fs club {fs_club}, {row.get('season')} {row.get('league')})")
-                audit(line)
-                if len(stats["reassign_sample"]) < sample_limit:
-                    stats["reassign_sample"].append(line)
-                if not wp.dry_run:
-                    wp.update_player(pid, acf={"current_club": [mapped_wp]})
-                stats["reassigned"] += 1
+                else:
+                    old_txt = wp.get_club_title(cur_wp) if cur_wp else "(blank)"
+                    new_txt = wp.get_club_title(mapped_wp)
+                    tag = " [auto-created]" if autocreated else ""
+                    line = (f"REASSIGN  {name}  (post {pid}){tag}  "
+                            f"{old_txt} [{cur_wp}]  ->  {new_txt} [{mapped_wp}]  ({ctx})")
+                    audit(line)
+                    if len(stats["reassign_sample"]) < sample_limit:
+                        stats["reassign_sample"].append(line)
+                    if autocreated:
+                        stats["reassign_from_autocreated"] += 1
+                    if not wp.dry_run:
+                        wp.update_player(pid, acf={"current_club": [mapped_wp]})
+                    stats["reassigned"] += 1
             else:
                 if cur_wp is None:
                     stats["noop"] += 1
-                    if len(stats["noop_blank_sample"]) < sample_limit:
-                        stats["noop_blank_sample"].append(
-                            f"{name} (post {pid}): already blank; "
-                            f"fs club {fs_club} not tracked "
-                            f"({row.get('season')} {row.get('league')})")
-                    continue
-                old_txt = wp.get_club_title(cur_wp)
-                line = (f"CLEAR     {name}  (post {pid})  "
-                        f"was {old_txt} [{cur_wp}]  ->  (blank)  "
-                        f"(moved to untracked fs club {fs_club}, "
-                        f"{row.get('season')} {row.get('league')})")
-                audit(line)
-                if len(stats["clear_sample"]) < sample_limit:
-                    stats["clear_sample"].append(line)
-                if not wp.dry_run:
-                    wp.update_player(pid, acf={"current_club": []})
-                stats["cleared"] += 1
+                    if len(stats["noop_untracked_sample"]) < sample_limit:
+                        stats["noop_untracked_sample"].append(
+                            f"{name} (post {pid}): already blank; {ctx} not tracked")
+                else:
+                    old_txt = wp.get_club_title(cur_wp)
+                    tag = " [auto-created]" if autocreated else ""
+                    line = (f"CLEAR     {name}  (post {pid}){tag}  "
+                            f"was {old_txt} [{cur_wp}]  ->  (blank)  "
+                            f"(moved to untracked {ctx})")
+                    audit(line)
+                    if len(stats["clear_sample"]) < sample_limit:
+                        stats["clear_sample"].append(line)
+                    if autocreated:
+                        stats["clear_from_autocreated"] += 1
+                    if not wp.dry_run:
+                        wp.update_player(pid, acf={"current_club": []})
+                    stats["cleared"] += 1
         except WPError as exc:
             stats["errors"] += 1
             log.error("  club-sync post %s (%s): %s", pid, name, exc)
+
+        time.sleep(pause)
 
     return stats

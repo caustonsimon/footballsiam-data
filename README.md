@@ -154,24 +154,37 @@ Disable with `--no-enrich`. Guard test: `--enrich-test <post_id,post_id>`.
 
 ### Part B — `current_club` reassignment (`--club-sync`, weekly)
 
-`weekly-club-sync.yml` (Mondays). Full pass over every `player` with
-`fs_advanced_stats_json`. Reads `all_seasons_metrics`, drops
-`league_type == "International"` rows, takes the most recent remaining row by
-`starting_year`/`ending_year`, and **ID-matches** its `club_team_id` against the
-34-club `CLUB_MAP`:
+`weekly-club-sync.yml` (Mondays). For every `player`, fetches the **live**
+FootyStats `/player-stats` list (~565 calls) and finds the most recent row that
+is:
+
+- `league_type == "Domestic League"` — no cups, no internationals (this also
+  drops AFC Champions League / President's Cup / AFC U23, whose `club_team_id`
+  is a select or national side, not a club)
+- `club_team_id > 0`
+- `appearances_overall > 0` — a roster listing with no minutes is not evidence
+- `ending_year >= (this year − 1)` — a 2-3-season-old appearance is not evidence
+  of a player's *current* club
+
+ordered by `(starting_year, ending_year, last_match_timestamp)`. That row's
+`club_team_id` is then **ID-matched** against the 34-club `CLUB_MAP`:
 
 - tracked club, differs from `current_club` → set `current_club`
 - not a tracked club, `current_club` set → clear it
-- otherwise → no change
+- already correct → no change
+- **no eligible row** → no action, logged `NO-EVIDENCE`
 
-Never name-matches. Runs report-only unless dispatched with `live=true`.
+Never name-matches. The derived blobs in `fs_advanced_stats_json`
+(`all_seasons_metrics`, `career_history_rich`) are **not** used — the first
+collapses competitions per season and silently drops transfers.
 
-> **Status: not live.** The dry run shows the stored `fs_advanced_stats_json`
-> is a stale snapshot (nothing refreshes it) and mixes cup / youth-national
-> competitions whose `club_team_id` is a select/national side — so the
-> "most-recent-club" heuristic misfires (see the session report). Needs either a
-> live `/player-stats` read or a `Domestic League`-only + recency filter before
-> `--live`.
+Runs report-only; writes only when dispatched with `live=true`. Set
+`CLUB_SYNC_DECISION_DUMP=<path>` to also emit one JSON line per player for
+offline analysis.
+
+> **Status: reviewed, not yet live.** See the session report for the dry-run
+> breakdown and the two open calls (whether to write `current_club` on the
+> Part-A auto-created players, and the residual thin `apps=1` reassigns).
 
 ### New WordPress prerequisites for Part A / B
 

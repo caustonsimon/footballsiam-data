@@ -339,37 +339,48 @@ def sync(
 # Entry point
 # --------------------------------------------------------------------------
 
-def _run_club_sync(wp: WPClient, *, sample_limit: int = 10) -> int:
-    """Part B: full pass over players with fs_advanced_stats_json."""
+def _run_club_sync(
+    wp: WPClient, fs: FootyStatsClient, *, sample_limit: int = 10
+) -> int:
+    """Part B: live /player-stats pass over every player."""
     mode = "LIVE" if not wp.dry_run else "DRY RUN (report only, no writes)"
     log.info("Starting club reassignment (Part B) - %s", mode)
     try:
-        st = reassign_clubs(wp, CLUB_MAP, audit=_audit, sample_limit=sample_limit)
-    except WPError as exc:
+        st = reassign_clubs(wp, fs, CLUB_MAP, audit=_audit, sample_limit=sample_limit)
+    except (WPError, FootyStatsError) as exc:
         log.error("Club sync aborted: %s", exc)
         return 2
 
     log.info("---------------------------------------------")
     log.info("Club reassignment summary (%s)", mode)
     log.info("  players scanned              : %d", st["scanned"])
-    log.info("  eligible (has fs_advanced..) : %d", st["eligible"])
-    log.info("  would reassign / reassigned  : %d", st["reassigned"])
-    log.info("  would clear / cleared        : %d", st["cleared"])
-    log.info("  no action                    : %d", st["noop"])
+    log.info("  skipped (no footystats_id)   : %d", st["no_footystats_id"])
+    log.info("  would reassign / reassigned  : %d  (of which auto-created: %d)",
+             st["reassigned"], st["reassign_from_autocreated"])
+    log.info("  would clear / cleared        : %d  (of which auto-created: %d)",
+             st["cleared"], st["clear_from_autocreated"])
+    log.info("  no action (already correct)  : %d", st["noop"])
+    log.info("  insufficient evidence        : %d", st["insufficient"])
     log.info("  errors                       : %d", st["errors"])
-    if st["reassign_sample"]:
-        log.info("  --- reassign sample ---")
-        for s in st["reassign_sample"]:
-            log.info("    %s", s)
-    if st["clear_sample"]:
-        log.info("  --- clear sample ---")
-        for s in st["clear_sample"]:
-            log.info("    %s", s)
-    if wp.dry_run and st["noop_blank_sample"]:
-        log.info("  --- already-blank / untracked sample ---")
-        for s in st["noop_blank_sample"]:
-            log.info("    %s", s)
+    for label, key in (
+        ("reassign sample", "reassign_sample"),
+        ("clear sample", "clear_sample"),
+        ("no-action / untracked sample", "noop_untracked_sample"),
+        ("insufficient-evidence sample", "insufficient_sample"),
+    ):
+        if st.get(key):
+            log.info("  --- %s ---", label)
+            for s in st[key]:
+                log.info("    %s", s)
     log.info("---------------------------------------------")
+
+    dump = os.environ.get("CLUB_SYNC_DECISION_DUMP")
+    if dump and st.get("decisions"):
+        import json as _json
+        with open(dump, "w", encoding="utf-8") as fh:
+            for d in st["decisions"]:
+                fh.write(_json.dumps(d, ensure_ascii=False) + "\n")
+        log.info("  decisions written to %s (%d rows)", dump, len(st["decisions"]))
     return 1 if st["errors"] else 0
 
 
@@ -458,7 +469,7 @@ def main(argv: list[str] | None = None) -> int:
         return _run_enrich_test(wp, fs, ids)
 
     if args.club_sync:
-        return _run_club_sync(wp)
+        return _run_club_sync(wp, fs)
 
     mode = "LIVE" if args.live else "DRY RUN (no writes)"
     log.info("Starting match sync - %s", mode)
