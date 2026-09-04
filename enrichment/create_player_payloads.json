@@ -1,0 +1,2883 @@
+[
+ {
+  "footystats_id": 1471,
+  "params": {
+   "post_type": "player",
+   "title": "John-Patrick Strauß",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "1471",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "John-Patrick",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Strauß",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Germany",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "822816000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 27,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 1649,
+  "params": {
+   "post_type": "player",
+   "title": "Melvyn Lorenzen",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "1649",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Melvyn",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Lorenzen",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Germany",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "785836800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 23,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 3981,
+  "params": {
+   "post_type": "player",
+   "title": "Andros Townsend",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "3981",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Andros",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Townsend",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "England",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "679647600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 30,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 5743,
+  "params": {
+   "post_type": "player",
+   "title": "Ezequiel Agüero",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "5743",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Ezequiel",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Agüero",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Argentina",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "765702000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 25,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 11147,
+  "params": {
+   "post_type": "player",
+   "title": "Alain Oyarzun Aguilar",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "11147",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Alain",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Oyarzun Aguilar",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Spain",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "749113200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 26,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 15039,
+  "params": {
+   "post_type": "player",
+   "title": "Dejan Meleg",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "15039",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Dejan",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Meleg",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Serbia",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251207",
+    "birthday": "780994800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 13,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 16032,
+  "params": {
+   "post_type": "player",
+   "title": "Diego Bardanca Flores",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "16032",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Diego",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Bardanca Flores",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Spain",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "732614400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 27,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 17475,
+  "params": {
+   "post_type": "player",
+   "title": "Mohamed Mara",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "17475",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Mohamed",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Mara",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Guinea",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "850377600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 28,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 17756,
+  "params": {
+   "post_type": "player",
+   "title": "Aboubakar Kamara",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "17756",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Aboubakar",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kamara",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Mauritania",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "794563200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 24,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 23428,
+  "params": {
+   "post_type": "player",
+   "title": "Armin Gremsl",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "23428",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Armin",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Gremsl",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Austria",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "776761200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 30,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 25674,
+  "params": {
+   "post_type": "player",
+   "title": "Mateus Lima Cruz",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "25674",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Mateus",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Lima Cruz",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Brazil",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260418",
+    "birthday": "727344000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 5,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 26425,
+  "params": {
+   "post_type": "player",
+   "title": "Dennis Murillo Skrzypiec",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "26425",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Dennis",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Murillo Skrzypiec",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Brazil",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "704444400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 25,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 35530,
+  "params": {
+   "post_type": "player",
+   "title": "Michael Kempter",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "35530",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Michael",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kempter",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Switzerland",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "789897600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 21,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 37628,
+  "params": {
+   "post_type": "player",
+   "title": "Willian Popp",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "37628",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Willian",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Popp",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Brazil",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "766220400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 12,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 38793,
+  "params": {
+   "post_type": "player",
+   "title": "Hirotaka Mita",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "38793",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Hirotaka",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Mita",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Japan",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "653295600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 29,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 39642,
+  "params": {
+   "post_type": "player",
+   "title": "Ewerton",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "39642",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Ewerton",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "da Silva Pereira",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Brazil",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "723196800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 27,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 40137,
+  "params": {
+   "post_type": "player",
+   "title": "Gerson Rodrigues Correia Leal",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "40137",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Gerson",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Rodrigues Correia Leal",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Luxembourg",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260315",
+    "birthday": "803631600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 21,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 40173,
+  "params": {
+   "post_type": "player",
+   "title": "Anass Ahannach",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "40173",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Anass",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Ahannach",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Netherlands",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "886838400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 27,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 44292,
+  "params": {
+   "post_type": "player",
+   "title": "Nattawut Sombatyotha",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44292",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Nattawut",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Sombatyotha",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20251004",
+    "birthday": "830934000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 4,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 44358,
+  "params": {
+   "post_type": "player",
+   "title": "Watcharin Nuangprakaew",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44358",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Watcharin",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Nuangprakaew",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "821952000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 13,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 44364,
+  "params": {
+   "post_type": "player",
+   "title": "Thanasit Siriphala",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44364",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Thanasit",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Siriphala",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260502",
+    "birthday": "807951600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 24,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 44393,
+  "params": {
+   "post_type": "player",
+   "title": "Tristan Do",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44393",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Tristan",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Do",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "728467200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 26,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 44406,
+  "params": {
+   "post_type": "player",
+   "title": "Peerapat Notchaiya",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44406",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Peerapat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Notchaiya",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260315",
+    "birthday": "728812800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 25,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 44420,
+  "params": {
+   "post_type": "player",
+   "title": "Kasidech Wattayawong",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44420",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Kasidech",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Wattayawong",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20251214",
+    "birthday": "759139200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 14,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 44441,
+  "params": {
+   "post_type": "player",
+   "title": "Chenrop Samphaodi",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44441",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Chenrop",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Samphaodi",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "802076400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 28,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 44457,
+  "params": {
+   "post_type": "player",
+   "title": "Suchao Nutnum",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44457",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Suchao",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Nutnum",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "422002800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 21,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 44520,
+  "params": {
+   "post_type": "player",
+   "title": "Kittipong Phuthawchueak",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44520",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Kittipong",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Phuthawchueak",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260321",
+    "birthday": "360399600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 24,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 44582,
+  "params": {
+   "post_type": "player",
+   "title": "Kritsana Kasemkulvilai",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44582",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Kritsana",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kasemkulvilai",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7940",
+    "last_confirmed_date": "20260510",
+    "birthday": "684399600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Ayutthaya United",
+   "n_apps": 28,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 44636,
+  "params": {
+   "post_type": "player",
+   "title": "Wongsakorn Chaikultewin",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44636",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Wongsakorn",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Chaikultewin",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "842857200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 14,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 44668,
+  "params": {
+   "post_type": "player",
+   "title": "Sorawit Panthong",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44668",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Sorawit",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Panthong",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "856425600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 26,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 44713,
+  "params": {
+   "post_type": "player",
+   "title": "Nopphon Lakhonphon",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44713",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Nopphon",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Lakhonphon",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "961398000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 27,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 44715,
+  "params": {
+   "post_type": "player",
+   "title": "Tanachai Noorat",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44715",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Tanachai",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Noorat",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "700905600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 28,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 44792,
+  "params": {
+   "post_type": "player",
+   "title": "Parinya Utapao",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44792",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Parinya",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Utapao",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20250920",
+    "birthday": "570528000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 4,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 44867,
+  "params": {
+   "post_type": "player",
+   "title": "Pawee Tanthatemee",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44867",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Pawee",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Tanthatemee",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "845967600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 25,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 44900,
+  "params": {
+   "post_type": "player",
+   "title": "Sittichok Paso",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "44900",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Sittichok",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Paso",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251123",
+    "birthday": "917510400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 10,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 45240,
+  "params": {
+   "post_type": "player",
+   "title": "Sarawut Inpaen",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "45240",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Sarawut",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Inpaen",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "699609600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 14,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 54703,
+  "params": {
+   "post_type": "player",
+   "title": "Anumanthan s/o Mohan Kumar",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "54703",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Anumanthan",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "s/o Mohan Kumar",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Singapore",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "774169200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 26,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 59721,
+  "params": {
+   "post_type": "player",
+   "title": "Philipp Kenan Dünnwald",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "59721",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Philipp Kenan",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Dünnwald",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Germany",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20251214",
+    "birthday": "816336000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 13,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 60072,
+  "params": {
+   "post_type": "player",
+   "title": "Dong-Su Kim",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "60072",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Dong-Su",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kim",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "South Korea",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "793353600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 14,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 67900,
+  "params": {
+   "post_type": "player",
+   "title": "Marko Šarić",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "67900",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Marko",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Šarić",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Serbia",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "912240000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 14,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 106081,
+  "params": {
+   "post_type": "player",
+   "title": "Stefan Tsonkov",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "106081",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Stefan",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Tsonkov",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Bulgaria",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "790934400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 28,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 129452,
+  "params": {
+   "post_type": "player",
+   "title": "Víctor Martínez Manrique",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "129452",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Víctor",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Martínez Manrique",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Spain",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251213",
+    "birthday": "865321200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 12,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 134296,
+  "params": {
+   "post_type": "player",
+   "title": "Wendel Leite Pimentel",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "134296",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Wendel",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Leite Pimentel",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Brazil",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "763891200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 28,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 138888,
+  "params": {
+   "post_type": "player",
+   "title": "Verapat Nilburapha",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "138888",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Verapat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Nilburapha",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251213",
+    "birthday": "835426800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 11,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 160400,
+  "params": {
+   "post_type": "player",
+   "title": "Nattawut Jaroenboot",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "160400",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Nattawut",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Jaroenboot",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "672217200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 30,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 160426,
+  "params": {
+   "post_type": "player",
+   "title": "Jaturapat Satham",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "160426",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Jaturapat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Satham",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7939",
+    "last_confirmed_date": "20260510",
+    "birthday": "929430000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Rayong",
+   "n_apps": 29,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 172401,
+  "params": {
+   "post_type": "player",
+   "title": "Ryhan Stewart",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "172401",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Ryhan",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Stewart",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Singapore",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "950601600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 28,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 183522,
+  "params": {
+   "post_type": "player",
+   "title": "Korawich Tasa",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "183522",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Korawich",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Tasa",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "955090800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 30,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 467251,
+  "params": {
+   "post_type": "player",
+   "title": "Mehdi Tahrat",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "467251",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Mehdi",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Jean Tahrat",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Algeria",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "633168000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 26,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 587989,
+  "params": {
+   "post_type": "player",
+   "title": "Bill Mamadou",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "587989",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Bill",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Mamadou",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Singapore",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260221",
+    "birthday": "999932400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 18,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 591688,
+  "params": {
+   "post_type": "player",
+   "title": "Ubiratan Brandao de Souza",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "591688",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Ubiratan Brandao",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "de Souza",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Brazil",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251207",
+    "birthday": "815212800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 12,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 603304,
+  "params": {
+   "post_type": "player",
+   "title": "Hein Phyo Win",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "603304",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Hein Phyo",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Win",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Myanmar",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "590655600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 15,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 612374,
+  "params": {
+   "post_type": "player",
+   "title": "Aaron Gurd",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "612374",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Aaron",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Gurd",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Australia",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 15,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 636608,
+  "params": {
+   "post_type": "player",
+   "title": "Jork Eblin Becerra Portocarrero",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "636608",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Jork Eblin",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Becerra Portocarrero",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Colombia",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "903855600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 15,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 668651,
+  "params": {
+   "post_type": "player",
+   "title": "Emil Roback",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "668651",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Emil",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Roback",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Sweden",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260111",
+    "birthday": "1051945200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 11,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 690159,
+  "params": {
+   "post_type": "player",
+   "title": "Nenad Lalić",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "690159",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Nenad",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Lalić",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Serbia",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260502",
+    "birthday": "923295600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 28,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 711665,
+  "params": {
+   "post_type": "player",
+   "title": "Denis Darbellay",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "711665",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Denis",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Darbellay",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Switzerland",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251207",
+    "birthday": "897030000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 14,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 734249,
+  "params": {
+   "post_type": "player",
+   "title": "John Lucero",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "734249",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "John",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Lucero",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "England",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "1070265600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 24,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 738449,
+  "params": {
+   "post_type": "player",
+   "title": "Woraphob Thaweesuk",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "738449",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Woraphob",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Thaweesuk",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260321",
+    "birthday": "888480000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 3,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 741555,
+  "params": {
+   "post_type": "player",
+   "title": "Purachet Thodsanit",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "741555",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Purachet",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Thodsanit",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260301",
+    "birthday": "989391600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 21,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 754686,
+  "params": {
+   "post_type": "player",
+   "title": "Sarut Nasri",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "754686",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Sarut",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Nasri",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260502",
+    "birthday": "802594800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 9,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 764375,
+  "params": {
+   "post_type": "player",
+   "title": "Orji Nelson Chukwuma",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "764375",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Orji",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Nelson Chukwuma",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Nigeria",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260111",
+    "birthday": "1017993600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 13,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 790920,
+  "params": {
+   "post_type": "player",
+   "title": "Wattana Klomjit",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "790920",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Wattana",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Klomjit",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "920620800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 24,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 791916,
+  "params": {
+   "post_type": "player",
+   "title": "Satsanapong Wattayuchutikul",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "791916",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Satsanapong",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Wattayuchutikul",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "713084400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 24,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 794815,
+  "params": {
+   "post_type": "player",
+   "title": "Pongpat Liorungrueangkit",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "794815",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Pongpat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Liorungrueangkit",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "844412400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 24,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 797338,
+  "params": {
+   "post_type": "player",
+   "title": "Sarayut Yoosuebchuea",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "797338",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Sarayut",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Yoosuebchuea",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20251024",
+    "birthday": "958028400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 9,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 808578,
+  "params": {
+   "post_type": "player",
+   "title": "Korrakot Pipatnadda",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "808578",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Korrakot",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Pipatnadda",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "932022000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 29,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 808610,
+  "params": {
+   "post_type": "player",
+   "title": "Chatuphum Kaewklang",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "808610",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Chatuphum",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kaewklang",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251207",
+    "birthday": "1000450800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 13,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 808625,
+  "params": {
+   "post_type": "player",
+   "title": "Phatcharaphong Prathumma",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "808625",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Phatcharaphong",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Prathumma",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260321",
+    "birthday": "961570800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 10,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 808648,
+  "params": {
+   "post_type": "player",
+   "title": "Anusak Jaiphet",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "808648",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Anusak",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Jaiphet",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260502",
+    "birthday": "930121200"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 29,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 826203,
+  "params": {
+   "post_type": "player",
+   "title": "Pongsakron Hanrattana",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "826203",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Pongsakron",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Hanrattana",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "1050908400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 25,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 849271,
+  "params": {
+   "post_type": "player",
+   "title": "Bookkoree Hlemdee",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "849271",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Bookkoree",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Hlemdee",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251213",
+    "birthday": "1078992000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 14,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 853389,
+  "params": {
+   "post_type": "player",
+   "title": "Patakorn Hanratana",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "853389",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Patakorn",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Hanratana",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251213",
+    "birthday": "1050908400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 14,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 856269,
+  "params": {
+   "post_type": "player",
+   "title": "Jared Sean Gallagher",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "856269",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Jared Sean",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Gallagher",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Singapore",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "1011340800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 13,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 870410,
+  "params": {
+   "post_type": "player",
+   "title": "Nitisak Anulun",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "870410",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Nitisak",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Anulun",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260501",
+    "birthday": "1044950400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 5,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 870411,
+  "params": {
+   "post_type": "player",
+   "title": "Khanaphod Kadee",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "870411",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Khanaphod",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kadee",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260111",
+    "birthday": "1025074800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 10,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 870467,
+  "params": {
+   "post_type": "player",
+   "title": "Kitinun Suttiwiriyakul",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "870467",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Kitinun",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Suttiwiriyakul",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20251108",
+    "birthday": "814431600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 2,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 870642,
+  "params": {
+   "post_type": "player",
+   "title": "Songwut Kraikruan",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "870642",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Songwut",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kraikruan",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "1005033600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 27,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 870662,
+  "params": {
+   "post_type": "player",
+   "title": "Payanat Thodsanid",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "870662",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Payanat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Thodsanid",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "1026284400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 25,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 870718,
+  "params": {
+   "post_type": "player",
+   "title": "Kakana Khamyok",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "870718",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Kakana",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Khamyok",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "1085122800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 29,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 870757,
+  "params": {
+   "post_type": "player",
+   "title": "Pichitchai Sienkrthok",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "870757",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Pichitchai",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Sienkrthok",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260425",
+    "birthday": "1047974400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 8,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 871726,
+  "params": {
+   "post_type": "player",
+   "title": "Ratthasart Bangsungnoen",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "871726",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Ratthasart",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Bangsungnoen",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "1126594800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 29,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 875943,
+  "params": {
+   "post_type": "player",
+   "title": "Arthit Bua-ngam",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "875943",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Arthit",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Bua-ngam",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20251206",
+    "birthday": "1012118400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 7,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 902762,
+  "params": {
+   "post_type": "player",
+   "title": "Yuki Kusano",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "902762",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Yuki",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kusano",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Japan",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260411",
+    "birthday": "837932400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 11,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 921601,
+  "params": {
+   "post_type": "player",
+   "title": "Chitsanuphong Phimpsang",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "921601",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Chitsanuphong",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Phimpsang",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7938",
+    "last_confirmed_date": "20260510",
+    "birthday": "1036137600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Prachuap",
+   "n_apps": 21,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 935293,
+  "params": {
+   "post_type": "player",
+   "title": "Anurak Mungdee",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "935293",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Anurak",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Mungdee",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "1009872000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 20,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 935296,
+  "params": {
+   "post_type": "player",
+   "title": "Sorawis Srifah",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "935296",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Sorawis",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Srifah",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20250914",
+    "birthday": "1191567600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 1,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 935298,
+  "params": {
+   "post_type": "player",
+   "title": "Narongsak Phetnok",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "935298",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Narongsak",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Phetnok",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 1,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 944914,
+  "params": {
+   "post_type": "player",
+   "title": "Siradanai Phosri",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "944914",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Siradanai",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Phosri",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "1125990000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 29,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 951308,
+  "params": {
+   "post_type": "player",
+   "title": "Thiraphat Nuntagowat",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "951308",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Thiraphat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Nuntagowat",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "1104912000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 28,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 954108,
+  "params": {
+   "post_type": "player",
+   "title": "Khomsan Sanphiphan",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "954108",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Khomsan",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Sanphiphan",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260405",
+    "birthday": "1143705600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 5,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 972779,
+  "params": {
+   "post_type": "player",
+   "title": "Kritsana Pummarrin",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "972779",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Kritsana",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Pummarrin",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Germany",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "1107936000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 16,
+   "fs_pos": "Goalkeeper"
+  }
+ },
+ {
+  "footystats_id": 973552,
+  "params": {
+   "post_type": "player",
+   "title": "Prachya Fatsuphap",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "973552",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Prachya",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Fatsuphap",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260510",
+    "birthday": "1030518000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 28,
+   "fs_pos": "Centre Back"
+  }
+ },
+ {
+  "footystats_id": 973716,
+  "params": {
+   "post_type": "player",
+   "title": "Punnathat Preampree",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "973716",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Punnathat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Preampree",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260510",
+    "birthday": "1190012400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 15,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 973717,
+  "params": {
+   "post_type": "player",
+   "title": "Pittawat Jeenthai",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "973717",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Pittawat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Jeenthai",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251207",
+    "birthday": "1142668800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 12,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 974432,
+  "params": {
+   "post_type": "player",
+   "title": "James Pakorn Falconer",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "974432",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "James Pakorn",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Falconer",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "1124434800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 18,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 974433,
+  "params": {
+   "post_type": "player",
+   "title": "Kittapak Seangsawat",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "974433",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Kittapak",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Seangsawat",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260501",
+    "birthday": "1112943600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 24,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 974717,
+  "params": {
+   "post_type": "player",
+   "title": "Thanapat Warong",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "974717",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Thanapat",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Warong",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20251129",
+    "birthday": "1078214400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 2,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 976711,
+  "params": {
+   "post_type": "player",
+   "title": "Danuphon Buppha",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "976711",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Danuphon",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Buppha",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "MF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "1200384000"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 13,
+   "fs_pos": "Midfielder"
+  }
+ },
+ {
+  "footystats_id": 977026,
+  "params": {
+   "post_type": "player",
+   "title": "Prakiattichai Singsook",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "977026",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Prakiattichai",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Singsook",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7932",
+    "last_confirmed_date": "20260125"
+   }
+  },
+  "_dbg": {
+   "club_name": "Nakhon Ratchasima",
+   "n_apps": 1,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 980934,
+  "params": {
+   "post_type": "player",
+   "title": "Tony Laurent-Gonnet",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "980934",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Tony",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Laurent-Gonnet",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "DF",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260426",
+    "birthday": "1051772400"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 2,
+   "fs_pos": "Defender"
+  }
+ },
+ {
+  "footystats_id": 985380,
+  "params": {
+   "post_type": "player",
+   "title": "Kittiphod Sathiphanuwat",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "985380",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Kittiphod",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Sathiphanuwat",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "FW",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7943",
+    "last_confirmed_date": "20260426",
+    "birthday": "1239951600"
+   }
+  },
+  "_dbg": {
+   "club_name": "Kanchanaburi Power",
+   "n_apps": 1,
+   "fs_pos": "Forward"
+  }
+ },
+ {
+  "footystats_id": 986024,
+  "params": {
+   "post_type": "player",
+   "title": "Rithisak Kalaya",
+   "status": "publish",
+   "meta": {
+    "footystats_id": "986024",
+    "_footystats_id": "field_6a740e0d96d5b",
+    "first_name": "Rithisak",
+    "_first_name": "field_69c4fab23e14b",
+    "last_name": "Kalaya",
+    "_last_name": "field_69c4fadd3e14c",
+    "nationality": "Thailand",
+    "_nationality": "field_69c4fae93e14d",
+    "position": "GK",
+    "_position": "field_69c4fef2885f0",
+    "last_confirmed_club": "7936",
+    "last_confirmed_date": "20260510",
+    "birthday": "1185346800"
+   }
+  },
+  "_dbg": {
+   "club_name": "Muang Thong United",
+   "n_apps": 1,
+   "fs_pos": "Goalkeeper"
+  }
+ }
+]
