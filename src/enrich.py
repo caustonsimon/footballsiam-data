@@ -684,7 +684,9 @@ def reassign_clubs(
                     if len(stats["clear_sample"]) < sample_limit:
                         stats["clear_sample"].append(line)
                     if not wp.dry_run:
-                        wp.update_player(pid, acf={"current_club": []})
+                        # the ACF relationship field enforces "min 1 post", so an
+                        # empty array is rejected (rest_too_few_items) - null clears it.
+                        wp.update_player(pid, acf={"current_club": None})
                         if not _verify_current_club(wp, pid, None):
                             stats["verify_failures"] += 1
                             log.warning("  VERIFY post %s: current_club did NOT "
