@@ -45,6 +45,12 @@ player row now resolves to a real name (0 numeric-ID fallbacks, was 1881 rows /
 `team_a_xg → home_xg`, `team_b_xg → away_xg` (ACF fields, written via the REST
 `acf` key). All 240 populated; 1 match (fs 8259336) is genuinely 0/0 in FootyStats.
 
+Prematch xG: `team_a_xg_prematch → home_xg_prematch`, `team_b_xg_prematch →
+away_xg_prematch` — plain post meta (not ACF), written via the connector
+(`ewpa/update-cpt-item`), so NOT exposed to REST. All 240 written; 16 early-season
+matches (matchweek 1, fs 7977061–7977071 range) are genuinely 0/0 — FootyStats
+had no prematch model yet.
+
 ## Files
 
 | file | description |
