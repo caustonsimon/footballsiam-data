@@ -355,16 +355,20 @@ def _run_club_sync(
     log.info("Club reassignment summary (%s)", mode)
     log.info("  players scanned              : %d", st["scanned"])
     log.info("  skipped (no footystats_id)   : %d", st["no_footystats_id"])
-    log.info("  would reassign / reassigned  : %d  (of which auto-created: %d)",
-             st["reassigned"], st["reassign_from_autocreated"])
-    log.info("  would clear / cleared        : %d  (of which auto-created: %d)",
-             st["cleared"], st["clear_from_autocreated"])
+    log.info("  skipped (no fs profile)      : %d", st["skipped_no_profile"])
+    log.info("  would reassign / reassigned  : %d", st["reassigned"])
+    log.info("  would clear / cleared        : %d", st["cleared"])
     log.info("  no action (already correct)  : %d", st["noop"])
     log.info("  insufficient evidence        : %d", st["insufficient"])
+    log.info("  thin reassign skipped (<apps): %d", st["thin_reassign_skipped"])
+    log.info("  bad FS record (manual review): %d", st["bad_fs_record"])
     log.info("  errors                       : %d", st["errors"])
+    log.info("  verify failures (acf write)  : %d", st["verify_failures"])
     for label, key in (
         ("reassign sample", "reassign_sample"),
         ("clear sample", "clear_sample"),
+        ("thin-evidence (skipped) sample", "thin_sample"),
+        ("bad-FS-record sample", "bad_sample"),
         ("no-action / untracked sample", "noop_untracked_sample"),
         ("insufficient-evidence sample", "insufficient_sample"),
     ):
@@ -381,7 +385,7 @@ def _run_club_sync(
             for d in st["decisions"]:
                 fh.write(_json.dumps(d, ensure_ascii=False) + "\n")
         log.info("  decisions written to %s (%d rows)", dump, len(st["decisions"]))
-    return 1 if st["errors"] else 0
+    return 1 if (st["errors"] or st["verify_failures"]) else 0
 
 
 def _run_enrich_test(wp: WPClient, fs: FootyStatsClient, post_ids: list[int]) -> int:

@@ -487,7 +487,7 @@ def _int_or(v: Any, default: int = 0) -> int:
 
 
 def _pick_domestic_row(
-    rows: list[dict[str, Any]], *, min_end_year: int = 0
+    rows: list[dict[str, Any]], *, min_end_year: int = 0, min_apps: int = 1
 ) -> dict[str, Any] | None:
     """From a live /player-stats list, the most recent row that is a *played*,
     *recent* domestic-league season. None -> insufficient evidence, no action.
@@ -497,8 +497,8 @@ def _pick_domestic_row(
                                            cup (AFC CL, President's Cup, AFC U23
                                            - whose club_team_id is a select side)
       club_team_id > 0
-      appearances_overall > 0            - a roster listing with no appearances
-                                           is not confirmed evidence
+      appearances_overall >= min_apps    - a roster listing / one-off cameo is
+                                           not confirmed evidence
       ending_year >= min_end_year        - a 2-3-season-old appearance is not
                                            evidence of a player's CURRENT club
     Order: (starting_year, ending_year, last_match_timestamp) ascending; take last.
@@ -508,7 +508,7 @@ def _pick_domestic_row(
         if isinstance(r, dict)
         and str(r.get("league_type", "")) == "Domestic League"
         and _int_or(r.get("club_team_id")) > 0
-        and _int_or(r.get("appearances_overall")) > 0
+        and _int_or(r.get("appearances_overall")) >= min_apps
         and _int_or(r.get("ending_year")) >= min_end_year
     ]
     if not eligible:
@@ -523,6 +523,19 @@ def _pick_domestic_row(
     )[-1]
 
 
+def _verify_current_club(
+    wp: WPClient, post_id: int, expected: int | None
+) -> bool:
+    """Read a player back and confirm current_club landed. expected None -> blank."""
+    try:
+        back = wp.get_player(post_id, fields="id,acf.current_club")
+    except WPError as exc:
+        log.warning("  verify post %s: read-back failed: %s", post_id, exc)
+        return False
+    got = _first_club_id((back.get("acf") or {}).get("current_club"))
+    return got == expected
+
+
 def reassign_clubs(
     wp: WPClient,
     fs: FootyStatsClient,
@@ -532,25 +545,36 @@ def reassign_clubs(
     sample_limit: int = 10,
     pause: float = 0.1,
     min_end_year: int | None = None,
+    min_reassign_apps: int = 3,
+    require_profile: bool = True,
 ) -> dict[str, Any]:
     """Full pass over every `player`. Fetches live /player-stats per player.
     Honours wp.dry_run (no writes when dry).
 
     min_end_year: ignore domestic-league rows that ended before this year.
-    Defaults to (this year - 1), so only the current and immediately previous
-    season count as evidence of a player's current club.
+      Defaults to (this year - 1) - only the current and immediately previous
+      season count as evidence of a player's current club.
+    min_reassign_apps: a *reassignment* needs at least this many appearances in
+      the decisive row (a one-off cameo is too weak to move current_club).
+      Clears use appearances >= 1 (the direction is "blank", lower risk).
+    require_profile: skip players with no fs_advanced_stats_json - i.e. the
+      Part-A auto-created players, whose current_club is deliberately blank and
+      must not be filled from a best-guess most-recent-appearance.
     """
     if min_end_year is None:
         min_end_year = dt.date.today().year - 1
-    log.info("  recency floor: ending_year >= %d", min_end_year)
+    log.info("  config: ending_year >= %d, reassign needs apps >= %d, "
+             "require fs_advanced_stats_json = %s",
+             min_end_year, min_reassign_apps, require_profile)
     stats: dict[str, Any] = {
-        "scanned": 0, "no_footystats_id": 0,
+        "scanned": 0, "no_footystats_id": 0, "skipped_no_profile": 0,
         "reassigned": 0, "cleared": 0, "noop": 0,
-        "insufficient": 0, "errors": 0,
-        "reassign_from_autocreated": 0, "clear_from_autocreated": 0,
+        "insufficient": 0, "thin_reassign_skipped": 0, "bad_fs_record": 0,
+        "errors": 0, "verify_failures": 0,
         "reassign_sample": [], "clear_sample": [],
         "noop_untracked_sample": [], "insufficient_sample": [],
-        "decisions": [],  # one row per player, for offline analysis
+        "thin_sample": [], "bad_sample": [],
+        "decisions": [],  # one row per considered player, for offline analysis
     }
 
     for p in wp.iter_all_players(
@@ -564,9 +588,10 @@ def reassign_clubs(
         if fs_id in (None, "", 0, "0"):
             stats["no_footystats_id"] += 1
             continue
-        # players created by Part A carry no fs_advanced_stats_json - flag them
-        # so the report can show how many candidates are auto-created profiles.
-        autocreated = not str(acf.get("fs_advanced_stats_json") or "").strip()
+        has_profile = bool(str(acf.get("fs_advanced_stats_json") or "").strip())
+        if require_profile and not has_profile:
+            stats["skipped_no_profile"] += 1
+            continue
 
         try:
             rows = fs.get_player(int(fs_id))
@@ -576,7 +601,21 @@ def reassign_clubs(
                       pid, name, fs_id, exc)
             continue
 
-        row = _pick_domestic_row(rows, min_end_year=min_end_year)
+        # Sanity: a valid player id returns rows that carry a name. Bogus /
+        # deleted ids (e.g. WP "Player 42458") come back as an all-empty-name
+        # grab-bag with impossible per-season appearance counts - never act on it.
+        if not any(str(r.get("known_as") or r.get("full_name") or "").strip()
+                   for r in rows):
+            stats["bad_fs_record"] += 1
+            line = (f"BAD-FS-RECORD  {name}  (post {pid})  fs={fs_id}  "
+                    f"- /player-stats has no named rows; no action, needs manual review")
+            audit(line)
+            if len(stats["bad_sample"]) < sample_limit:
+                stats["bad_sample"].append(line)
+            time.sleep(pause)
+            continue
+
+        row = _pick_domestic_row(rows, min_end_year=min_end_year, min_apps=1)
         cur_wp = _first_club_id(acf.get("current_club"))
 
         if row is None:
@@ -593,33 +632,42 @@ def reassign_clubs(
 
         fs_club = _int_or(row.get("club_team_id"))
         mapped_wp = club_map.get(fs_club)
+        apps = _int_or(row.get("appearances_overall"))
         ctx = (f"fs club {fs_club}, {row.get('season')} {row.get('league')}, "
-               f"apps={row.get('appearances_overall')}")
+               f"apps={apps}")
         stats["decisions"].append({
-            "post": pid, "name": name, "fs_id": fs_id, "autocreated": autocreated,
+            "post": pid, "name": name, "fs_id": fs_id,
             "cur_wp": cur_wp, "fs_club": fs_club, "mapped_wp": mapped_wp,
             "season": row.get("season"), "league": row.get("league"),
-            "end_year": _int_or(row.get("ending_year")),
-            "apps": _int_or(row.get("appearances_overall")),
+            "end_year": _int_or(row.get("ending_year")), "apps": apps,
         })
 
         try:
             if mapped_wp is not None:
                 if cur_wp == mapped_wp:
                     stats["noop"] += 1
+                elif apps < min_reassign_apps:
+                    stats["thin_reassign_skipped"] += 1
+                    line = (f"THIN-EVIDENCE  {name}  (post {pid})  "
+                            f"would move to {wp.get_club_title(mapped_wp)} [{mapped_wp}] "
+                            f"but only {ctx}; no action")
+                    audit(line)
+                    if len(stats["thin_sample"]) < sample_limit:
+                        stats["thin_sample"].append(line)
                 else:
                     old_txt = wp.get_club_title(cur_wp) if cur_wp else "(blank)"
                     new_txt = wp.get_club_title(mapped_wp)
-                    tag = " [auto-created]" if autocreated else ""
-                    line = (f"REASSIGN  {name}  (post {pid}){tag}  "
+                    line = (f"REASSIGN  {name}  (post {pid})  "
                             f"{old_txt} [{cur_wp}]  ->  {new_txt} [{mapped_wp}]  ({ctx})")
                     audit(line)
                     if len(stats["reassign_sample"]) < sample_limit:
                         stats["reassign_sample"].append(line)
-                    if autocreated:
-                        stats["reassign_from_autocreated"] += 1
                     if not wp.dry_run:
                         wp.update_player(pid, acf={"current_club": [mapped_wp]})
+                        if not _verify_current_club(wp, pid, mapped_wp):
+                            stats["verify_failures"] += 1
+                            log.warning("  VERIFY post %s: current_club did NOT "
+                                        "land as %s", pid, mapped_wp)
                     stats["reassigned"] += 1
             else:
                 if cur_wp is None:
@@ -629,17 +677,18 @@ def reassign_clubs(
                             f"{name} (post {pid}): already blank; {ctx} not tracked")
                 else:
                     old_txt = wp.get_club_title(cur_wp)
-                    tag = " [auto-created]" if autocreated else ""
-                    line = (f"CLEAR     {name}  (post {pid}){tag}  "
+                    line = (f"CLEAR     {name}  (post {pid})  "
                             f"was {old_txt} [{cur_wp}]  ->  (blank)  "
                             f"(moved to untracked {ctx})")
                     audit(line)
                     if len(stats["clear_sample"]) < sample_limit:
                         stats["clear_sample"].append(line)
-                    if autocreated:
-                        stats["clear_from_autocreated"] += 1
                     if not wp.dry_run:
                         wp.update_player(pid, acf={"current_club": []})
+                        if not _verify_current_club(wp, pid, None):
+                            stats["verify_failures"] += 1
+                            log.warning("  VERIFY post %s: current_club did NOT "
+                                        "clear", pid)
                     stats["cleared"] += 1
         except WPError as exc:
             stats["errors"] += 1

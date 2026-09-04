@@ -166,6 +166,14 @@ class WPClient:
         resp = self._request("GET", f"{CPT_REST_BASE}/{post_id}", params=params)
         return self._json_or_raise(resp, f"GET {CPT_REST_BASE}/{post_id}")
 
+    def get_player(self, post_id: int, fields: str | None = None) -> dict[str, Any]:
+        """Full `player` post by id (context=edit so all acf/meta is returned)."""
+        params: dict[str, Any] = {"context": "edit"}
+        if fields:
+            params["_fields"] = fields
+        resp = self._request("GET", f"{PLAYER_REST_BASE}/{post_id}", params=params)
+        return self._json_or_raise(resp, f"GET {PLAYER_REST_BASE}/{post_id}")
+
     def iter_all_players(self, fields: str = "id,title,acf") -> Iterator[dict[str, Any]]:
         """Yield every published `player` post. `context=edit` for full acf."""
         page = 1
