@@ -33,6 +33,22 @@ Each was fetched from FootyStats `/player-stats` and created as a `player` post
 
 FootyStats emitted only: `Defender`, `Midfielder`, `Forward`, `Goalkeeper`, `Centre Back`.
 
+## 2b. raw_match_data v3 — wp_id + position
+
+`raw_match_data`'s `player_stats` and `match_events` originally carried only the
+FootyStats `player_id`, so match-report player links (which need the WP post ID)
+were broken, and `player_stats` had no `position` (FootyStats lineup/bench data
+omits it entirely).
+
+Rebuilt for all 240 matches with the 668-player lookup:
+
+- `player_stats[]`: added `wp_id` (WordPress `player` post ID) and `position`
+  (`GK`/`DF`/`MF`/`FW`, from the player's own WP profile). `player_id` (FootyStats) kept.
+- `match_events[]`: added `p1_wp_id` alongside `p1_id`. (No `p2_*` — no assist data.)
+
+Coverage: 10,717 `player_stats` rows and 1,695 `match_events` — 100% resolved
+`wp_id` and `position`, 0 blanks.
+
 ## 2. Re-enrichment
 
 With the lookup now complete (668 players), `player_stats` + `match_events` were
