@@ -96,6 +96,14 @@ python src/sync_matches.py --live     # actually write
 python src/sync_matches.py --league "Thai League 2" --limit 5   # scoped test
 ```
 
+Exit codes: `0` clean · `1` finished with per-item errors · `2` sync aborted
+(real failure) · `3` **host anti-bot challenge** — SiteGround served its
+`sgcaptcha` page instead of the REST API, so nothing ran. `WPClient` retries a
+challenged request up to 3× (4s/8s backoff) with a descriptive `User-Agent`
+before giving up; a `3` means the WP REST API was unreachable from the runner
+IP, not that the data is wrong. Retry later, or run from a stable/allowlisted
+IP. The log line is `=== HOST CHALLENGE - sync did NOT run (not a failure) ===`.
+
 ### Schedule (GitHub Actions)
 
 - `15 15 * * *` → 22:15 Asia/Bangkok

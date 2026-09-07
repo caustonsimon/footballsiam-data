@@ -72,7 +72,12 @@ def _load_dotenv(path: Path) -> None:
 _load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from footystats_client import FootyStatsClient, FootyStatsError  # noqa: E402
-from wp_client import WPClient, WPError  # noqa: E402
+from wp_client import WPClient, WPError, WPHostChallengeError  # noqa: E402
+
+# exit codes: 0 ok, 1 finished with per-item errors, 2 sync aborted (real
+# failure), 3 host anti-bot challenge (WP REST unreachable from this IP - not
+# our failure; retry later / allowlist the caller).
+EXIT_HOST_CHALLENGE = 3
 from enrich import (  # noqa: E402
     build_player_lookup,
     enrich_match,
@@ -328,6 +333,8 @@ def sync(
                         stats["enrich_skipped"] += 1
                     else:
                         stats["errors"] += 1
+            except WPHostChallengeError:
+                raise  # a host challenge is not a per-match error - abort the run
             except (WPError, KeyError) as exc:
                 stats["errors"] += 1
                 log.error("  ERROR on match %s: %s", fs_id, exc)
@@ -347,6 +354,10 @@ def _run_club_sync(
     log.info("Starting club reassignment (Part B) - %s", mode)
     try:
         st = reassign_clubs(wp, fs, CLUB_MAP, audit=_audit, sample_limit=sample_limit)
+    except WPHostChallengeError as exc:
+        log.error("=== HOST CHALLENGE - club sync did NOT run (not a failure) ===")
+        log.error("  %s", exc)
+        return EXIT_HOST_CHALLENGE
     except (WPError, FootyStatsError) as exc:
         log.error("Club sync aborted: %s", exc)
         return 2
@@ -483,6 +494,13 @@ def main(argv: list[str] | None = None) -> int:
             league_filter=args.league, limit=args.limit,
             enrich=not args.no_enrich,
         )
+    except WPHostChallengeError as exc:
+        log.error("=== HOST CHALLENGE - sync did NOT run (not a failure) ===")
+        log.error("  %s", exc)
+        log.error("  The host (SiteGround) served an anti-bot page instead of the")
+        log.error("  WP REST API. Nothing was read or written. Retry later, or")
+        log.error("  allowlist the runner / move the job to a stable IP.")
+        return EXIT_HOST_CHALLENGE
     except (WPError, FootyStatsError) as exc:
         log.error("Sync aborted: %s", exc)
         return 2

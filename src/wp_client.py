@@ -37,9 +37,29 @@ MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 5
 PER_PAGE = 100
 
+# A descriptive UA - the default `python-requests/x` string is a common bot
+# signature and gets challenged more readily.
+USER_AGENT = "footballsiam-sync/1.0 (+https://github.com/caustonsimon/footballsiam-data)"
+
+# SiteGround's anti-bot system answers with an HTML page that meta-refreshes to
+# /.well-known/sgcaptcha/ instead of the REST JSON. It is served with a 2xx
+# status, so it has to be detected by body content.
+CHALLENGE_MARKER = b"/.well-known/sgcaptcha/"
+CHALLENGE_RETRIES = 3            # initial try + 2 retries
+CHALLENGE_BACKOFF_SECONDS = 4    # * attempt -> 4s, 8s
+
 
 class WPError(RuntimeError):
     pass
+
+
+class WPHostChallengeError(WPError):
+    """The host's anti-bot layer blocked the request (SiteGround sgcaptcha).
+
+    Distinct from WPError so an unattended run can report "the host challenged
+    us / the REST API was unreachable from this IP" rather than "the sync
+    failed". Not a data or logic problem.
+    """
 
 
 class WPClient:
@@ -61,10 +81,20 @@ class WPClient:
             )
         self.dry_run = dry_run
         self.session = session or requests.Session()
+        self.session.headers["User-Agent"] = USER_AGENT
+        self.session.headers["Accept"] = "application/json"
         self.auth = HTTPBasicAuth(self.username, self.app_password)
         self._club_title_cache: dict[int, str] = {}
 
     # -- low level -------------------------------------------------------
+
+    @staticmethod
+    def _is_host_challenge(resp: requests.Response) -> bool:
+        """True when the host served an anti-bot challenge instead of the API."""
+        ctype = resp.headers.get("content-type", "").lower()
+        if "application/json" in ctype:
+            return False
+        return CHALLENGE_MARKER in resp.content[:8192]
 
     def _request(self, method: str, path: str, **kwargs: Any) -> requests.Response:
         url = self.base_url + path.lstrip("/")
@@ -81,6 +111,16 @@ class WPClient:
                     continue
                 raise WPError(f"{method} {path} failed: {exc}") from exc
 
+            if self._is_host_challenge(resp):
+                if attempt < CHALLENGE_RETRIES:
+                    time.sleep(CHALLENGE_BACKOFF_SECONDS * attempt)
+                    continue
+                raise WPHostChallengeError(
+                    f"{method} {path}: host anti-bot challenge (SiteGround "
+                    f"sgcaptcha) after {attempt} attempts - the WP REST API was "
+                    f"unreachable from this IP. Not a sync failure."
+                )
+
             if resp.status_code in (429, 500, 502, 503, 504) and attempt < MAX_RETRIES:
                 time.sleep(RETRY_BACKOFF_SECONDS * attempt)
                 continue
@@ -89,6 +129,11 @@ class WPClient:
 
     @staticmethod
     def _json_or_raise(resp: requests.Response, context: str) -> Any:
+        if WPClient._is_host_challenge(resp):
+            raise WPHostChallengeError(
+                f"{context}: host anti-bot challenge (SiteGround sgcaptcha) - "
+                f"the WP REST API was unreachable from this IP. Not a sync failure."
+            )
         if not resp.ok:
             raise WPError(f"{context} -> HTTP {resp.status_code}: {resp.text[:500]}")
         try:
