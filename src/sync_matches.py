@@ -82,6 +82,7 @@ from enrich import (  # noqa: E402
     build_player_lookup,
     enrich_match,
     reassign_clubs,
+    reenrich_raw_match_data,
 )
 
 # --------------------------------------------------------------------------
@@ -434,6 +435,26 @@ def _run_enrich_test(wp: WPClient, fs: FootyStatsClient, post_ids: list[int]) ->
     return 0
 
 
+def _run_reenrich(wp: WPClient, fs: FootyStatsClient, post_ids: list[int]) -> int:
+    """Rebuild raw_match_data on already-enriched posts after a logic change."""
+    mode = "LIVE" if not wp.dry_run else "DRY RUN (no writes)"
+    log.info("Re-enrich raw_match_data on %d posts - %s", len(post_ids), mode)
+    try:
+        st = reenrich_raw_match_data(wp, fs, post_ids, audit=_audit)
+    except (WPHostChallengeError, WPError, FootyStatsError) as exc:
+        log.error("Re-enrich aborted: %s", exc)
+        return 2
+    log.info("---------------------------------------------")
+    log.info("Re-enrich summary (%s)", mode)
+    log.info("  posts                : %d", st["posts"])
+    log.info("  would change / changed: %d", st["changed"])
+    log.info("  unchanged (no-op)    : %d", st["unchanged"])
+    log.info("  errors               : %d", st["errors"])
+    log.info("  verify failures      : %d", st["verify_failures"])
+    log.info("---------------------------------------------")
+    return 1 if (st["errors"] or st["verify_failures"]) else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live", action="store_true",
@@ -451,6 +472,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--enrich-test", metavar="POST_IDS",
                         help="Part C test: run the enrich path (dry) against "
                              "these comma-separated `matches` post ids and exit")
+    parser.add_argument("--reenrich", metavar="POST_IDS",
+                        help="rebuild raw_match_data (only) on these comma-"
+                             "separated `matches` post ids from a fresh /match; "
+                             "use after an event-building logic change. Also "
+                             "accepts @file with one id per line.")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -482,6 +508,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.enrich_test:
         ids = [int(x) for x in args.enrich_test.replace(" ", "").split(",") if x]
         return _run_enrich_test(wp, fs, ids)
+
+    if args.reenrich:
+        spec = args.reenrich
+        if spec.startswith("@"):
+            spec = Path(spec[1:]).read_text().replace("\n", ",")
+        ids = [int(x) for x in spec.replace(" ", "").split(",") if x.strip()]
+        return _run_reenrich(wp, fs, ids)
 
     if args.club_sync:
         return _run_club_sync(wp, fs)

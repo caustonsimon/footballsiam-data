@@ -72,6 +72,23 @@ TEAM_STAT_MAP = {
     "possession": "possession",
 }
 
+# FootyStats player_events / card_details type  ->  (normalized event_type,
+# event_detail). FootyStats splits goals into "Goal" / "Penalty" / "Own Goal"
+# and dismissals into "Red" / "Second Yellow"; downstream code keys on the plain
+# type, so collapse the variants and keep the nuance in event_detail.
+# event_team is NEVER changed - an own goal stays on the scorer's real team,
+# exactly as FootyStats reports it.
+EVENT_TYPE_MAP = {
+    "Goal":          ("Goal", ""),
+    "Penalty":       ("Goal", "penalty"),
+    "Own Goal":      ("Goal", "own goal"),
+    "Second Yellow": ("Red", "second yellow"),
+}
+
+
+def _normalize_event(raw_type: Any) -> tuple[str, str]:
+    return EVENT_TYPE_MAP.get(str(raw_type), (str(raw_type), ""))
+
 
 # --------------------------------------------------------------------------
 # Position mapping  (the approved rule - first match wins)
@@ -308,19 +325,23 @@ def _build_raw_match_data(
 
     def handle(pid: Any, ev: dict[str, Any], team: str) -> None:
         nonlocal own_goals
-        etype = ev.get("event_type")
+        raw_type = ev.get("event_type")
         minute = ev.get("event_time")
-        detail = ""
-        et = team
-        if etype == "Goal":
+        norm_type, detail = _normalize_event(raw_type)
+        # event_team is always the player's own team - never flipped.
+        if raw_type == "Own Goal":
+            # trust FootyStats' explicit tag
+            own_goals += 1
+        elif raw_type == "Goal":
+            # fallback: an untagged goal whose minute matches an OPPONENT goal
+            # (and none of this team's) is an own goal FootyStats did not flag.
             mv = _minute_variants(minute)
             own = home_goal_mins if team == "Home" else away_goal_mins
             opp = away_goal_mins if team == "Home" else home_goal_mins
             if not (mv & own) and (mv & opp):
                 detail = "own goal"
-                et = "Away" if team == "Home" else "Home"
                 own_goals += 1
-        add_event(etype, minute, pid, et, detail)
+        add_event(norm_type, minute, pid, team, detail)
 
     for side, key in (("Home", "team_a"), ("Away", "team_b")):
         for p in (md.get("lineups") or {}).get(key, []) or []:
@@ -331,7 +352,8 @@ def _build_raw_match_data(
                 handle(b.get("player_in_id"), ev, side)
     for key, side in (("team_a_card_details", "Home"), ("team_b_card_details", "Away")):
         for c in md.get(key, []) or []:
-            add_event(c.get("card_type"), c.get("time"), c.get("player_id"), side)
+            nt, dt = _normalize_event(c.get("card_type"))
+            add_event(nt, c.get("time"), c.get("player_id"), side, dt)
 
     blob = json.dumps(
         {"player_stats": player_stats, "match_events": events},
@@ -460,6 +482,94 @@ def _verify_enrich_write(
     if problems:
         log.warning("  VERIFY post %s: these keys did NOT persist -> %s",
                     post_id, ", ".join(problems))
+
+
+# --------------------------------------------------------------------------
+# Rebuild raw_match_data for already-enriched posts (logic changed)
+# --------------------------------------------------------------------------
+
+def _event_type_counts(rmd_b64: str) -> dict[str, int]:
+    try:
+        obj = json.loads(base64.b64decode(rmd_b64))
+    except Exception:
+        return {}
+    c: dict[str, int] = {}
+    for e in obj.get("match_events", []):
+        key = e.get("event_type", "?")
+        if e.get("event_detail"):
+            key += f"/{e['event_detail']}"
+        c[key] = c.get(key, 0) + 1
+    return c
+
+
+def reenrich_raw_match_data(
+    wp: WPClient,
+    fs: FootyStatsClient,
+    post_ids: list[int],
+    *,
+    audit: Callable[[str], None],
+    pause: float = 0.15,
+) -> dict[str, Any]:
+    """Rebuild ONLY `raw_match_data` for the given `matches` posts from a fresh
+    /match fetch (team stats / xG are left alone). Honours wp.dry_run.
+
+    Use after a change to the event-building logic - the normal enrich guard
+    skips posts that already have raw_match_data.
+    """
+    stats = {"posts": len(post_ids), "changed": 0, "unchanged": 0,
+             "errors": 0, "verify_failures": 0}
+    lookup = build_player_lookup(wp)
+    log.info("  player lookup: %d", len(lookup))
+
+    for pid in post_ids:
+        try:
+            post = wp.get_match(pid, fields="id,title,meta.footystats_match_id,"
+                                            "meta.raw_match_data")
+        except WPError as exc:
+            stats["errors"] += 1
+            log.error("  post %s: fetch failed: %s", pid, exc)
+            continue
+        meta = post.get("meta") or {}
+        title = (post.get("title") or {}).get("rendered", "")
+        fs_id = meta.get("footystats_match_id")
+        if not fs_id:
+            stats["errors"] += 1
+            log.error("  post %s (%s): no footystats_match_id", pid, title)
+            continue
+        try:
+            md = fs.get_match(int(fs_id))
+        except FootyStatsError as exc:
+            stats["errors"] += 1
+            log.error("  post %s fs %s: /match fetch failed: %s", pid, fs_id, exc)
+            continue
+
+        old_rmd = str(meta.get("raw_match_data") or "")
+        new_rmd, _ = _build_raw_match_data(md, lookup)
+        if new_rmd == old_rmd:
+            stats["unchanged"] += 1
+            continue
+
+        old_c, new_c = _event_type_counts(old_rmd), _event_type_counts(new_rmd)
+        delta = {k: new_c.get(k, 0) - old_c.get(k, 0)
+                 for k in set(old_c) | set(new_c)
+                 if new_c.get(k, 0) != old_c.get(k, 0)}
+        audit(f"REENRICH  post {pid}  fs {fs_id}  {title}  events {old_c} -> {new_c}"
+              f"  delta {delta}")
+        stats["changed"] += 1
+        if not wp.dry_run:
+            try:
+                wp.update_match(pid, meta={"raw_match_data": new_rmd})
+            except WPError as exc:
+                stats["errors"] += 1
+                log.error("  post %s: write failed: %s", pid, exc)
+                continue
+            back = wp.get_match(pid, fields="id,meta.raw_match_data")
+            if (back.get("meta") or {}).get("raw_match_data") != new_rmd:
+                stats["verify_failures"] += 1
+                log.warning("  VERIFY post %s: raw_match_data did not persist", pid)
+        time.sleep(pause)
+
+    return stats
 
 
 # --------------------------------------------------------------------------
