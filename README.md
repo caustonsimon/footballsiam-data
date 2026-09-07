@@ -149,8 +149,25 @@ the sync fetches `/match` detail and writes, in one REST call:
   attempts, fouls, possession` (`team_a_*` / `team_b_*`)
 - `home_xg` / `away_xg` (ACF) and `home_xg_prematch` / `away_xg_prematch` (meta)
 - `raw_match_data` — base64 JSON: `player_stats[]` with `wp_id` + `position`,
-  `match_events[]` with `p1_wp_id`; own-goal detection cross-checks the goal
-  minute against that team's own goal-timing array
+  `match_events[]` with `p1_wp_id`
+
+**Event-type normalization** (`EVENT_TYPE_MAP` in `enrich.py`). FootyStats splits
+goals into `Goal` / `Penalty` / `Own Goal` and dismissals into `Red` /
+`Second Yellow`. These are collapsed so downstream code keyed on the plain type
+still sees them, with the nuance kept in `event_detail`:
+
+| FootyStats `event_type` | → `event_type` | `event_detail` |
+|---|---|---|
+| `Goal` | `Goal` | `` |
+| `Penalty` | `Goal` | `penalty` |
+| `Own Goal` | `Goal` | `own goal` |
+| `Second Yellow` | `Red` | `second yellow` |
+
+`event_team` is **never flipped** — an own goal stays on the scorer's real team,
+exactly as FootyStats reports it (the match-report shortcode does its own
+flip-to-beneficiary for display). A plain `Goal` whose minute matches an
+opponent goal and none of its own team's is still tagged `own goal` by a
+fallback minute heuristic.
 
 Missing players are auto-created from `/player-stats` using the approved
 position map (`GK/DF/MF/FW`), with `last_confirmed_club` + `last_confirmed_date`
@@ -159,6 +176,10 @@ every run and grown in-memory as players are created. Every write emits an
 `AUDIT | …` log line. Idempotent: `raw_match_data` present ⇒ skip.
 
 Disable with `--no-enrich`. Guard test: `--enrich-test <post_id,post_id>`.
+After an event-logic change, rebuild `raw_match_data` on already-enriched posts
+(the guard would otherwise skip them) with
+`--reenrich <post_id,post_id | @file>` (fresh `/match`, `raw_match_data` only,
+verifies each write; dry unless `--live`).
 
 ### Part B — `current_club` reassignment (`--club-sync`, weekly)
 
