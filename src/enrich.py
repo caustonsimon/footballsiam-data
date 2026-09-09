@@ -263,40 +263,63 @@ def _collect_player_ids(md: dict[str, Any]) -> list[int]:
     return ids
 
 
+def _placeholder_ids(md: dict[str, Any], side_key: str) -> set[Any]:
+    """FootyStats sometimes reuses one player_id as an unknown-player placeholder
+    across several squad slots. Detect it generically: any player_id that shows
+    up 2+ times, at 2+ different shirt numbers, within one team's combined
+    lineup + bench. (A real player has exactly one shirt number per match, so
+    two distinct shirts for the same id means it is not an identity.)
+    """
+    from collections import defaultdict
+    shirts: dict[Any, set] = defaultdict(set)
+    for p in (md.get("lineups") or {}).get(side_key, []) or []:
+        pid = p.get("player_id")
+        if pid is not None:
+            shirts[pid].add(p.get("shirt_number"))
+    for b in (md.get("bench") or {}).get(side_key, []) or []:
+        pid = b.get("player_in_id")
+        if pid not in (None, -1):
+            shirts[pid].add(b.get("player_in_shirt_number"))
+    return {pid for pid, s in shirts.items() if len(s) >= 2}
+
+
 def _build_raw_match_data(
     md: dict[str, Any], lookup: dict[str, dict[str, Any]]
 ) -> tuple[str, int]:
     """(base64 JSON string, own_goal_count)."""
 
-    def name_of(pid: Any) -> str:
-        e = lookup.get(str(pid)) if pid is not None else None
-        return e["title"] if e else str(pid)
+    placeholders = {
+        "Home": _placeholder_ids(md, "team_a"),
+        "Away": _placeholder_ids(md, "team_b"),
+    }
 
-    def wpid_of(pid: Any) -> Any:
+    def slot(pid: Any, team: str) -> tuple[Any, str, str]:
+        """(wp_id, player_name, position) for a lineup/event slot. A detected
+        placeholder id resolves to Unknown with no lookup."""
+        if pid in placeholders.get(team, ()):
+            return None, "Unknown", ""
         e = lookup.get(str(pid)) if pid is not None else None
-        return e["wp_id"] if e else None
-
-    def pos_of(pid: Any) -> str:
-        e = lookup.get(str(pid)) if pid is not None else None
-        return e["position"] if e else ""
+        if e:
+            return e["wp_id"], e["title"], e["position"]
+        return None, str(pid), ""
 
     player_stats: list[dict[str, Any]] = []
     for side, key in (("Home", "team_a"), ("Away", "team_b")):
         for p in (md.get("lineups") or {}).get(key, []) or []:
             pid = p.get("player_id")
+            w, nm, ps = slot(pid, side)
             player_stats.append({
-                "player_id": pid, "wp_id": wpid_of(pid), "team": side,
-                "player_name": name_of(pid), "position": pos_of(pid),
-                "is_starter": True,
+                "player_id": pid, "wp_id": w, "team": side,
+                "player_name": nm, "position": ps, "is_starter": True,
             })
         for b in (md.get("bench") or {}).get(key, []) or []:
             pid = b.get("player_in_id")
             if pid in (None, -1):
                 continue
+            w, nm, ps = slot(pid, side)
             player_stats.append({
-                "player_id": pid, "wp_id": wpid_of(pid), "team": side,
-                "player_name": name_of(pid), "position": pos_of(pid),
-                "is_starter": False,
+                "player_id": pid, "wp_id": w, "team": side,
+                "player_name": nm, "position": ps, "is_starter": False,
             })
 
     home_goal_mins: set[str] = set()
@@ -317,9 +340,10 @@ def _build_raw_match_data(
         if k in dedupe:
             return
         dedupe.add(k)
+        w, nm, _ = slot(pid, team)
         events.append({
             "event_type": et, "event_detail": detail, "event_minute": mn,
-            "p1_id": pid, "p1_wp_id": wpid_of(pid), "p1_name": name_of(pid),
+            "p1_id": pid, "p1_wp_id": w, "p1_name": nm,
             "event_team": team,
         })
 
