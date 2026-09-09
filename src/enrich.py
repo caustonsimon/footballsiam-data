@@ -288,15 +288,16 @@ def _build_raw_match_data(
 ) -> tuple[str, int]:
     """(base64 JSON string, own_goal_count)."""
 
-    placeholders = {
-        "Home": _placeholder_ids(md, "team_a"),
-        "Away": _placeholder_ids(md, "team_b"),
-    }
+    # Once an id is exposed as a placeholder anywhere in the match (2+ shirt
+    # numbers within one team), treat it as a placeholder for EVERY slot in
+    # that match - a single lone occurrence on the other side is the same
+    # sentinel, not a real player.
+    placeholder_ids = _placeholder_ids(md, "team_a") | _placeholder_ids(md, "team_b")
 
     def slot(pid: Any, team: str) -> tuple[Any, str, str]:
         """(wp_id, player_name, position) for a lineup/event slot. A detected
         placeholder id resolves to Unknown with no lookup."""
-        if pid in placeholders.get(team, ()):
+        if pid in placeholder_ids:
             return None, "Unknown", ""
         e = lookup.get(str(pid)) if pid is not None else None
         if e:
