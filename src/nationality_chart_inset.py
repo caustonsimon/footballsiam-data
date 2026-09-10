@@ -7,18 +7,37 @@ title lives on the Canva page itself, same pattern as the attendance chart).
     python src/nationality_chart_inset.py thai-league-1 20 --season 2025/2026
     python src/nationality_chart_inset.py thai-league-2 3 --min-count 3
 
-Data source (2026-09-10 update): for Thai League 1, this script first tries
-the site's own JSON endpoint (`GET /wp-json/fs/v1/nationality-breakdown`),
-which returns the exact same starting-XI nationality counts the homepage's
-Nationality Breakdown widget renders (same function, same season pin, same
-starter-only filter — single source of truth, so future tweaks to that widget
-apply here automatically with zero extra work). This only satisfies a request
-for the *current* latest match week of the *current* season — if the
-requested `match_week`/`--season` don't match what the site currently reports
-as latest (e.g. a historical backfill, or Thai League 2, which the widget
-doesn't cover), it falls back to the original direct computation below
-unchanged. Pass --no-site-api to always skip the site and compute directly
-(useful for comparing the two paths, or if the endpoint is ever down).
+Data source (2026-09-10 update, two changes):
+
+1. For Thai League 1, this script first tries the site's own JSON endpoint
+   (`GET /wp-json/fs/v1/nationality-breakdown`), which returns the exact same
+   starting-XI nationality counts the homepage's Nationality Breakdown widget
+   renders (same function, same season pin, same starter-only filter — single
+   source of truth, so future tweaks to that widget apply here automatically
+   with zero extra work). This only satisfies a request for the *current*
+   latest match week of the *current* season — if the requested
+   `match_week`/`--season` don't match what the site currently reports as
+   latest (e.g. a historical backfill, or Thai League 2, which the widget
+   doesn't cover), it falls back to the original direct computation below
+   unchanged. Pass --no-site-api to always skip the site and compute directly
+   (useful for comparing the two paths, or if the endpoint is ever down).
+
+2. IMPORTANT — --data-file, for the weekly automated run specifically: when
+   this script runs inside a Claude-driven shell (the weekly scheduled task,
+   via device_bash), NEITHER of the network paths above can actually reach
+   footballsiam.com — Claude's sandboxed shells go through an org-level
+   egress proxy that blocks raw HTTP to it entirely (confirmed while building
+   this: even a plain `curl footballsiam.com` from that shell gets rejected).
+   Only Claude's own WebFetch tool and the WordPress MCP connector can reach
+   the site from within a Claude session. So for the automated weekly run,
+   the calling routine must fetch
+   https://footballsiam.com/wp-json/fs/v1/nationality-breakdown itself via
+   WebFetch, save that response verbatim to a local JSON file, and pass
+   --data-file pointing at it — this script then reads counts straight from
+   that file and never touches the network at all. If you're running this
+   manually from a normal terminal with real internet access (not through a
+   Claude-driven shell), you don't need --data-file — the network paths above
+   work fine on their own, exactly as before.
 
 The direct-computation path (fetch_match_week / collect_starters /
 fetch_nationalities / tally) is copied verbatim from nationality_chart.py —
@@ -162,6 +181,21 @@ def fetch_latest_from_site(wp: WPClient, comp_name: str) -> dict | None:
         return None
     if not isinstance(data, dict) or not data.get("available"):
         return None
+    return data
+
+
+def load_data_file(path: Path) -> dict:
+    """Load a JSON file saved verbatim from the site's nationality-breakdown
+    endpoint (see --data-file in the module docstring — this is how the
+    weekly automated run gets data in, since it can't reach the network
+    itself). Same shape as fetch_latest_from_site()'s return value:
+    {"available": bool, "season": str, "week": int, "latest": [...], "overall": [...]}.
+    Raises on missing file / malformed JSON / available=false so the caller
+    fails loudly rather than silently charting nothing.
+    """
+    data = json.loads(path.read_text())
+    if not isinstance(data, dict) or not data.get("available"):
+        raise ValueError(f"{path} does not contain available nationality-breakdown data")
     return data
 
 
@@ -393,14 +427,35 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-site-api", action="store_true",
                     help="skip the site's JSON endpoint and always compute "
                          "directly via WPClient (for debugging/comparison)")
+    ap.add_argument("--data-file", type=Path, default=None,
+                    help="path to a JSON file saved verbatim from the site's "
+                         "nationality-breakdown endpoint (fetched via WebFetch, "
+                         "not this script) — use this when running inside a "
+                         "Claude-driven shell that can't reach the network "
+                         "itself; see the module docstring. Skips both network "
+                         "paths below entirely when given.")
     args = ap.parse_args(argv)
 
     comp_term, comp_name = COMPETITIONS[args.competition]
-    wp = WPClient(dry_run=True)  # reads only — used for both the site-API call and the fallback
 
     rows: list[tuple[str, int]] | None = None
 
-    if not args.no_site_api:
+    if args.data_file is not None:
+        print(f"{comp_name} — {args.season} — Match Week {args.match_week}  [from --data-file]")
+        site_data = load_data_file(args.data_file)
+        site_season = str(site_data.get("season"))
+        site_week = int(site_data.get("week", -1))
+        if site_season != str(args.season) or site_week != args.match_week:
+            print(f"  ! WARNING: {args.data_file} contains MW{site_week} of {site_season}, "
+                  f"but you asked for MW{args.match_week} of {args.season} — using the "
+                  f"file's data anyway (it's the only source available in this mode), "
+                  f"but double-check this is the week you meant to chart.")
+        rows = rows_from_site_slices(site_data["latest"], min_count=args.min_count)
+        starters_count = sum(v for _, v in rows)
+        print(f"  starters (from data file): {starters_count}")
+
+    if rows is None and not args.no_site_api:
+        wp = WPClient(dry_run=True)  # reads only — used for both the site-API call and the fallback
         site_data = fetch_latest_from_site(wp, comp_name)
         if site_data is not None:
             site_season = str(site_data.get("season"))
@@ -416,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
                       f"computing directly instead)")
 
     if rows is None:
+        wp = WPClient(dry_run=True)  # reads only — direct computation, requires real network
         print(f"{comp_name} — {args.season} — Match Week {args.match_week}")
         matches = fetch_match_week(wp, comp_term, args.season, args.match_week)
         print(f"  matches found: {len(matches)}")
