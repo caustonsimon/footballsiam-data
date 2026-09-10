@@ -7,12 +7,25 @@ title lives on the Canva page itself, same pattern as the attendance chart).
     python src/nationality_chart_inset.py thai-league-1 20 --season 2025/2026
     python src/nationality_chart_inset.py thai-league-2 3 --min-count 3
 
-Data-fetching (fetch_match_week / collect_starters / fetch_nationalities /
-tally) is copied verbatim from nationality_chart.py — same WPClient-based
-WordPress lookups, same "Unknown" fallback bucket for blank nationality /
-missing wp_id, same grouping logic (group_small). Only `render()` differs:
-this produces the polished Canva-inset visual, not the plain white-background
-chart nationality_chart.py makes.
+Data source (2026-09-10 update): for Thai League 1, this script first tries
+the site's own JSON endpoint (`GET /wp-json/fs/v1/nationality-breakdown`),
+which returns the exact same starting-XI nationality counts the homepage's
+Nationality Breakdown widget renders (same function, same season pin, same
+starter-only filter — single source of truth, so future tweaks to that widget
+apply here automatically with zero extra work). This only satisfies a request
+for the *current* latest match week of the *current* season — if the
+requested `match_week`/`--season` don't match what the site currently reports
+as latest (e.g. a historical backfill, or Thai League 2, which the widget
+doesn't cover), it falls back to the original direct computation below
+unchanged. Pass --no-site-api to always skip the site and compute directly
+(useful for comparing the two paths, or if the endpoint is ever down).
+
+The direct-computation path (fetch_match_week / collect_starters /
+fetch_nationalities / tally) is copied verbatim from nationality_chart.py —
+same WPClient-based WordPress lookups, same "Unknown" fallback bucket for
+blank nationality / missing wp_id, same grouping logic (group_small). Only
+`render()` differs: this produces the polished Canva-inset visual, not the
+plain white-background chart nationality_chart.py makes.
 
 Style notes (locked in after a lot of back-and-forth on Matchweek 1 — see the
 Football Siam content pipeline chat if you need the reasoning):
@@ -37,7 +50,8 @@ Football Siam content pipeline chat if you need the reasoning):
     different (e.g. much more even), sanity-check the rendered legend still
     fits without overlap before shipping, and adjust LEGEND_FONTSIZE /
     axes fractions in render() if not — don't just ship an overflowing
-    legend.
+    legend. (Applies whichever data path filled `rows` — group_small() is
+    shared by both.)
   - Output aspect ratio (9.6x7.6in, i.e. 1440x1140px @ dpi150) does NOT
     exactly match the Canva placeholder box (980.51189337526 x
     862.4674084300458px, ratio ~1.1369). After inserting this PNG into the
@@ -117,6 +131,49 @@ def _wp_get(wp: WPClient, path: str, params: dict) -> list:
     if resp.status_code == 400 and "rest_post_invalid_page_number" in resp.text:
         return []
     return wp._json_or_raise(resp, f"GET {path}")
+
+
+def fetch_latest_from_site(wp: WPClient, comp_name: str) -> dict | None:
+    """Try the site's own nationality-breakdown endpoint first — it's the
+    exact same data (and same computation) the homepage widget renders, so
+    using it here means this chart can never silently drift from the
+    website. Returns the endpoint's JSON dict on success, or None on any
+    failure (network error, non-2xx, snippet not active yet, competition
+    not Thai League 1, or the endpoint reporting no data yet) — callers
+    should fall back to the direct WPClient computation below when this
+    returns None.
+
+    IMPORTANT: this goes through WPClient's own `_request` (the same call
+    fetch_match_week/fetch_nationalities use for wp/v2/*), not a bare
+    `requests.get()`. The site's SiteGround anti-bot layer has been observed
+    to 404 plain/generic HTTP clients on API-shaped URLs (confirmed while
+    building this — a browser session got real data on the exact same URL a
+    bare requests.get() 404'd on) — WPClient's session already carries
+    whatever headers/retry logic make the wp/v2/* calls below work reliably
+    against that anti-bot layer, so route this through it too rather than
+    reinventing that handling here.
+    """
+    if comp_name != "Thai League 1":
+        return None  # the widget/endpoint is Thai League 1 only
+    try:
+        data = _wp_get(wp, "fs/v1/nationality-breakdown", {})
+    except Exception as exc:
+        print(f"  (site API unavailable, falling back to direct computation: {exc})")
+        return None
+    if not isinstance(data, dict) or not data.get("available"):
+        return None
+    return data
+
+
+def rows_from_site_slices(slices: list[dict], min_count: int) -> list[tuple[str, int]]:
+    """Convert the site API's [{nat, cnt, pct, color}, ...] into this script's
+    own (label, count) rows via the same group_small() grouping used by the
+    direct-computation path, so the rendered chart is identical either way.
+    """
+    counts: Counter = Counter()
+    for s in slices:
+        counts[s["nat"]] = int(s["cnt"])
+    return group_small(counts, min_count=min_count)
 
 
 def fetch_match_week(wp: WPClient, comp_term: int, season: str, week: int) -> list[dict]:
@@ -333,36 +390,57 @@ def main(argv: list[str] | None = None) -> int:
                          "at this layout's font size; see module docstring)")
     ap.add_argument("--outputs", default=str(_ROOT / "outputs"),
                     help="output directory (default: ./outputs)")
+    ap.add_argument("--no-site-api", action="store_true",
+                    help="skip the site's JSON endpoint and always compute "
+                         "directly via WPClient (for debugging/comparison)")
     args = ap.parse_args(argv)
 
     comp_term, comp_name = COMPETITIONS[args.competition]
-    wp = WPClient(dry_run=True)  # reads only
+    wp = WPClient(dry_run=True)  # reads only — used for both the site-API call and the fallback
 
-    print(f"{comp_name} — {args.season} — Match Week {args.match_week}")
-    matches = fetch_match_week(wp, comp_term, args.season, args.match_week)
-    print(f"  matches found: {len(matches)}")
-    if not matches:
-        print("  nothing to chart - check the competition / week / --season")
-        return 1
+    rows: list[tuple[str, int]] | None = None
 
-    starter_wp_ids, unenriched = collect_starters(matches)
-    if not starter_wp_ids:
-        print("  no starters (none of these matches are enriched yet)")
-        return 1
-    unique = {w for w in starter_wp_ids if w}
-    no_wp = sum(1 for w in starter_wp_ids if w is None)
-    print(f"  starters: {len(starter_wp_ids)}  "
-          f"(unique players {len(unique)}, rows without wp_id {no_wp}, "
-          f"un-enriched matches skipped {unenriched})")
+    if not args.no_site_api:
+        site_data = fetch_latest_from_site(wp, comp_name)
+        if site_data is not None:
+            site_season = str(site_data.get("season"))
+            site_week = int(site_data.get("week", -1))
+            if site_season == str(args.season) and site_week == args.match_week:
+                print(f"{comp_name} — {args.season} — Match Week {args.match_week}  [via site API]")
+                rows = rows_from_site_slices(site_data["latest"], min_count=args.min_count)
+                starters_count = sum(v for _, v in rows)
+                print(f"  starters (from site): {starters_count}")
+            else:
+                print(f"  (site API reports MW{site_week} of {site_season} — "
+                      f"requested MW{args.match_week} of {args.season} differs, "
+                      f"computing directly instead)")
 
-    nat = fetch_nationalities(wp, unique)
-    counts = tally(starter_wp_ids, nat)
-    blank = counts.get("Unknown", 0)
-    if blank:
-        print(f"  Unknown bucket: {blank} "
-              f"(blank nationality or missing wp_id)")
+    if rows is None:
+        print(f"{comp_name} — {args.season} — Match Week {args.match_week}")
+        matches = fetch_match_week(wp, comp_term, args.season, args.match_week)
+        print(f"  matches found: {len(matches)}")
+        if not matches:
+            print("  nothing to chart - check the competition / week / --season")
+            return 1
 
-    rows = group_small(Counter(counts), min_count=args.min_count)
+        starter_wp_ids, unenriched = collect_starters(matches)
+        if not starter_wp_ids:
+            print("  no starters (none of these matches are enriched yet)")
+            return 1
+        unique = {w for w in starter_wp_ids if w}
+        no_wp = sum(1 for w in starter_wp_ids if w is None)
+        print(f"  starters: {len(starter_wp_ids)}  "
+              f"(unique players {len(unique)}, rows without wp_id {no_wp}, "
+              f"un-enriched matches skipped {unenriched})")
+
+        nat = fetch_nationalities(wp, unique)
+        counts = tally(starter_wp_ids, nat)
+        blank = counts.get("Unknown", 0)
+        if blank:
+            print(f"  Unknown bucket: {blank} "
+                  f"(blank nationality or missing wp_id)")
+
+        rows = group_small(Counter(counts), min_count=args.min_count)
 
     print("\n  nationality tally:")
     for k, v in rows:
