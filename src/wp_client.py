@@ -32,6 +32,7 @@ DEFAULT_BASE = "https://footballsiam.com/wp-json/"
 CPT_REST_BASE = "wp/v2/match"      # the `matches` CPT registers rest_base "match"
 CLUB_REST_BASE = "wp/v2/club"
 PLAYER_REST_BASE = "wp/v2/player"
+MEDIA_REST_BASE = "wp/v2/media"
 DEFAULT_TIMEOUT = 30
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 5
@@ -315,6 +316,51 @@ class WPClient:
             return {"_dry_run": True, "would_update": post_id, **body}
         resp = self._request("POST", f"{PLAYER_REST_BASE}/{post_id}", json=body)
         return self._json_or_raise(resp, f"POST {PLAYER_REST_BASE}/{post_id}")
+
+    def upload_media(
+        self,
+        file_path: str,
+        *,
+        filename: str | None = None,
+        title: str | None = None,
+        alt_text: str | None = None,
+    ) -> dict[str, Any]:
+        """Upload local file bytes straight to wp/v2/media and return the attachment.
+
+        Unlike the WordPress connector's "upload image from URL" ability, this
+        takes a file already sitting on disk (e.g. a chart PNG rendered locally)
+        and needs no public URL of its own first. Returns the attachment dict,
+        including `source_url` - the public URL other tools (e.g. Canva) can
+        then fetch it from. Honours dry_run.
+        """
+        import mimetypes
+
+        fname = filename or os.path.basename(file_path)
+        mime = mimetypes.guess_type(fname)[0] or "application/octet-stream"
+        if self.dry_run:
+            return {"_dry_run": True, "would_upload": file_path, "filename": fname}
+        with open(file_path, "rb") as fh:
+            data = fh.read()
+        headers = {
+            "Content-Disposition": f'attachment; filename="{fname}"',
+            "Content-Type": mime,
+        }
+        resp = self._request("POST", MEDIA_REST_BASE, data=data, headers=headers)
+        result = self._json_or_raise(resp, f"POST {MEDIA_REST_BASE}")
+
+        patch: dict[str, Any] = {}
+        if title:
+            patch["title"] = title
+        if alt_text:
+            patch["alt_text"] = alt_text
+        if patch:
+            patch_resp = self._request(
+                "POST", f"{MEDIA_REST_BASE}/{result['id']}", json=patch
+            )
+            result = self._json_or_raise(
+                patch_resp, f"POST {MEDIA_REST_BASE}/{result['id']}"
+            )
+        return result
 
     # -- connectivity check ----------------------------------------
 
