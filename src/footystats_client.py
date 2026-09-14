@@ -95,6 +95,34 @@ class FootyStatsClient:
             page += 1
         return out
 
+    def get_league_players(self, season_id: int) -> list[dict[str, Any]]:
+        """Every player row for a FootyStats season_id (GET /league-players).
+
+        NOT YET VERIFIED against a live response - added for the T2 squad
+        import (2026-09-14) without network access to check the real field
+        names on each row (player id / club id). Mirrors get_league_matches's
+        pagination shape (pager.max_page), which IS verified elsewhere in
+        this client, on the assumption /league-players follows the same
+        FootyStats pagination convention. If the first dry run of
+        import_t2_squads.py shows 0 usable rows, check here first - the
+        endpoint name or the pager field may not be what's guessed above.
+        """
+        page = 1
+        out: list[dict[str, Any]] = []
+        while True:
+            payload = self._get(
+                "league-players", {"season_id": season_id, "page": page}
+            )
+            data = payload.get("data") or []
+            out.extend(data)
+
+            pager = payload.get("pager") or {}
+            max_page = int(pager.get("max_page", 1) or 1)
+            if page >= max_page:
+                break
+            page += 1
+        return out
+
     def get_match(self, match_id: int) -> dict[str, Any]:
         """Full detail for one match (GET /match?match_id=...).
 

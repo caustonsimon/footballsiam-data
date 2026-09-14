@@ -1,0 +1,74 @@
+name: t2-squad-import
+
+# One-off (re-runnable) full Thai League 2 squad import - adds `player`
+# posts for players FootyStats' full league list knows about but who have
+# never appeared in an enriched match yet (see src/import_t2_squads.py for
+# why that's a real gap, and the endpoint-shape caveat).
+#
+# Manual dispatch only, and DRY RUN (report only) unless run with
+# check=false and live=true. Always run with check=true first after any
+# change to this script - it costs nothing and confirms the FootyStats
+# response shape before anything else runs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      check:
+        description: 'Check mode: print raw API shape only, no other action, no writes'
+        type: boolean
+        default: true
+      live:
+        description: 'Write changes (unchecked = dry run / report only). Ignored if check=true.'
+        type: boolean
+        default: false
+      limit:
+        description: 'Optional cap on number of new players to process (blank = no limit)'
+        type: string
+        default: ''
+
+concurrency:
+  group: t2-squad-import
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  t2-squad-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run T2 squad import
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          INPUT_CHECK: ${{ inputs.check }}
+          INPUT_LIVE: ${{ inputs.live }}
+          INPUT_LIMIT: ${{ inputs.limit }}
+        run: |
+          set -euo pipefail
+          if [ "${INPUT_CHECK:-true}" = "true" ]; then
+            echo "Running: import_t2_squads.py --check"
+            python src/import_t2_squads.py --check
+          else
+            ARGS=()
+            if [ "${INPUT_LIVE:-false}" = "true" ]; then
+              ARGS+=(--live)
+            fi
+            if [ -n "${INPUT_LIMIT:-}" ]; then
+              ARGS+=(--limit "${INPUT_LIMIT}")
+            fi
+            echo "Running: import_t2_squads.py ${ARGS[*]}"
+            python src/import_t2_squads.py "${ARGS[@]}"
+          fi
