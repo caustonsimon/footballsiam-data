@@ -115,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     skipped_existing = 0
     skipped_untracked_club = 0
     skipped_no_id = 0
+    skipped_no_name = 0
     errors = 0
 
     for row in rows:
@@ -124,6 +125,13 @@ def main(argv: list[str] | None = None) -> int:
         club_fid = _first_present(row, CLUB_ID_KEYS)
         if fs_pid is None:
             skipped_no_id += 1
+            continue
+
+        name = (row.get("full_name") or row.get("known_as") or "").strip()
+        if not name:
+            log.info("  fs_pid=%s: skipping - no name on file (likely a dead/junk "
+                     "FootyStats ID, e.g. the known 42458)", fs_pid)
+            skipped_no_name += 1
             continue
 
         club_wp_id = CLUB_MAP_TL2.get(int(club_fid)) if club_fid is not None else None
@@ -170,9 +178,9 @@ def main(argv: list[str] | None = None) -> int:
     log.info("=== T2 squad import summary (%s) ===", "LIVE" if args.live else "DRY RUN")
     log.info(
         "considered=%d created=%d skipped_existing=%d "
-        "skipped_untracked_club=%d skipped_no_id=%d errors=%d",
+        "skipped_untracked_club=%d skipped_no_id=%d skipped_no_name=%d errors=%d",
         considered, created, skipped_existing, skipped_untracked_club,
-        skipped_no_id, errors,
+        skipped_no_id, skipped_no_name, errors,
     )
     return 1 if errors else 0
 
