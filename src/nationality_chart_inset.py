@@ -188,13 +188,27 @@ def load_data_file(path: Path) -> dict:
     """Load a JSON file saved verbatim from the site's nationality-breakdown
     endpoint (see --data-file in the module docstring — this is how the
     weekly automated run gets data in, since it can't reach the network
-    itself). Same shape as fetch_latest_from_site()'s return value:
-    {"available": bool, "season": str, "week": int, "latest": [...], "overall": [...]}.
-    Raises on missing file / malformed JSON / available=false so the caller
-    fails loudly rather than silently charting nothing.
+    itself).
+
+    2026-09-12: the site switched to the v6 route (Snippet 103, "FS
+    Nationality Breakdown v6 (FIX)"), which fixes an undercount bug in the
+    old route but no longer includes a top-level "available" key in its
+    shape: {"season": str, "week": int|str|None, "latest": [...], "overall": [...]}.
+    So "available" is treated as absent-by-default now: data counts as
+    available when "week" is non-null and at least one of "latest"/"overall"
+    is non-empty. The old {"available": bool, ...} shape (if ever seen again)
+    is still honoured for backward compatibility.
+    Raises on missing file / malformed JSON / not-yet-available data so the
+    caller fails loudly rather than silently charting nothing.
     """
     data = json.loads(path.read_text())
-    if not isinstance(data, dict) or not data.get("available"):
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} does not contain available nationality-breakdown data")
+    if "available" in data:
+        is_available = bool(data.get("available"))
+    else:
+        is_available = bool(data.get("week")) and bool(data.get("latest") or data.get("overall"))
+    if not is_available:
         raise ValueError(f"{path} does not contain available nationality-breakdown data")
     return data
 
