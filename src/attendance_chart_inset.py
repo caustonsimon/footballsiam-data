@@ -85,7 +85,6 @@ the design first in case a future placeholder box size differs slightly).
 from __future__ import annotations
 
 import argparse
-import sys
 from datetime import date
 from pathlib import Path
 
