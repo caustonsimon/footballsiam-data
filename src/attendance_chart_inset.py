@@ -122,34 +122,40 @@ GRID_GREY = "#d9dede"
 # raw API team name (stripped, uppercased for lookup) -> (chart code, clean
 # display name for the season-to-date table). See module docstring.
 TEAM_INFO = {
-    "AYUTTHAYA UNITED": ("AYUTD", "Ayutthaya United"),
-    "BG PATHUM UNITED": ("BGPU", "Pathum United"),
-    "TRUE BANGKOK UNITED": ("BUFC", "Bangkok United"),
-    "BURIRAM UNITED": ("BRUTD", "Buriram United"),
-    "SINGHA CHIANGRAI UNITED": ("CRUTD", "Chiangrai United"),
-    "CHONBURI FC": ("CHON", "Chonburi"),
-    "LAMPHUN WARRIORS": ("LNWR", "Lamphun Warrior"),
-    "PATTANI FC": ("PTFC", "Pattani"),
-    "PORT FC": ("PORT", "Port"),
-    "PT PRACHUAP FC": ("PRFC", "Prachuap"),
-    "RASISALAI UNITED": ("RSU", "Rasi Salai United"),
-    "RATCHABURI FC": ("RFC", "Ratchaburi"),
-    "RAYONG FC": ("RYFC", "Rayong"),
-    "SISAKET UNITED": ("SISU", "Sisaket United"),
-    "SUKHOTHAI FC": ("SKTFC", "Sukhothai"),
-    "UTHAI THANI FC": ("UTFC", "Uthai Thani"),
+    # raw API name -> (table display name, chart-axis short name)
+    "AYUTTHAYA UNITED": ("Ayutthaya United", "Ayutthaya"),
+    "BG PATHUM UNITED": ("Pathum United", "Pathum Utd"),
+    "TRUE BANGKOK UNITED": ("Bangkok United", "Bangkok Utd"),
+    "BURIRAM UNITED": ("Buriram United", "Buriram"),
+    "SINGHA CHIANGRAI UNITED": ("Chiangrai United", "Chiangrai"),
+    "CHONBURI FC": ("Chonburi", "Chonburi"),
+    "LAMPHUN WARRIORS": ("Lamphun Warrior", "Lamphun"),
+    "PATTANI FC": ("Pattani", "Pattani"),
+    "PORT FC": ("Port", "Port"),
+    "PT PRACHUAP FC": ("Prachuap", "Prachuap"),
+    "RASISALAI UNITED": ("Rasi Salai United", "Rasi Salai"),
+    "RATCHABURI FC": ("Ratchaburi", "Ratchaburi"),
+    "RAYONG FC": ("Rayong", "Rayong"),
+    "SISAKET UNITED": ("Sisaket United", "Sisaket"),
+    "SUKHOTHAI FC": ("Sukhothai", "Sukhothai"),
+    "UTHAI THANI FC": ("Uthai Thani", "Uthai Thani"),
 }
 
 
 def team_info(raw_name: str) -> tuple[str, str]:
+    """(table display name, chart-axis short name) for a raw API team name.
+    2026-09-16: axis labels used to be 4-5 letter codes (BRUTD v CRUTD) —
+    Simon couldn't read them on the chart, so both the table and the axis
+    now use real (if shortened) club names instead. See module docstring.
+    """
     key = (raw_name or "").strip().upper()
     if key in TEAM_INFO:
         return TEAM_INFO[key]
-    code = "".join(w[0] for w in key.split() if w)[:5].upper()
     display = (raw_name or "Unknown").strip().title()
-    print(f"  ! no TEAM_INFO entry for {raw_name!r} — auto-generated code "
-          f"{code!r} / display {display!r}, add it to TEAM_INFO if this looks wrong")
-    return code, display
+    print(f"  ! no TEAM_INFO entry for {raw_name!r} — using {display!r} as-is "
+          f"for both table and axis, add a shortened form to TEAM_INFO if "
+          f"this is too long to read on the chart")
+    return display, display
 
 
 for _f in [
@@ -265,7 +271,7 @@ def season_to_date(session: requests.Session, tournament_id: int, upto_week: int
         att = m.get("attendance_number")
         if att is None:
             continue
-        _, display = team_info(m.get("home_team_name_en", ""))
+        display, _ = team_info(m.get("home_team_name_en", ""))
         totals[display] = totals.get(display, 0) + int(att)
         games[display] = games.get(display, 0) + 1
     rows = [(club, totals[club], games[club]) for club in totals]
@@ -320,11 +326,11 @@ def render(
     fig.patches.append(card)
 
     # ---- top: line chart -------------------------------------------------
-    ax = fig.add_axes([0.105, 0.485, 0.85, 0.44])
+    ax = fig.add_axes([0.105, 0.70, 0.85, 0.225])
     xs = list(range(len(fixtures)))
     ys = [f["attendance_number"] for f in fixtures]
     labels = [
-        f"{team_info(f['home_team_name_en'])[0]} v {team_info(f['away_team_name_en'])[0]}"
+        f"{team_info(f['home_team_name_en'])[1]} v {team_info(f['away_team_name_en'])[1]}"
         for f in fixtures
     ]
 
@@ -354,16 +360,56 @@ def render(
         )
 
     ax.set_xticks(xs)
-    ax.set_xticklabels(labels, rotation=15, ha="right", fontsize=12.5,
-                        fontweight="bold", color="#2c3b33", rotation_mode="anchor")
+    ax.set_xticklabels([])  # drawn manually below — see comment
     ax.set_ylabel("Attendance", fontsize=14, fontweight="bold", color="#4a5a52",
                    labelpad=10)
+    # IMPORTANT — two separate, non-obvious rendering bugs were found here
+    # (2026-09-16, matplotlib 3.10.9, Agg backend) while making these axis
+    # labels readable (they used to be short codes like "BRUTD v CRUTD").
+    # Both silently DROP THE FIRST CHARACTER of a long, steeply-rotated
+    # label — not a clip/paint-over issue, verified down to the SVG glyph
+    # level (the <use> list for the Text omits the first glyph entirely).
+    # Neither is fixed by .set_clip_on(False).
+    #   1. rotation_mode="anchor" on this ax.text() call triggers it
+    #      whenever the figure has a second Axes anywhere in it (this
+    #      script always does — ax_t, the table below). Fix: don't pass
+    #      rotation_mode="anchor" here; default rotation mode has no such
+    #      bug and still anchors acceptably at ha="right" for this angle.
+    #   2. Independently of (1), it also triggers whenever a label's
+    #      rotated extent comes close to / overlaps another Axes' patch
+    #      elsewhere in the figure — specifically, ax_t's green header
+    #      Rectangle (added below) sits right at ax_t's top edge, which
+    #      is immediately below where these labels hang. Fix: keep enough
+    #      vertical gap between `ax`'s bottom (currently 0.70) and ax_t's
+    #      top (0.435) that even the longest label (~24 chars at 68°) does
+    #      not reach down into ax_t's territory. Bisected empirically by
+    #      re-adding pieces of the figure one at a time until the bug
+    #      reproduced/disappeared — don't shrink this gap without
+    #      re-testing a long label ("Ratchaburi v Bangkok Utd") at high
+    #      zoom; a quick look at normal size will not catch 1-2 missing
+    #      characters.
+    for _x, _label in zip(xs, labels):
+        ax.text(
+            _x, -0.02, _label, transform=ax.get_xaxis_transform(),
+            rotation=68, ha="right", va="top",
+            fontsize=12.5, fontweight="bold", color="#2c3b33", clip_on=False,
+        )
 
     # ---- bottom: season-to-date table -------------------------------------
     ax_t = fig.add_axes([0.0, 0.0, 1.0, 0.435])
     ax_t.set_xlim(0, 1)
     ax_t.set_ylim(0, 1)
     ax_t.axis("off")
+    # ax_t's own background patch is opaque by default and gets painted
+    # AFTER ax (it's added later) — that silently covered the bottom of any
+    # x-axis label in `ax` long/steep enough to reach down into ax_t's
+    # figure-space (0 to 0.435), which is exactly what a long rotated
+    # fixture label like "Ratchaburi v Bangkok Utd" does. Cost real time to
+    # track down (2026-09-16) because .set_clip_on(False) on the label text
+    # itself does nothing for this — the label was never being clipped, it
+    # was being drawn OVER. Making this patch transparent fixes it; the
+    # white card behind everything already provides the background.
+    ax_t.patch.set_alpha(0)
 
     HEADER_H = 0.155
     SUBHEAD_H = 0.10
