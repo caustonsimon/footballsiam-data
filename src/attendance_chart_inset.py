@@ -124,14 +124,14 @@ GRID_GREY = "#d9dede"
 # display name for the season-to-date table). See module docstring.
 TEAM_INFO = {
     "AYUTTHAYA UNITED": ("AYUTD", "Ayutthaya United"),
-    "BG PATHUM UNITED": ("BGPU", "BG Pathum United"),
+    "BG PATHUM UNITED": ("BGPU", "Pathum United"),
     "TRUE BANGKOK UNITED": ("BUFC", "Bangkok United"),
     "BURIRAM UNITED": ("BRUTD", "Buriram United"),
     "SINGHA CHIANGRAI UNITED": ("CRUTD", "Chiangrai United"),
     "CHONBURI FC": ("CHON", "Chonburi"),
     "LAMPHUN WARRIORS": ("LNWR", "Lamphun Warrior"),
     "PATTANI FC": ("PTFC", "Pattani"),
-    "PORT FC": ("PORT", "Port FC"),
+    "PORT FC": ("PORT", "Port"),
     "PT PRACHUAP FC": ("PRFC", "Prachuap"),
     "RASISALAI UNITED": ("RSU", "Rasi Salai United"),
     "RATCHABURI FC": ("RFC", "Ratchaburi"),
