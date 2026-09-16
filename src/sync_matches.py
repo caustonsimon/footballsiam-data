@@ -116,13 +116,77 @@ LEAGUES: list[dict[str, Any]] = [
         "club_map": CLUB_MAP_TL1,
         # taxonomy REST field -> term ids (built-in category taxonomy is "categories")
         "taxonomies": {"competition": [116], "categories": [204], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": True,
     },
     {
         "name": "Thai League 2",
         "season_id": 17896,
         "club_map": CLUB_MAP_TL2,
         "taxonomies": {"competition": [117], "categories": [209], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": True,
     },
+    # -- Added 2026-09-15: fixtures/results only, no dedicated club or player
+    # pages for these. club_map is the full merged CLUB_MAP (not a per-league
+    # slice) so a Thai club already tracked in T1/T2 (e.g. a side playing in
+    # the AFC competitions) still resolves to its real club page; everyone
+    # else (every T3 club, every foreign AFC opponent) falls back to a
+    # plain-text name in build_create_payload() instead of a KeyError.
+    {
+        "name": "AFC Champions League Elite",
+        "season_id": 17381,          # FootyStats: "Asia AFC Champions League"
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [120], "categories": [173], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    {
+        "name": "AFC Champions League Two",
+        "season_id": 17205,          # FootyStats: "Asia AFC Cup"
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [121], "categories": [177], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    {
+        "name": "Thai League 3 North",
+        "season_id": 17840,
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [127], "categories": [128], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    {
+        "name": "Thai League 3 North East",
+        "season_id": 17883,
+        "club_map": CLUB_MAP,
+        # NB: "North East" has a duplicate competition term in WP (137 and
+        # 154). The live fixtures filter dropdown uses slug t3_north_east,
+        # which is term 137 -- 154 (slug t3_northeast, no underscore) looks
+        # orphaned/unused. Using 137.
+        "taxonomies": {"competition": [137], "categories": [138], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    {
+        "name": "Thai League 3 South",
+        "season_id": 17884,
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [131], "categories": [132], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    {
+        "name": "Thai League 3 East",
+        "season_id": 17885,
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [129], "categories": [130], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    {
+        "name": "Thai League 3 West",
+        "season_id": 17886,
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [139], "categories": [140], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    # Thai League 3 Central deliberately omitted -- FootyStats has no
+    # current-season data for it (confirmed 2026-09-15). WP taxonomy terms
+    # already exist (competition 133, category 134) for whenever it's ready.
 ]
 
 log = logging.getLogger("sync_matches")
@@ -162,22 +226,59 @@ def bangkok_date_time(unix_ts: int) -> tuple[str, str]:
 def build_create_payload(
     match: dict[str, Any], league: dict[str, Any], wp: WPClient
 ) -> dict[str, Any]:
-    home_wp = league["club_map"][match["homeID"]]
-    away_wp = league["club_map"][match["awayID"]]
+    # .get(), not [] -- for a require_full_club_map=False league (AFC CL,
+    # T3) being unmapped is the expected case, not an error. sync() already
+    # guarantees both sides ARE mapped for require_full_club_map=True
+    # leagues before this is ever called, so .get() is safe there too.
+    home_wp = league["club_map"].get(match["homeID"])
+    away_wp = league["club_map"].get(match["awayID"])
     ymd, kickoff = bangkok_date_time(match["date_unix"])
-    home_title = wp.get_club_title(home_wp) or str(match.get("home_name", "")).strip()
-    away_title = wp.get_club_title(away_wp) or str(match.get("away_name", "")).strip()
+    home_title = (
+        (wp.get_club_title(home_wp) if home_wp else None)
+        or str(match.get("home_name", "")).strip()
+    )
+    away_title = (
+        (wp.get_club_title(away_wp) if away_wp else None)
+        or str(match.get("away_name", "")).strip()
+    )
 
     # All meta is registered as `string` on the site (see README) and the existing
     # data is stored as strings, so every value goes out as a string.
+    # v3 fix (2026-09-15): a match being CREATED for the first time can
+    # already be finished (status == "complete") -- this happens whenever a
+    # whole season's fixture list is bulk-imported partway through the
+    # season, exactly what the AFC CL / T3 rollout did. The existing-match
+    # UPDATE path a few dozen lines down already backfills a real score only
+    # when status == "complete"; creation needs the identical check, or
+    # every already-played match goes in blank and sits in Fixtures forever
+    # until some later sync happens to touch it via the update path.
+    status = str(match.get("status", "")).lower()
+    if status == "complete":
+        home_score = str(int(match.get("homeGoalCount", 0) or 0))
+        away_score = str(int(match.get("awayGoalCount", 0) or 0))
+    else:
+        home_score = ""
+        away_score = ""
+
     payload: dict[str, Any] = {
         "title": f"{home_title} vs {away_title}",
         "status": "publish",
         "meta": {
-            "home_team": str(home_wp),
-            "away_team": str(away_wp),
-            "home_score": "",
-            "away_score": "",
+            "home_team": str(home_wp) if home_wp else "",
+            "away_team": str(away_wp) if away_wp else "",
+            # Plain-text fallback for a side with no WP club post (every T3
+            # club, every foreign AFC opponent). NOTE: these two meta keys
+            # are brand new -- they need registering for REST on the
+            # `matches` CPT (register_post_meta or a new ACF field) before
+            # they'll actually persist, and the front-end fixtures/results
+            # display needs a small patch to read them when home_team/
+            # away_team come back empty. Until both of those land, these
+            # matches will still be created correctly here, just render
+            # with a blank team name on the site.
+            "home_team_name": home_title,
+            "away_team_name": away_title,
+            "home_score": home_score,
+            "away_score": away_score,
             "date": ymd,                       # YYYYMMDD - required by fs_get_matches()
             "kick_off_time": kickoff,          # H:i, 24h, Asia/Bangkok
             "match_week": str(match_week_of(match)),
@@ -217,6 +318,7 @@ def sync(
         "skipped_recorded": 0,
         "skipped_incomplete": 0,
         "unmapped_team": 0,
+        "text_only_team": 0,
         "enriched": 0,
         "enrich_skipped": 0,
         "players_created": 0,
@@ -264,14 +366,22 @@ def sync(
             fs_id = int(match["id"])
             home_id, away_id = match.get("homeID"), match.get("awayID")
 
-            if home_id not in league["club_map"] or away_id not in league["club_map"]:
-                stats["unmapped_team"] += 1
-                log.warning(
-                    "  UNMAPPED team in match %s: homeID=%s awayID=%s (%s vs %s) - skipped, not guessing",
-                    fs_id, home_id, away_id,
-                    match.get("home_name"), match.get("away_name"),
-                )
-                continue
+            if league.get("require_full_club_map", True):
+                if home_id not in league["club_map"] or away_id not in league["club_map"]:
+                    stats["unmapped_team"] += 1
+                    log.warning(
+                        "  UNMAPPED team in match %s: homeID=%s awayID=%s (%s vs %s) - skipped, not guessing",
+                        fs_id, home_id, away_id,
+                        match.get("home_name"), match.get("away_name"),
+                    )
+                    continue
+            else:
+                # Being unmapped is expected here (T3 / foreign AFC clubs) --
+                # build_create_payload() falls back to a plain-text name for
+                # whichever side has no WP club post. Just count it so the
+                # summary shows how many came through text-only.
+                if home_id not in league["club_map"] or away_id not in league["club_map"]:
+                    stats["text_only_team"] += 1
 
             existing = index.get(fs_id)
             status = str(match.get("status", "")).lower()
@@ -549,6 +659,7 @@ def main(argv: list[str] | None = None) -> int:
     log.info("  skipped (has score)    : %d", stats["skipped_recorded"])
     log.info("  skipped (not complete) : %d", stats["skipped_incomplete"])
     log.info("  unmapped team (skip)   : %d", stats["unmapped_team"])
+    log.info("  text-only team (no page): %d", stats["text_only_team"])
     log.info("  errors                 : %d", stats["errors"])
     log.info("---------------------------------------------")
 
