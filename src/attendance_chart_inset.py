@@ -3,58 +3,71 @@
 "Attendance" post inset (white rounded card, no title/header — the title
 lives on the Canva page itself: "Attendances" / "thai League 1" / "Match
 week NN  2026/27"). Same overall pattern as src/nationality_chart_inset.py
-(transparent figure, house colours, matplotlib, output to outputs/), but
-unlike that script this one's card is SOLID WHITE, not green — see the
-nationality script's docstring for why (locked in on Matchweek 1 feedback).
+(transparent figure, house colours, matplotlib, output to outputs/).
 
     python src/attendance_chart_inset.py thai-league-1 2
-    python src/attendance_chart_inset.py thai-league-1 2 --season 2026/2027
 
 Data source
 -----------
-Attendance is NOT synced to WordPress (checked 2026-09-16: `wp/v2/match`
-meta has a `stadium` field but no `attendance` field, and the base64
-`raw_match_data` blob only carries `player_stats`/`match_events` — no
-attendance either). The only source for it is the FootyStats API directly
-(`league-matches`, field `attendance`, -1 when not yet reported), the same
-API sync_matches.py pulls from for the initial WP import.
+2026-09-16, v2: switched from the FootyStats API to the OFFICIAL Thai
+League website's own public API (competition.tl.prod.c0d1um.io — the
+backend behind thaileague.co.th's Results pages). Reasoning: FootyStats
+had attendance for only 4 of Matchweek 2's 8 fixtures five days after
+kickoff (the other 4 stuck at -1 = "not yet reported"), while the official
+site had all 8 matches' attendance figures available immediately — it's
+the venues reporting straight to the league, not a third-party aggregator
+waiting on a feed. Cross-checked: every figure this API gives for the 4
+matches FootyStats DID have matched FootyStats exactly, and Matchweek 1's
+full set matches the already-published MW1 chart exactly too. So this is
+strictly better: faster AND cross-validated as accurate. FootyStats is no
+longer used by this script at all.
 
-IMPORTANT — this is the opposite situation from nationality_chart_inset.py's
---data-file requirement: footballsiam.com itself is unreachable from a
-Claude-driven device_bash shell (SiteGround's anti-bot layer), but
-api.football-data-api.com is NOT behind that block — a plain
-FootyStatsClient() call works fine from device_bash (confirmed 2026-09-16:
-curl to api.football-data-api.com and google.com both returned real HTTP
-200s from that shell, only footballsiam.com itself is challenged). So this
-script talks to FootyStats directly over the network by default, no
---data-file dance needed. --data-file is still offered below as an escape
-hatch (a JSON list of raw FootyStats match objects, i.e. the `data` array
-of a `league-matches` response for the relevant season_id) in case that
-ever changes or you want to test against a saved snapshot.
+This API is not documented anywhere (found by opening thaileague.co.th's
+Results page in a real browser and reading window.performance's resource
+list for XHR calls — there is no public API doc). It needs no API key and
+works fine over the network from a device_bash shell (confirmed
+2026-09-16, same as api.football-data-api.com — it's specifically
+footballsiam.com itself that device_bash can't reach, not FootyStats/Thai
+League). Endpoints used, all under
+https://competition.tl.prod.c0d1um.io/thaileague/api/ :
+  - tournament-public/?latest_activated_season=True&show_in_public_website=True
+      -> current season's tournaments incl. Thai League 1/2's id (`tournament`
+         below) and name_en (e.g. "BYD SEALION 6 LEAGUE I 2026/27"). This is
+         re-resolved every run instead of hardcoding an id, since (like
+         FootyStats' season_id) it changes every season — but unlike
+         FootyStats there's no need to hunt down and hardcode a new number
+         each year, it's just a name-match away.
+  - matchday-dropdown-public/?tournament=<id>&stage=&start_date__lte=<today>
+      -> maps a human match week number ("name": "1", "2", ...) to the
+         internal match_day id these endpoints actually key on. Filtered to
+         start_date__lte=today, so a week that hasn't started yet won't
+         resolve — that's the signal this script uses for "not played yet".
+  - match-day-match-public/?tournament=<id>&match_day=<id>&only_valid_match=true&page=1
+      -> every scheduled fixture for one match week, regardless of status
+         (omit match_day to page through the WHOLE season instead, used for
+         the season-to-date table). Each match has `attendance_number`
+         (None until reported — in practice this API has it the moment the
+         match is marked played, no lag observed so far), `home_team_name_en`
+         / `away_team_name_en` (inconsistent casing/branding straight from
+         the source — see TEAM_INFO below for the cleanup), `match_day_name`
+         (the human week number as a string), and `match_status` (an int
+         code; 2 = finished, observed for every MW1/MW2 match so far — not
+         reverse-engineered further than that).
+  Paginated DRF-style ({count, next, previous, results}) — fetch_all() below
+  follows `next` until exhausted, since a full season won't fit on one page.
 
-Attendance data lag: FootyStats does not always have every match's
-attendance in within a day or two of kickoff — on 2026-09-16, Matchweek 2
-(played 2026-09-11 to 09-13) still had only 4 of 8 matches reporting
-attendance (the other 4 showed -1), even though Matchweek 1 (played five
-days earlier, one week prior) had gone on to fill in cleanly by the time it
-was charted. This script does NOT wait or retry for that — it charts
-whatever has a non-negative attendance value *right now* and prints a loud
-warning listing which fixtures are still missing, so the calling routine
-can decide whether to post a partial chart or hold off. Never silently
-publish a chart with fewer than the full slate of fixtures without knowing
-why — check the printed warning first.
-
-Team abbreviations (TEAM_ABBR below) are a hand-maintained lookup, not
-derived from any WordPress/FootyStats field (neither exposes one). Built
-2026-09-16 from the 16 Thai League 1 2026/27 club names FootyStats reports
-and cross-checked against the abbreviations visible in the Matchweek 1
-Canva design (DAHUrrqKYMY) — e.g. "Bangkok Glass" shows as BGPU because
-Football Siam refers to the club as "BG Pathum United" elsewhere (see the
-Matchweek 2 Team of the Week Buffer post). If a new club is promoted into
-the league, add it to TEAM_ABBR — unmapped names fall back to an
-auto-generated code (first letters of each word, uppercased, max 5 chars)
-so the script never crashes, but check the output for anything that looks
-wrong before shipping.
+TEAM_INFO (below) maps the API's raw home/away team name strings (matched
+case-insensitively, stripped) to a short chart-axis code AND a clean
+display name for the season-to-date table — the raw strings are a messy
+mix of ALL CAPS ("RASISALAI UNITED"), sponsor-prefixed ("PT Prachuap FC",
+"True Bangkok United", "Singha Chiangrai United") and plain names
+("Sukhothai FC"), not fit to print directly. Built 2026-09-16 from the 16
+Thai League 1 2026/27 club names this API returns across Matchweeks 1-2,
+codes cross-checked against the abbreviations visible in the Matchweek 1
+Canva design (DAHUrrqKYMY). If a new club shows up (promotion, or Thai
+League 2), add it here — unmapped names fall back to an auto-generated
+code and a title-cased raw name so the script never crashes, but check the
+output before shipping.
 
 Canva placeholder box (read from DAHUrrqKYMY 2026-09-16): the image rect
 element is 980.51189337526 x 862.4674084300458px (locator id
@@ -72,8 +85,8 @@ the design first in case a future placeholder box size differs slightly).
 from __future__ import annotations
 
 import argparse
-import json
 import sys
+from datetime import date
 from pathlib import Path
 
 import matplotlib
@@ -83,18 +96,21 @@ import matplotlib.font_manager as fm  # noqa: E402
 import matplotlib.patheffects as pe  # noqa: E402
 import matplotlib.ticker as mticker  # noqa: E402
 from matplotlib.patches import FancyBboxPatch, Rectangle  # noqa: E402
+import requests  # noqa: E402
 
 _ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_ROOT / "src"))
-from sync_matches import _load_dotenv  # noqa: E402
-_load_dotenv(_ROOT / ".env")
-from footystats_client import FootyStatsClient, FootyStatsError  # noqa: E402
 
-# competition slug -> (FootyStats season_id, display name) — season_ids
-# copied from sync_matches.py's LEAGUES table (Thai League 1 / 2 rows).
+API_BASE = "https://competition.tl.prod.c0d1um.io/thaileague/api/"
+USER_AGENT = "footballsiam-content/1.0 (+https://github.com/caustonsimon/footballsiam-data)"
+
+# competition slug -> a distinctive, non-overlapping substring to find in a
+# tournament's name_en from tournament-public (see module docstring). Must
+# not be a substring of the OTHER competition's name — "LEAGUE I " (with the
+# trailing space) does not match "...LEAGUE II 2026/27" because the next
+# character there is a second "I", not a space.
 COMPETITIONS = {
-    "thai-league-1": (17367, "Thai League 1"),
-    "thai-league-2": (17896, "Thai League 2"),
+    "thai-league-1": ("LEAGUE I ", "Thai League 1"),
+    "thai-league-2": ("LEAGUE II ", "Thai League 2"),
 }
 
 GREEN = "#004d25"
@@ -104,36 +120,37 @@ DARK_TEXT = "#12261b"
 ROW_ALT = "#f2f6f3"     # faint green-grey banding for alternating table rows
 GRID_GREY = "#d9dede"
 
-# hand-maintained team-name -> short code lookup (see module docstring).
-TEAM_ABBR = {
-    "Ayutthaya United": "AYUTD",
-    "Bangkok Glass": "BGPU",       # a.k.a. BG Pathum United
-    "Bangkok United": "BUFC",
-    "Buriram United": "BRUTD",
-    "Chiangrai United": "CRUTD",
-    "Chonburi": "CHON",
-    "Lamphun Warrior": "LNWR",
-    "Lamphun Warriors": "LNWR",
-    "Pattani": "PTFC",
-    "Port FC": "PORT",
-    "Prachuap": "PRFC",
-    "Rasi Salai United": "RSU",
-    "Rasisalai United": "RSU",
-    "Ratchaburi": "RFC",
-    "Rayong": "RYFC",
-    "Sisaket United": "SISU",
-    "Sukhothai": "SKTFC",
-    "Uthai Thani": "UTFC",
+# raw API team name (stripped, uppercased for lookup) -> (chart code, clean
+# display name for the season-to-date table). See module docstring.
+TEAM_INFO = {
+    "AYUTTHAYA UNITED": ("AYUTD", "Ayutthaya United"),
+    "BG PATHUM UNITED": ("BGPU", "BG Pathum United"),
+    "TRUE BANGKOK UNITED": ("BUFC", "Bangkok United"),
+    "BURIRAM UNITED": ("BRUTD", "Buriram United"),
+    "SINGHA CHIANGRAI UNITED": ("CRUTD", "Chiangrai United"),
+    "CHONBURI FC": ("CHON", "Chonburi"),
+    "LAMPHUN WARRIORS": ("LNWR", "Lamphun Warrior"),
+    "PATTANI FC": ("PTFC", "Pattani"),
+    "PORT FC": ("PORT", "Port FC"),
+    "PT PRACHUAP FC": ("PRFC", "Prachuap"),
+    "RASISALAI UNITED": ("RSU", "Rasi Salai United"),
+    "RATCHABURI FC": ("RFC", "Ratchaburi"),
+    "RAYONG FC": ("RYFC", "Rayong"),
+    "SISAKET UNITED": ("SISU", "Sisaket United"),
+    "SUKHOTHAI FC": ("SKTFC", "Sukhothai"),
+    "UTHAI THANI FC": ("UTFC", "Uthai Thani"),
 }
 
 
-def abbr(name: str) -> str:
-    if name in TEAM_ABBR:
-        return TEAM_ABBR[name]
-    code = "".join(w[0] for w in name.split() if w)[:5].upper()
-    print(f"  ! no TEAM_ABBR entry for {name!r} — auto-generated code {code!r}, "
-          f"add it to TEAM_ABBR if this looks wrong")
-    return code
+def team_info(raw_name: str) -> tuple[str, str]:
+    key = (raw_name or "").strip().upper()
+    if key in TEAM_INFO:
+        return TEAM_INFO[key]
+    code = "".join(w[0] for w in key.split() if w)[:5].upper()
+    display = (raw_name or "Unknown").strip().title()
+    print(f"  ! no TEAM_INFO entry for {raw_name!r} — auto-generated code "
+          f"{code!r} / display {display!r}, add it to TEAM_INFO if this looks wrong")
+    return code, display
 
 
 for _f in [
@@ -147,56 +164,111 @@ for _f in [
 plt.rcParams["font.family"] = "Liberation Sans"
 
 
-def load_matches(data_file: Path | None, season_id: int) -> list[dict]:
-    """Every raw match object for a FootyStats season_id — either from a
-    saved JSON file (a `league-matches` response's `data` array) or, by
-    default, straight from the FootyStats API (works fine from a
-    device_bash shell — see module docstring).
+def _session() -> requests.Session:
+    s = requests.Session()
+    s.headers.update({"User-Agent": USER_AGENT})
+    return s
+
+
+def fetch_all(session: requests.Session, url: str, params: dict | None = None) -> list[dict]:
+    """Follow a DRF-paginated endpoint's `next` link until exhausted."""
+    out: list[dict] = []
+    resp = session.get(url, params=params, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    out.extend(data.get("results", data if isinstance(data, list) else []))
+    next_url = data.get("next") if isinstance(data, dict) else None
+    while next_url:
+        resp = session.get(next_url, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        out.extend(data.get("results", []))
+        next_url = data.get("next")
+    return out
+
+
+def resolve_tournament(session: requests.Session, competition: str) -> tuple[int, str]:
+    needle, comp_name = COMPETITIONS[competition]
+    resp = session.get(
+        API_BASE + "tournament-public/",
+        params={"latest_activated_season": "True", "show_in_public_website": "True"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    tournaments = resp.json()
+    tournaments = tournaments.get("results", tournaments) if isinstance(tournaments, dict) else tournaments
+    for t in tournaments:
+        name_en = (t.get("name_en") or "").upper()
+        if needle in name_en:
+            return t["id"], t.get("name_en", comp_name)
+    raise RuntimeError(
+        f"could not find a current tournament matching {needle!r} for {comp_name} "
+        f"in tournament-public response — Thai League may have renamed the "
+        f"competition; inspect the API and update COMPETITIONS"
+    )
+
+
+def resolve_match_day(session: requests.Session, tournament_id: int, week: int) -> dict | None:
+    resp = session.get(
+        API_BASE + "matchday-dropdown-public/",
+        params={"tournament": tournament_id, "stage": "", "start_date__lte": date.today().isoformat()},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    days = resp.json()
+    for d in days:
+        if str(d.get("name")) == str(week):
+            return d
+    return None
+
+
+def week_fixtures(session: requests.Session, tournament_id: int, match_day_id: int) -> tuple[list[dict], list[dict]]:
+    """(have, missing) — every scheduled fixture for one match_day, split by
+    whether attendance_number is populated. `missing` covers both "not yet
+    played" and (should it ever recur) "played but unreported" — this API
+    has not shown that gap so far (see module docstring), so the two aren't
+    distinguished the way the old FootyStats-based script did.
     """
-    if data_file is not None:
-        data = json.loads(data_file.read_text())
-        if isinstance(data, dict):
-            data = data.get("data", data)
-        if not isinstance(data, list):
-            raise ValueError(f"{data_file} does not contain a list of match objects")
-        return data
-    fs = FootyStatsClient()
-    return fs.get_league_matches(season_id)
+    matches = fetch_all(
+        session, API_BASE + "match-day-match-public/",
+        params={"tournament": tournament_id, "tournament_team": "", "stage": "",
+                "match_day": match_day_id, "only_valid_match": "true",
+                "show_have_photo_field": "true"},
+    )
+    have = [m for m in matches if m.get("attendance_number") is not None]
+    missing = [m for m in matches if m not in have]
+    have.sort(key=lambda m: (m.get("start_date") or "", m.get("start_time") or ""))
+    return have, missing
 
 
-def week_fixtures(matches: list[dict], week: int) -> tuple[list[dict], list[dict], list[dict]]:
-    """Split a match week's matches into (with_attendance, missing_attendance,
-    not_yet_played) — each a list of raw FootyStats match dicts.
+def season_to_date(session: requests.Session, tournament_id: int, upto_week: int) -> list[tuple[str, int, int]]:
+    """[(display_name, season_total, games_played)] for every club that has
+    hosted at least one match (match_day_name <= upto_week) with a recorded
+    attendance, sorted descending by season total. HOME attendance only,
+    same as the Matchweek 1 design ("SEASON-TO-DATE — HOME ATTENDANCE").
     """
-    wk = [m for m in matches if m.get("game_week") == week]
-    played = [m for m in wk if m.get("status") == "complete"]
-    not_played = [m for m in wk if m.get("status") != "complete"]
-    have = [m for m in played if isinstance(m.get("attendance"), int) and m["attendance"] >= 0]
-    missing = [m for m in played if m not in have]
-    have.sort(key=lambda m: m.get("date_unix", 0))
-    return have, missing, not_played
-
-
-def season_to_date(matches: list[dict], upto_week: int) -> list[tuple[str, int, int]]:
-    """[(club, season_total, games_played)] for every club that has hosted
-    at least one match (game_week <= upto_week) with a recorded attendance,
-    sorted descending by season total. This is HOME attendance only, same
-    as the Matchweek 1 design ("SEASON-TO-DATE — HOME ATTENDANCE").
-    """
+    matches = fetch_all(
+        session, API_BASE + "match-day-match-public/",
+        params={"tournament": tournament_id, "tournament_team": "", "stage": "",
+                "match_status": "results", "only_valid_match": "true",
+                "show_have_photo_field": "true"},
+    )
     totals: dict[str, int] = {}
     games: dict[str, int] = {}
     for m in matches:
-        wk = m.get("game_week")
-        if not isinstance(wk, int) or wk > upto_week:
+        wk_name = m.get("match_day_name")
+        try:
+            wk = int(wk_name)
+        except (TypeError, ValueError):
             continue
-        if m.get("status") != "complete":
+        if wk > upto_week:
             continue
-        att = m.get("attendance")
-        if not isinstance(att, int) or att < 0:
+        att = m.get("attendance_number")
+        if att is None:
             continue
-        home = m.get("home_name") or "Unknown"
-        totals[home] = totals.get(home, 0) + att
-        games[home] = games.get(home, 0) + 1
+        _, display = team_info(m.get("home_team_name_en", ""))
+        totals[display] = totals.get(display, 0) + int(att)
+        games[display] = games.get(display, 0) + 1
     rows = [(club, totals[club], games[club]) for club in totals]
     rows.sort(key=lambda r: -r[1])
     return rows
@@ -251,8 +323,11 @@ def render(
     # ---- top: line chart -------------------------------------------------
     ax = fig.add_axes([0.105, 0.485, 0.85, 0.44])
     xs = list(range(len(fixtures)))
-    ys = [f["attendance"] for f in fixtures]
-    labels = [f"{abbr(f['home_name'])} v {abbr(f['away_name'])}" for f in fixtures]
+    ys = [f["attendance_number"] for f in fixtures]
+    labels = [
+        f"{team_info(f['home_team_name_en'])[0]} v {team_info(f['away_team_name_en'])[0]}"
+        for f in fixtures
+    ]
 
     step = _nice_step(max(ys) if ys else 5000)
     y_max = step * (max(ys) // step + 2) if ys else step * 4
@@ -281,8 +356,7 @@ def render(
 
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=15, ha="right", fontsize=12.5,
-                        fontweight="bold", color="#2c3b33",
-                        rotation_mode="anchor")
+                        fontweight="bold", color="#2c3b33", rotation_mode="anchor")
     ax.set_ylabel("Attendance", fontsize=14, fontweight="bold", color="#4a5a52",
                    labelpad=10)
 
@@ -339,14 +413,8 @@ def main(argv: list[str] | None = None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("competition", choices=sorted(COMPETITIONS))
     ap.add_argument("match_week", type=int)
-    ap.add_argument("--season", default="2026/2027",
-                    help="season label, for display/logging only (default: 2026/2027)")
     ap.add_argument("--outputs", default=str(_ROOT / "outputs"),
                     help="output directory (default: ./outputs)")
-    ap.add_argument("--data-file", type=Path, default=None,
-                    help="path to a JSON file holding the `data` array of a saved "
-                         "FootyStats league-matches response, to skip the network "
-                         "call (see module docstring — normally not needed).")
     ap.add_argument("--allow-partial", action="store_true",
                     help="render even if some of this match week's fixtures are "
                          "missing attendance data (by default the script refuses "
@@ -354,36 +422,30 @@ def main(argv: list[str] | None = None) -> int:
                          "is never shipped by accident).")
     args = ap.parse_args(argv)
 
-    season_id, comp_name = COMPETITIONS[args.competition]
-    print(f"{comp_name} — {args.season} — Match Week {args.match_week}")
+    session = _session()
 
-    try:
-        matches = load_matches(args.data_file, season_id)
-    except FootyStatsError as exc:
-        print(f"  ! FootyStats API error: {exc}")
+    tournament_id, tournament_name = resolve_tournament(session, args.competition)
+    print(f"{tournament_name} (tournament id {tournament_id}) — Match Week {args.match_week}")
+
+    match_day = resolve_match_day(session, tournament_id, args.match_week)
+    if match_day is None:
+        print(f"  ! Match Week {args.match_week} hasn't started yet (or doesn't exist) "
+              f"per the Thai League site's own match-day list.")
         return 1
-    print(f"  matches loaded for season: {len(matches)}")
 
-    have, missing, not_played = week_fixtures(matches, args.match_week)
-
-    if not_played:
-        print(f"  ! {len(not_played)} fixture(s) in week {args.match_week} not yet "
-              f"played/complete:")
-        for m in not_played:
-            print(f"      {m.get('home_name')} v {m.get('away_name')} "
-                  f"(status={m.get('status')})")
+    have, missing = week_fixtures(session, tournament_id, match_day["id"])
 
     if missing:
-        print(f" ! {len(missing)} played fixture(s) in week {args.match_week} still "
-              f"missing attendance from FootyStats:")
+        print(f"  ! {len(missing)} fixture(s) in week {args.match_week} have no "
+              f"attendance yet (not played, or reported but not yet posted):")
         for m in missing:
-            print(f"      {m.get('home_name')} v {m.get('away_name')} "
-                  f"(id {m.get('id')})")
+            print(f"      {m.get('home_team_name_en')} v {m.get('away_team_name_en')} "
+                  f"(status={m.get('match_status')}, id {m.get('id')})")
         if not args.allow_partial:
             print(f"\n  Refusing to render a partial week ({len(have)}/"
                   f"{len(have) + len(missing)} fixtures have attendance). "
                   f"Re-run with --allow-partial to chart what's available anyway, "
-                  f"or wait for FootyStats to fill the rest in.")
+                  f"or wait for the rest to be played/reported.")
             return 1
         print(f"  --allow-partial set: rendering with {len(have)}/"
               f"{len(have) + len(missing)} fixtures anyway.")
@@ -394,9 +456,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\n  fixtures charted ({len(have)}):")
     for m in have:
-        print(f"    {m['attendance']:>7,}  {m['home_name']} v {m['away_name']}")
+        print(f"    {m['attendance_number']:>7,}  {m['home_team_name_en']} v {m['away_team_name_en']}")
 
-    table_rows = season_to_date(matches, args.match_week)
+    table_rows = season_to_date(session, tournament_id, args.match_week)
     print(f"\n  season-to-date home attendance ({len(table_rows)} clubs):")
     for club, total, games in table_rows:
         print(f"    {total:>7,}  ({games} gm)  {club}")
