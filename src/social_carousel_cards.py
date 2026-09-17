@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FOOTBALL SIAM - SOCIAL CAROUSEL CARDS (v1, 2026-09-17)
+FOOTBALL SIAM - SOCIAL CAROUSEL CARDS (v2, 2026-09-17)
 
 Renders the Thu-Sun social carousel's two images directly in Python:
   1. A "Fixtures/Results" card (kickoff times on Thursday, scores from
@@ -17,8 +17,8 @@ anti-bot challenge (sgcaptcha), which blocks plain HTTP AND a real
 headless-browser (Playwright/Chromium) request alike, from any
 cloud/datacenter IP -- confirmed by direct test 2026-09-16 (both got
 served the "Robot Challenge Screen" instead of real content). Only
-WebFetch (a different fetch path) or the device-linked WordPress MCP
-connector can reach the site reliably, and neither can take a
+WebFetch (a different fetch path) or device_bash (the user's own
+network) can reach the site reliably, and neither can take a
 screenshot.
 
 So this script takes the same approach that already works for the
@@ -26,13 +26,46 @@ Attendance/Nationality Buffer automations: fetch plain JSON (via
 WebFetch, from the Football Siam Social Data APIs -- Snippet 134,
 fs/v1/social-table-data / fs/v1/social-fixtures-data / fs/v1/current-
 matchweek) and render the finished card directly here, matching the
-WP shortcodes' visual language (dark green #0A3B25 header band, gold
+site's own visual language (dark green #0A3B25 header band, gold
 #e3c567 accent text, footballsiam.com footer strip) as closely as
 practical. ONE DELIBERATE DIFFERENCE: no club badge logos -- fetching
 those images at runtime hits the exact same anti-bot wall as fetching
 HTML (confirmed), so team names render as text only here. This matches
 how the existing Attendance chart's season-to-date table already shows
 club names as plain text with no logos.
+
+FONTS (added v2, 2026-09-17)
+-----------------------------
+footballsiam.com's real stylesheet (confirmed by curling the live
+homepage HTML and grepping font-family declarations, 2026-09-17) uses
+Playfair Display (serif) for display headings and Lato (sans-serif)
+for everything else -- NOT matplotlib's default DejaVu fonts, and not
+the Liberation Sans used by the sibling attendance/nationality charts
+(that was a generic substitute, never actually matched). Both font
+families are bundled as TTFs in assets/fonts/ alongside this script so
+rendering doesn't depend on whatever happens to be installed on the
+machine running it:
+  - PlayfairDisplay-Bold.ttf / -Regular.ttf: statically instantiated
+    (via fonttools varLib.instancer) from Google Fonts' variable
+    PlayfairDisplay[wght].ttf at wght=700/400, since matplotlib doesn't
+    reliably pick weights out of a variable font.
+  - Lato-Bold.ttf / -Regular.ttf: copied from the Lato family already
+    present on the rendering machine (/usr/share/fonts/truetype/lato/).
+If assets/fonts/ is ever missing these files, re-fetch Playfair Display
+from https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/
+and instantiate as above; grab Lato from the same google/fonts repo
+(ofl/lato/) if it's not already on the machine.
+
+BADGE SIZING (fixed v2, 2026-09-17)
+-------------------------------------
+The v1 badge (76x30px) was measured too tight for its text -- kickoff
+times like "19:00"/"18:30" and scores like "10 - 0" run ~67px wide at
+this font/size, leaving only ~4px padding each side (confirmed by
+Simon: looked cramped against the box edges in the posted cards). The
+badge is now sized from an actual text-extent measurement rather than
+guessed, with comfortable padding baked in -- see BADGE_W/BADGE_H
+below. If future kickoff-time or score formats turn out wider than
+"XX - XX", bump BADGE_W rather than shrinking the font.
 
 USAGE
 -----
@@ -69,6 +102,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.font_manager as fm
 
 # House colours -- matched to the WP shortcode cards (Snippet 130/132),
 # which Simon has already seen and approved, rather than the slightly
@@ -91,6 +125,22 @@ LEAGUE_LABELS = {
     "thai-league-2": "Thai League 2",
 }
 
+# -- Fonts: matched to footballsiam.com's real stylesheet (see module
+# docstring). Bundled TTFs beside this script, loaded by explicit path
+# so this doesn't depend on what's installed system-wide.
+_FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
+FONT_HEADLINE = fm.FontProperties(fname=str(_FONT_DIR / "PlayfairDisplay-Bold.ttf"))
+FONT_BOLD = fm.FontProperties(fname=str(_FONT_DIR / "Lato-Bold.ttf"))
+FONT_REGULAR = fm.FontProperties(fname=str(_FONT_DIR / "Lato-Regular.ttf"))
+
+# -- Kickoff-time / score badge sizing: measured (not guessed) from the
+# actual rendered width of "19:00"-style and "10 - 0"-style strings at
+# BADGE_FONTSIZE in FONT_BOLD (~67px wide, ~24px tall at 150 DPI) with
+# generous padding added. See BADGE SIZING note in the module docstring.
+BADGE_FONTSIZE = 12.5
+BADGE_W = 92
+BADGE_H = 36
+
 
 def _fig_for_height(height_px):
     width_in = CARD_WIDTH_PX / DPI
@@ -108,13 +158,13 @@ def _fig_for_height(height_px):
 def _header(ax, height_px, league_name, badge_label, sub_label=None, header_h=100):
     ax.add_patch(patches.Rectangle((0, 0), CARD_WIDTH_PX, header_h, facecolor=DARK_GREEN, edgecolor="none"))
     ax.text(36, header_h / 2 - (8 if sub_label else 0), league_name,
-             fontsize=22, fontweight="bold", color=WHITE, ha="left", va="center",
-             fontstyle="normal", family="serif")
+             fontsize=24, color=WHITE, ha="left", va="center",
+             fontproperties=FONT_HEADLINE)
     ax.text(CARD_WIDTH_PX - 36, header_h / 2 - (10 if sub_label else 0), badge_label,
-             fontsize=11, fontweight="bold", color=GOLD, ha="right", va="center")
+             fontsize=11, color=GOLD, ha="right", va="center", fontproperties=FONT_BOLD)
     if sub_label:
         ax.text(CARD_WIDTH_PX - 36, header_h / 2 + 16, sub_label,
-                 fontsize=12, fontweight="bold", color="#c9d9c9", ha="right", va="center")
+                 fontsize=12, color="#c9d9c9", ha="right", va="center", fontproperties=FONT_BOLD)
     return header_h
 
 
@@ -122,7 +172,7 @@ def _footer(ax, height_px, footer_h=50):
     y0 = height_px - footer_h
     ax.add_patch(patches.Rectangle((0, y0), CARD_WIDTH_PX, footer_h, facecolor=FOOTER_BG, edgecolor="none"))
     ax.text(CARD_WIDTH_PX - 36, y0 + footer_h / 2, "footballsiam.com",
-             fontsize=12, fontweight="bold", color=DARK_GREEN, ha="right", va="center")
+             fontsize=12, color=DARK_GREEN, ha="right", va="center", fontproperties=FONT_BOLD)
 
 
 def render_fixtures_card(data, out_path):
@@ -161,7 +211,7 @@ def render_fixtures_card(data, out_path):
     y = header_h + top_pad
     if not matches:
         ax.text(CARD_WIDTH_PX / 2, header_h + body_h / 2, f"No {badge_label.lower()} to show.",
-                 fontsize=13, color="#888888", ha="center", va="center")
+                 fontsize=13, color="#888888", ha="center", va="center", fontproperties=FONT_REGULAR)
     else:
         last_date = None
         row_i = 0
@@ -169,7 +219,7 @@ def render_fixtures_card(data, out_path):
             if m.get("date") != last_date:
                 last_date = m.get("date")
                 ax.text(32, y + date_header_h / 2, last_date,
-                         fontsize=12, fontweight="bold", color=DARK_GREEN, ha="left", va="center")
+                         fontsize=12, color=DARK_GREEN, ha="left", va="center", fontproperties=FONT_BOLD)
                 y += date_header_h
 
             if row_i % 2 == 0:
@@ -184,17 +234,20 @@ def render_fixtures_card(data, out_path):
             else:
                 center_text = m.get("time", "TBC")
 
-            ax.text(CARD_WIDTH_PX / 2 - 55, mid, m.get("home", ""), fontsize=13.5, fontweight="bold",
-                     color=DARK_TEXT, ha="right", va="center")
-            ax.text(CARD_WIDTH_PX / 2 + 55, mid, m.get("away", ""), fontsize=13.5, fontweight="bold",
-                     color=DARK_TEXT, ha="left", va="center")
+            # Team-name anchors sit just outside the (now wider) centre
+            # badge -- BADGE_W/2 + a fixed clearance, not a hand-picked
+            # constant, so the gap stays correct if BADGE_W changes.
+            name_offset = BADGE_W / 2 + 20
+            ax.text(CARD_WIDTH_PX / 2 - name_offset, mid, m.get("home", ""), fontsize=13.5,
+                     color=DARK_TEXT, ha="right", va="center", fontproperties=FONT_BOLD)
+            ax.text(CARD_WIDTH_PX / 2 + name_offset, mid, m.get("away", ""), fontsize=13.5,
+                     color=DARK_TEXT, ha="left", va="center", fontproperties=FONT_BOLD)
 
-            badge_w, badge_h = 76, 30
             ax.add_patch(patches.FancyBboxPatch(
-                (CARD_WIDTH_PX / 2 - badge_w / 2, mid - badge_h / 2), badge_w, badge_h,
-                boxstyle="round,pad=0,rounding_size=4", facecolor=DARK_GREEN, edgecolor="none"))
-            ax.text(CARD_WIDTH_PX / 2, mid, center_text, fontsize=12.5, fontweight="bold",
-                     color=WHITE, ha="center", va="center")
+                (CARD_WIDTH_PX / 2 - BADGE_W / 2, mid - BADGE_H / 2), BADGE_W, BADGE_H,
+                boxstyle="round,pad=0,rounding_size=6", facecolor=DARK_GREEN, edgecolor="none"))
+            ax.text(CARD_WIDTH_PX / 2, mid, center_text, fontsize=BADGE_FONTSIZE,
+                     color=WHITE, ha="center", va="center", fontproperties=FONT_BOLD)
 
             y += row_h
             row_i += 1
@@ -233,34 +286,34 @@ def render_table_card(data, out_path):
 
     y = header_h + top_pad
     # column header row
-    ax.text(col_pos, y + col_header_h / 2, "#", fontsize=11, fontweight="bold", color="#888888", ha="center", va="center")
-    ax.text(col_club, y + col_header_h / 2, "Club", fontsize=11, fontweight="bold", color="#888888", ha="left", va="center")
+    ax.text(col_pos, y + col_header_h / 2, "#", fontsize=11, color="#888888", ha="center", va="center", fontproperties=FONT_BOLD)
+    ax.text(col_club, y + col_header_h / 2, "Club", fontsize=11, color="#888888", ha="left", va="center", fontproperties=FONT_BOLD)
     for i, lbl in enumerate(col_labels):
         cx = col_stats_start + col_w * i + col_w / 2
-        ax.text(cx, y + col_header_h / 2, lbl, fontsize=11, fontweight="bold", color="#888888", ha="center", va="center")
+        ax.text(cx, y + col_header_h / 2, lbl, fontsize=11, color="#888888", ha="center", va="center", fontproperties=FONT_BOLD)
     y += col_header_h
 
     if not standings:
         ax.text(CARD_WIDTH_PX / 2, y + row_h / 2, "No matches scheduled for this division.",
-                 fontsize=13, color="#888888", ha="center", va="center")
+                 fontsize=13, color="#888888", ha="center", va="center", fontproperties=FONT_REGULAR)
     else:
         for i, t in enumerate(standings):
             row_bg = WHITE if i % 2 == 0 else ROW_ALT
             ax.add_patch(patches.Rectangle((0, y), CARD_WIDTH_PX, row_h, facecolor=row_bg, edgecolor="none"))
             mid = y + row_h / 2
 
-            ax.text(col_pos, mid, str(t.get("pos", i + 1)), fontsize=12.5, fontweight="bold",
-                     color=DARK_GREEN, ha="center", va="center")
-            ax.text(col_club, mid, t.get("name", ""), fontsize=13, fontweight="bold",
-                     color=DARK_TEXT, ha="left", va="center")
+            ax.text(col_pos, mid, str(t.get("pos", i + 1)), fontsize=12.5,
+                     color=DARK_GREEN, ha="center", va="center", fontproperties=FONT_BOLD)
+            ax.text(col_club, mid, t.get("name", ""), fontsize=13,
+                     color=DARK_TEXT, ha="left", va="center", fontproperties=FONT_BOLD)
 
             values = [t.get("p", 0), t.get("w", 0), t.get("d", 0), t.get("l", 0),
                       t.get("gf", 0), t.get("ga", 0), t.get("gd", 0), t.get("pts", 0)]
             for j, val in enumerate(values):
                 cx = col_stats_start + col_w * j + col_w / 2
-                weight = "bold" if col_labels[j] == "Pts" else "normal"
-                ax.text(cx, mid, str(val), fontsize=12.5, fontweight=weight,
-                         color=DARK_TEXT, ha="center", va="center")
+                font = FONT_BOLD if col_labels[j] == "Pts" else FONT_REGULAR
+                ax.text(cx, mid, str(val), fontsize=12.5,
+                         color=DARK_TEXT, ha="center", va="center", fontproperties=font)
 
             y += row_h
 
