@@ -110,7 +110,7 @@ IP. The log line is `=== HOST CHALLENGE - sync did NOT run (not a failure) ===`.
 - `0 20 * * *` → 03:00 Asia/Bangkok
 - `workflow_dispatch` for manual runs (with an optional `dry_run` toggle and league filter)
 
-Secrets required on the repo: `FOOTYSTATS_API_KEY`, `WP_APP_USERNAME`, `WP_APP_PASSWORD`.
+Secrets required on the repo: `FOOTYSTATS_API_KEY`, `WP_APP_USERNAME`, `WP_APP_PASSWORD`, `WP_GRADE_TOKEN` (see 'Predictor auto-grading' below).
 
 ## WordPress REST prerequisites
 
@@ -136,6 +136,50 @@ initial import. Two things must be true on the site:
    `footystats_match_id` while the CPT is non-empty, it aborts instead of creating
    duplicates. A clean dry run once the snippet is active looks like
    `checked 546 / created 0 / scores updated 0 / skipped(not complete) 546`.
+
+## Predictor auto-grading (added 2026-09-17)
+
+Grading the T1 Predictor Game used to require someone to open wp-admin and
+click a button (`fs_render_predictor_hub`, under FC Siam -> Predictor Grader)
+after a matchweek finished. If nobody remembered, predictions sat as
+`status = pending` forever and the leaderboard looked dead.
+
+`sync_matches.py` now checks this automatically at the end of every run:
+
+1. Any Thai League 1 matchweek that got a score written *during this run* is
+   collected into a set.
+2. For each one, it calls `GET fs/v1/matchweek-status` (Snippet 133) to
+   confirm the whole matchweek - not just the one match that just got a
+   score - is fully played.
+3. If it is, it calls `POST fs/v1/grade-predictions` (Snippet: "FS Predictor
+   Auto-Grading Engine v1", id 136 as of 2026-09-17), which runs the exact
+   same scoring logic as the old admin button (3pts exact score, 1pt correct
+   result), creates the `fs_score` leaderboard posts, and sends the bilingual
+   result emails - then marks those predictions `status = graded`.
+
+This is idempotent by design: grading only ever touches predictions still
+marked `pending`, so calling it again for an already-graded matchweek (e.g.
+because a later run also touched that matchweek for an unrelated reason) is
+a safe no-op, not a duplicate-award. Only ever fires in `--live` mode - a dry
+run never calls it (see `WPClient.grade_predictor_matchweek`'s `dry_run`
+guard).
+
+**Auth note:** this uses a shared-secret header (`x-fs-grade-token`,
+env var `WP_GRADE_TOKEN`), the same pattern the older `fs/v1/update-live`
+route already uses on this site - `current_user_can()` was tried for a
+similar route once before (`fs/v1/update-match`) and had to be abandoned
+because something in this host's stack strips the Application Password's
+Authorization header on custom REST routes (see that route's own
+"Temporarily open to bypass token stripping" comment). The token must match
+exactly what's hardcoded in the "FS Predictor Auto-Grading Engine v1" Code
+Snippet's `permission_callback`. The admin "Predictor Grader" page itself is
+untouched and still works as a manual override/backup for spot-fixing one
+matchweek.
+
+**Known outstanding issue, unrelated to this feature but worth fixing
+alongside it if the token above is ever regenerated:** the same snippet's
+`fs_predictor_smtp()` still has a live SMTP password hardcoded in plaintext.
+Flagged to Simon, not yet rotated - see the project to-do list.
 
 ## Sync automation — Part A (match enrichment) and Part B (club reassignment)
 

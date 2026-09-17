@@ -303,6 +303,63 @@ def _audit(msg: str) -> None:
     log.info("AUDIT | %s", msg)
 
 
+def _check_and_grade_predictor(wp: WPClient, mws: set[int]) -> None:
+    """Auto-grade the Predictor Game for any Thai League 1 matchweek that just
+    became fully complete during this sync run (added 2026-09-17).
+
+    Previously grading needed a manual wp-admin button click
+    (fs_render_predictor_hub) after every matchweek finished - if nobody
+    remembered to click it, the leaderboard silently looked dead. This reuses
+    the same "is this matchweek actually finished" check already built for the
+    social-media carousel (fs/v1/matchweek-status, Snippet 133) and calls the
+    new fs/v1/grade-predictions endpoint (Snippet: "FS Predictor Auto-Grading
+    Engine v1") the moment a matchweek both (a) had a score written in THIS
+    run and (b) is now fully complete.
+
+    Grading itself is idempotent on the WP side (only touches predictions
+    still marked "pending"), so it is safe to check every run a matchweek's
+    score changed, not only the first time it completes - an already-graded
+    matchweek is just a fast no-op on the WP side.
+
+    Only Thai League 1 is checked - the Predictor Game does not cover Thai
+    League 2 or the other competitions.
+    """
+    for mw in sorted(mws):
+        try:
+            status = wp.get_matchweek_status(PREDICTOR_LEAGUE, SEASON_LABEL, mw)
+        except WPError as exc:
+            log.warning("  predictor: could not check matchweek-status for mw %s: %s", mw, exc)
+            continue
+
+        if not status.get("complete"):
+            log.info(
+                "  predictor: mw %s not fully complete yet (%s/%s played) - skipping auto-grade",
+                mw, status.get("played"), status.get("total"),
+            )
+            continue
+
+        try:
+            result = wp.grade_predictor_matchweek(mw)
+        except WPError as exc:
+            log.warning("  predictor: grading call failed for mw %s: %s", mw, exc)
+            continue
+
+        if result.get("graded_count"):
+            _audit(
+                f"PREDICTOR GRADED  mw {mw}  "
+                f"graded={result.get('graded_count', 0)}  "
+                f"points_awarded={result.get('total_points_awarded', 0)}"
+            )
+        else:
+            log.info(
+                "  predictor: mw %s complete, nothing to grade (%s)",
+                mw, result.get("message", "no pending predictions"),
+            )
+
+
+PREDICTOR_LEAGUE = "thai-league-1"
+
+
 def sync(
     wp: WPClient,
     fs: FootyStatsClient,
@@ -324,6 +381,11 @@ def sync(
         "players_created": 0,
         "errors": 0,
     }
+
+    # Thai League 1 matchweeks that got a score written THIS run - checked
+    # for predictor auto-grading once the whole sync finishes (added
+    # 2026-09-17, see _check_and_grade_predictor()).
+    t1_updated_mws: set[int] = set()
 
     log.info("Indexing existing `matches` posts by footystats_match_id ...")
     index = wp.index_matches_by_footystats_id()
@@ -407,6 +469,8 @@ def sync(
                         }
                         wp.update_match_meta(existing["id"], new_meta)
                         stats["scores_updated"] += 1
+                        if league["name"] == "Thai League 1":
+                            t1_updated_mws.add(int(new_meta["match_week"]))
                         _audit(
                             f"SCORE  post {existing['id']}  fs {fs_id}  "
                             f"{new_meta['home_score']}-{new_meta['away_score']}  "
@@ -449,6 +513,9 @@ def sync(
             except (WPError, KeyError) as exc:
                 stats["errors"] += 1
                 log.error("  ERROR on match %s: %s", fs_id, exc)
+
+    if t1_updated_mws and not wp.dry_run:
+        _check_and_grade_predictor(wp, t1_updated_mws)
 
     return stats
 

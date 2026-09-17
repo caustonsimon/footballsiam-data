@@ -362,6 +362,47 @@ class WPClient:
             )
         return result
 
+    # -- predictor auto-grading (added 2026-09-17) ------------------
+    # Custom fs/v1 REST routes on the site, mirroring the existing
+    # fs/v1/update-match / fs/v1/update-live pattern (a shared-secret
+    # header rather than current_user_can, because this host has already
+    # been seen to strip the Application Password's Authorization header
+    # on at least one custom route -- see the "Importer" snippet's
+    # "Temporarily open to bypass token stripping" comment). WP_GRADE_TOKEN
+    # must match the token hardcoded in the "FS Predictor Auto-Grading
+    # Engine v1" Code Snippet's permission_callback.
+
+    def get_matchweek_status(self, league: str, season: str, mw: int) -> dict[str, Any]:
+        """GET fs/v1/matchweek-status - {total, played, remaining, complete}."""
+        resp = self._request(
+            "GET", "fs/v1/matchweek-status",
+            params={"league": league, "season": season, "mw": mw},
+        )
+        return self._json_or_raise(resp, f"GET fs/v1/matchweek-status league={league} mw={mw}")
+
+    def grade_predictor_matchweek(self, mw: int) -> dict[str, Any]:
+        """POST fs/v1/grade-predictions - triggers automatic Predictor Game
+        grading for one matchweek. Idempotent on the WP side (only ever
+        touches pending predictions), so calling it for an already-graded
+        matchweek is a safe no-op. Honours dry_run (does not call out at all
+        in a dry run - grading has side effects: it creates fs_score posts
+        and sends result emails, so it should never fire from a dry run).
+        """
+        if self.dry_run:
+            return {"_dry_run": True, "would_grade_mw": mw}
+        token = os.environ.get("WP_GRADE_TOKEN", "")
+        if not token:
+            raise WPError(
+                "WP_GRADE_TOKEN not set - cannot call fs/v1/grade-predictions. "
+                "See README > 'Predictor auto-grading'."
+            )
+        resp = self._request(
+            "POST", "fs/v1/grade-predictions",
+            json={"mw": mw},
+            headers={"x-fs-grade-token": token},
+        )
+        return self._json_or_raise(resp, f"POST fs/v1/grade-predictions mw={mw}")
+
     # -- connectivity check ----------------------------------------
 
     def whoami(self) -> dict[str, Any]:
