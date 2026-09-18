@@ -204,8 +204,13 @@ def ensure_player(
         "first_name": first,
         "last_name": last,
         "nationality": nationality,
-        "position": position,
     }
+    if position:
+        # ACF's position field is a select limited to GK/DF/MF/FW - an empty
+        # string is rejected by the REST API (rest_invalid_param). When
+        # map_position() can't determine a position, just omit the key
+        # entirely rather than sending "".
+        acf["position"] = position
     meta = {"last_confirmed_date": last_date_ymd}
     if last_club_wp_id:
         meta["last_confirmed_club"] = str(int(last_club_wp_id))
