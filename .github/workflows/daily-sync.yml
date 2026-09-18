@@ -2,10 +2,10 @@ name: daily-sync
 
 on:
   schedule:
-    - cron: '0 1 * * *'     # 08:00 Asia/Bangkok
-    - cron: '30 1 * * *'    # 08:30 Asia/Bangkok
-    - cron: '0 2 * * *'     # 09:00 Asia/Bangkok
-    - cron: '30 2 * * *'    # 09:30 Asia/Bangkok
+    - cron: '0 13 * * *'    # 20:00 Asia/Bangkok
+    - cron: '30 13 * * *'   # 20:30 Asia/Bangkok
+    - cron: '0 14 * * *'    # 21:00 Asia/Bangkok
+    - cron: '30 14 * * *'   # 21:30 Asia/Bangkok
     - cron: '15 15 * * *'   # 22:15 Asia/Bangkok
     - cron: '0 20 * * *'    # 03:00 Asia/Bangkok
   workflow_dispatch:
