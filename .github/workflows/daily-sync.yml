@@ -5,8 +5,9 @@ on:
     - cron: '0 13 * * *'    # 20:00 Asia/Bangkok
     - cron: '30 13 * * *'   # 20:30 Asia/Bangkok
     - cron: '0 14 * * *'    # 21:00 Asia/Bangkok
-    - cron: '30 14 * * *'   # 21:30 Asia/Bangkok
-    - cron: '15 15 * * *'   # 22:15 Asia/Bangkok
+    - cron: '15 14 * * *'   # 21:15 Asia/Bangkok
+    - cron: '25 14 * * *'   # 21:25 Asia/Bangkok
+    - cron: '0 15 * * *'    # 22:00 Asia/Bangkok
     - cron: '0 20 * * *'    # 03:00 Asia/Bangkok
   workflow_dispatch:
     inputs:
