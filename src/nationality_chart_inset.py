@@ -100,10 +100,41 @@ from matplotlib.patches import FancyBboxPatch  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
 
 _ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_ROOT / "src"))
-from sync_matches import _load_dotenv  # noqa: E402
-_load_dotenv(_ROOT / ".env")
-from wp_client import WPClient, WPError  # noqa: E402
+
+# 2026-09-20: WPClient/wp_client/sync_matches are repo-internal and only
+# needed by the two network fallback paths below (no --data-file given).
+# The automated weekly run always passes --data-file (see docstring point
+# 2) and never touches either path, so these are imported lazily inside
+# _wp_client_or_raise() instead of at module level -- that's what makes
+# this script runnable in a fresh environment with zero access to the
+# footballsiam-data repo (e.g. a cloud sandbox with no git credentials for
+# it), same pattern as attendance_chart_inset.py v2.
+WPClient = None  # type: ignore[assignment]  # populated by _wp_client_or_raise()
+WPError = Exception  # placeholder so `except WPError:` below stays valid
+                     # syntax before _wp_client_or_raise() ever runs
+
+
+def _wp_client_or_raise():
+    """Lazily import sync_matches/wp_client and return a fresh WPClient
+    class + WPError, raising a clear error if the repo-internal modules
+    aren't importable (e.g. running with --data-file was skipped by
+    mistake, or this script was copied out of the repo without them).
+    """
+    global WPClient, WPError
+    sys.path.insert(0, str(_ROOT / "src"))
+    try:
+        from sync_matches import _load_dotenv
+        from wp_client import WPClient as _WPClient, WPError as _WPError
+    except ImportError as exc:
+        raise RuntimeError(
+            "This script needs sync_matches.py/wp_client.py (repo-internal) "
+            "for network access, but they're not importable. Pass --data-file "
+            "instead (fetch the site's JSON via WebFetch first) if you're "
+            "running outside the footballsiam-data repo."
+        ) from exc
+    _load_dotenv(_ROOT / ".env")
+    WPClient, WPError = _WPClient, _WPError
+    return WPClient, WPError
 
 # competition slug -> (competition taxonomy term id, display name)
 COMPETITIONS = {
@@ -469,6 +500,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  starters (from data file): {starters_count}")
 
     if rows is None and not args.no_site_api:
+        WPClient, WPError = _wp_client_or_raise()
         wp = WPClient(dry_run=True)  # reads only — used for both the site-API call and the fallback
         site_data = fetch_latest_from_site(wp, comp_name)
         if site_data is not None:
@@ -485,6 +517,7 @@ def main(argv: list[str] | None = None) -> int:
                       f"computing directly instead)")
 
     if rows is None:
+        WPClient, WPError = _wp_client_or_raise()
         wp = WPClient(dry_run=True)  # reads only — direct computation, requires real network
         print(f"{comp_name} — {args.season} — Match Week {args.match_week}")
         matches = fetch_match_week(wp, comp_term, args.season, args.match_week)
