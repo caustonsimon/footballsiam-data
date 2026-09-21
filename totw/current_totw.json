@@ -1,0 +1,18 @@
+{
+  "matchweek": 3,
+  "formation": "4-3-3",
+  "player_of_the_week": "Méndez",
+  "players": [
+    {"name": "Hansen", "club": "Chonburi", "position": "GK", "rating": 7.6, "slot": "GK"},
+    {"name": "Everton", "club": "Bangkok United", "position": "DF", "rating": 7.8, "slot": "CB1"},
+    {"name": "Vilar", "club": "Prachuap", "position": "DF", "rating": 8.2, "slot": "CB2"},
+    {"name": "Schad", "club": "Lamphun Warrior", "position": "DF", "rating": 7.9, "slot": "LB"},
+    {"name": "Chukwuma", "club": "Rasisalai United", "position": "DF", "rating": 7.6, "slot": "RB"},
+    {"name": "Méndez", "club": "Prachuap", "position": "MF", "rating": 8.8, "slot": "CM1"},
+    {"name": "Mermoz", "club": "Sisaket United", "position": "MF", "rating": 8.6, "slot": "CM2"},
+    {"name": "Panya", "club": "Ratchaburi", "position": "MF", "rating": 8.1, "slot": "CM3"},
+    {"name": "Davis", "club": "Rasisalai United", "position": "FW", "rating": 8.2, "slot": "LW"},
+    {"name": "Popp", "club": "Bangkok United", "position": "FW", "rating": 8.1, "slot": "ST"},
+    {"name": "Jefferson", "club": "Sukhothai", "position": "FW", "rating": 8.0, "slot": "RW"}
+  ]
+}
