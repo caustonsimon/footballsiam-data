@@ -848,6 +848,99 @@ def reassign_clubs(
 # what was actually being stored)
 # --------------------------------------------------------------------------
 
+def _build_all_seasons_metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Groups raw /player-stats rows (one row per season+competition) into
+    the season-keyed shape the Player Pages front end actually reads
+    (fs_player_advanced_stats / fs_player_match_log in the "FS Player Pages
+    - MASTER ENGINE" snippet, via its fs_p_aggregate_season_metrics() PHP
+    helper): one entry per season, keyed by FootyStats' own `season` string,
+    with counting stats (appearances/minutes/goals/assists/conceded/clean
+    sheets, overall+home+away, plus cards/penalties) summed across every
+    competition played that season, and the richer per-90/percentile
+    `detailed` block kept from whichever competition-row for that season has
+    the most appearances (FootyStats only returns detailed metrics for some
+    competitions/seasons - older or lower-tier ones often come back
+    detailed: null, so this picks the row most likely to have it).
+
+    2026-09-22 fix: the original populate_player_stats() stored the raw FootyStats
+    rows flat, under a top-level "rows" key. The front-end code was already
+    built (before this pass) expecting "all_seasons_metrics" as a
+    season-keyed dict - so despite real data being written, the site showed
+    "No seasonal analysis metrics recorded" for every player. This function
+    is the fix: it derives that expected shape from the same raw rows,
+    which are still kept in the payload under "rows" too (nothing is
+    discarded, this is purely additive).
+    """
+    sum_keys = [
+        "appearances_overall", "minutes_played_overall", "goals_overall", "assists_overall",
+        "conceded_overall", "clean_sheets_overall",
+        "appearances_home", "minutes_played_home", "goals_home", "assists_home",
+        "conceded_home", "clean_sheets_home",
+        "appearances_away", "minutes_played_away", "goals_away", "assists_away",
+        "conceded_away", "clean_sheets_away",
+        "yellow_cards_overall", "red_cards_overall", "penalty_misses", "penalty_goals",
+    ]
+    # FootyStats' /player-stats response has a real, confirmed data-quality
+    # quirk: it sometimes repeats the exact same season+competition row two
+    # or three times verbatim (same competition_id, club_team_id, every stat
+    # identical). Summing those as if they were separate competitions would
+    # silently triple-count a player's goals/apps for that season. Dedupe on
+    # a stable identity key before aggregating - real multi-competition
+    # seasons (different competition_id) are untouched.
+    seen_rows: set[tuple[Any, Any, Any, Any]] = set()
+    deduped_rows: list[dict[str, Any]] = []
+    for row in rows:
+        ident = (row.get("season"), row.get("competition_id"), row.get("club_team_id"),
+                 row.get("appearances_overall"))
+        if ident in seen_rows:
+            continue
+        seen_rows.add(ident)
+        deduped_rows.append(row)
+
+    by_season: dict[str, dict[str, Any]] = {}
+    for row in deduped_rows:
+        season = row.get("season")
+        if not season:
+            continue
+        if season not in by_season:
+            # Seed with a full copy of this row - carries every field FootyStats
+            # sent (age, nationality, position, and any top-level advanced
+            # metrics), matching how the PHP aggregator seeds on first sight.
+            by_season[season] = dict(row)
+            continue
+        existing = by_season[season]
+        for key in sum_keys:
+            existing[key] = int(existing.get(key) or 0) + int(row.get(key) or 0)
+        pg = int(existing.get("penalty_goals") or 0)
+        pm = int(existing.get("penalty_misses") or 0)
+        if (pg + pm) > 0:
+            existing["penalty_success"] = round((pg / (pg + pm)) * 100)
+        # Prefer whichever single competition-row for this season actually
+        # carries the richer 'detailed' block, favouring the one with more
+        # appearances - same tie-break the PHP side already used.
+        if not existing.get("detailed") and row.get("detailed"):
+            existing["detailed"] = row["detailed"]
+        elif (row.get("appearances_overall") or 0) > (existing.get("appearances_overall") or 0) \
+                and row.get("detailed"):
+            existing["detailed"] = row["detailed"]
+    return by_season
+
+
+def _pick_latest_season_key(all_seasons_metrics: dict[str, Any]) -> str | None:
+    """Picks the most recent season key by parsing the leading year out of
+    each raw FootyStats season string (e.g. "2026/2027" -> 2026, "2020" ->
+    2020). Ties (shouldn't happen - keys are unique) fall back to string
+    order."""
+    if not all_seasons_metrics:
+        return None
+
+    def _year(key: str) -> int:
+        digits = "".join(ch for ch in key[:4] if ch.isdigit())
+        return int(digits) if digits else 0
+
+    return max(all_seasons_metrics.keys(), key=lambda k: (_year(k), k))
+
+
 def populate_player_stats(
     wp: WPClient,
     fs: FootyStatsClient,
@@ -951,7 +1044,32 @@ def populate_player_stats(
             time.sleep(pause)
             continue
 
-        payload = json.dumps({"synced_at": now_iso, "rows": rows}, separators=(",", ":"))
+        all_seasons_metrics = _build_all_seasons_metrics(rows)
+        latest_key = _pick_latest_season_key(all_seasons_metrics)
+        latest_season_metrics = all_seasons_metrics.get(latest_key, {}) if latest_key else {}
+
+        # bio: cheap top-level fallbacks the front end already knows how to
+        # use when a player's own ACF fields are empty (see fs_p_age_dob(),
+        # fs_player_top_bar/bio_bar in the Player Pages snippet). Pulled from
+        # whichever row is most likely to carry them; every one of these has
+        # a working ACF-field fallback already, so this is a nice-to-have,
+        # not load-bearing.
+        bio_source = rows[0] if rows else {}
+        bio = {
+            k: v for k, v in {
+                "birthday": bio_source.get("birthday"),
+                "height": bio_source.get("height"),
+                "shirt_number": (bio_source.get("detailed") or {}).get("shirt_number"),
+            }.items() if v not in (None, "", 0)
+        }
+
+        payload = json.dumps({
+            "synced_at": now_iso,
+            "rows": rows,
+            "all_seasons_metrics": all_seasons_metrics,
+            "latest_season_metrics": latest_season_metrics,
+            "bio": bio,
+        }, separators=(",", ":"))
         try:
             if not wp.dry_run:
                 wp.update_player(pid, acf={"fs_advanced_stats_json": payload})
