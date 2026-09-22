@@ -1,0 +1,58 @@
+name: weekly-player-stats-sync
+
+# Fills fs_advanced_stats_json on every `player` post with their full
+# /player-stats career row list (goals, assists, xG/xA, shooting, passing,
+# defensive actions, GK stats - everything FootyStats returns per player).
+# Runs weekly, offset from weekly-club-sync.yml so the two ~2,200-call
+# FootyStats passes don't overlap.
+#
+# Runs in DRY RUN (report only) unless dispatched manually with live=true.
+# See src/enrich.py > populate_player_stats() for what gets written.
+
+on:
+  schedule:
+    - cron: '30 20 * * 2'   # Tuesdays 03:30 Asia/Bangkok
+  workflow_dispatch:
+    inputs:
+      live:
+        description: 'Write changes (unchecked = dry run / report only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: player-stats-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  player-stats-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run player stats population
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          INPUT_LIVE: ${{ inputs.live }}
+        run: |
+          set -euo pipefail
+          ARGS=(--player-stats)
+          if [ "${INPUT_LIVE:-false}" = "true" ]; then
+            ARGS+=(--live)
+          fi
+          echo "Running: sync_matches.py ${ARGS[*]}"
+          python src/sync_matches.py "${ARGS[@]}"
