@@ -1,0 +1,85 @@
+name: head-coach-sync
+
+# Keeps Head Coach data flowing with no manual re-running needed:
+#   1. backfill-coach-ids - re-fetches /match for any already-synced match
+#      still missing home_coach_id/away_coach_id (one-time catch-up across
+#      the ~1,613 pre-existing matches; naturally becomes a fast no-op once
+#      caught up, since enrich_match() captures coach ids on all new
+#      matches going forward).
+#   2. head-coach-sync - resolves each club's current Head Coach from the
+#      best available match evidence, fetches their /manager record, and
+#      creates/updates the head_coach WP post (Snippets 142-145 required
+#      and already active - see src/enrich.py > populate_head_coaches()).
+#
+# Runs hourly, matching FootyStats' own hourly rate cap - both steps stop
+# themselves cleanly (not an error) if that cap is hit mid-run, and simply
+# pick up the remainder on the next scheduled run.
+#
+# Runs LIVE on schedule (this pass writes real data, same as daily-sync.yml)
+# - workflow_dispatch defaults to dry run so it can be sanity-checked
+#   on demand without writing anything.
+
+on:
+  schedule:
+    - cron: '0 * * * *'    # hourly, on the hour
+  workflow_dispatch:
+    inputs:
+      live:
+        description: 'Write changes (unchecked = dry run / report only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: head-coach-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  head-coach-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Backfill missing coach ids on existing matches
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_LIVE: ${{ inputs.live }}
+        run: |
+          set -euo pipefail
+          ARGS=(--backfill-coach-ids)
+          if [ "$EVENT_NAME" != "workflow_dispatch" ] || [ "$INPUT_LIVE" = "true" ]; then
+            ARGS+=(--live)
+          fi
+          echo "Running: sync_matches.py ${ARGS[*]}"
+          python src/sync_matches.py "${ARGS[@]}"
+
+      - name: Resolve and populate Head Coach data/pages
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_LIVE: ${{ inputs.live }}
+        run: |
+          set -euo pipefail
+          ARGS=(--head-coach-sync)
+          if [ "$EVENT_NAME" != "workflow_dispatch" ] || [ "$INPUT_LIVE" = "true" ]; then
+            ARGS+=(--live)
+          fi
+          echo "Running: sync_matches.py ${ARGS[*]}"
+          python src/sync_matches.py "${ARGS[@]}"
