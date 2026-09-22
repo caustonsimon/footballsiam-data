@@ -839,3 +839,96 @@ def reassign_clubs(
         time.sleep(pause)
 
     return stats
+
+
+# --------------------------------------------------------------------------
+# Player stats population (new 2026-09-22 - fills the previously-unused
+# fs_advanced_stats_json field, closing the gap between what FootyStats
+# already provides via FootyStatsClient.get_player() / /player-stats and
+# what was actually being stored)
+# --------------------------------------------------------------------------
+
+def populate_player_stats(
+    wp: WPClient,
+    fs: FootyStatsClient,
+    *,
+    audit: Callable[[str], None],
+    sample_limit: int = 10,
+    pause: float = 0.1,
+) -> dict[str, Any]:
+    """Full pass over every `player`. Fetches live /player-stats per player
+    (the same endpoint reassign_clubs() already calls, but this time keeps
+    the whole row list - not just club_team_id/appearances_overall) and
+    stores it as JSON in fs_advanced_stats_json.
+
+    Deliberately independent from reassign_clubs(): same data source, but
+    writes a different field and carries no reassignment risk. Honours
+    wp.dry_run (no writes when dry).
+
+    Each row is one season+competition the player appears in (per FootyStats'
+    own shape - not deduplicated or restructured here, so nothing about the
+    original data is lost or reinterpreted). Downstream code (player page
+    rendering, reassign_clubs' require_profile gate) picks what it needs.
+    """
+    log.info("  config: storing full /player-stats row list per player "
+             "(no filtering - identical shape to what FootyStats returns)")
+    stats: dict[str, Any] = {
+        "scanned": 0, "no_footystats_id": 0, "updated": 0,
+        "no_rows": 0, "bad_fs_record": 0, "errors": 0,
+        "update_sample": [],
+    }
+    now_iso = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    for p in wp.iter_all_players(fields="id,title,acf.footystats_id"):
+        stats["scanned"] += 1
+        acf = p.get("acf") or {}
+        pid = int(p["id"])
+        name = (p.get("title") or {}).get("rendered", "") or f"player {pid}"
+        fs_id = acf.get("footystats_id")
+        if fs_id in (None, "", 0, "0"):
+            stats["no_footystats_id"] += 1
+            continue
+
+        try:
+            rows = fs.get_player(int(fs_id))
+        except FootyStatsError as exc:
+            stats["errors"] += 1
+            log.error("  player-stats post %s (%s) fs=%s: /player-stats failed: %s",
+                      pid, name, fs_id, exc)
+            time.sleep(pause)
+            continue
+
+        # Same sanity check as reassign_clubs() - a bogus/deleted FootyStats
+        # id comes back as an all-empty-name grab-bag; never store that.
+        if not any(str(r.get("known_as") or r.get("full_name") or "").strip()
+                   for r in rows):
+            stats["bad_fs_record"] += 1
+            line = (f"BAD-FS-RECORD  {name}  (post {pid})  fs={fs_id}  "
+                    f"- /player-stats has no named rows; skipped, needs manual review")
+            audit(line)
+            if len(stats["update_sample"]) < sample_limit:
+                stats["update_sample"].append(line)
+            time.sleep(pause)
+            continue
+
+        if not rows:
+            stats["no_rows"] += 1
+            time.sleep(pause)
+            continue
+
+        payload = json.dumps({"synced_at": now_iso, "rows": rows}, separators=(",", ":"))
+        try:
+            if not wp.dry_run:
+                wp.update_player(pid, acf={"fs_advanced_stats_json": payload})
+            stats["updated"] += 1
+            if len(stats["update_sample"]) < sample_limit:
+                stats["update_sample"].append(
+                    f"STATS  {name}  (post {pid})  fs={fs_id}  "
+                    f"{len(rows)} row(s), {len(payload)} bytes")
+        except WPError as exc:
+            stats["errors"] += 1
+            log.error("  player-stats post %s (%s): write failed: %s", pid, name, exc)
+
+        time.sleep(pause)
+
+    return stats

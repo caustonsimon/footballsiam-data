@@ -81,6 +81,7 @@ EXIT_HOST_CHALLENGE = 3
 from enrich import (  # noqa: E402
     build_player_lookup,
     enrich_match,
+    populate_player_stats,
     reassign_clubs,
     reenrich_raw_match_data,
 )
@@ -577,6 +578,42 @@ def _run_club_sync(
     return 1 if (st["errors"] or st["verify_failures"]) else 0
 
 
+def _run_player_stats_sync(
+    wp: WPClient, fs: FootyStatsClient, *, sample_limit: int = 10
+) -> int:
+    """Fills fs_advanced_stats_json (full /player-stats row list) for every
+    player with a footystats_id. Independent from --club-sync - same data
+    source, different field, no reassignment logic."""
+    mode = "LIVE" if not wp.dry_run else "DRY RUN (report only, no writes)"
+    log.info("Starting player stats population - %s", mode)
+    try:
+        st = populate_player_stats(wp, fs, audit=_audit, sample_limit=sample_limit)
+    except WPHostChallengeError as exc:
+        log.error("=== HOST CHALLENGE - player stats sync did NOT run (not a failure) ===")
+        log.error("  %s", exc)
+        return EXIT_HOST_CHALLENGE
+    except (WPError, FootyStatsError) as exc:
+        log.error("Player stats sync aborted: %s", exc)
+        return 2
+
+    log.info("---------------------------------------------")
+    log.info("Player stats population summary (%s)", mode)
+    log.info("  players scanned              : %d", st["scanned"])
+    log.info("  skipped (no footystats_id)   : %d", st["no_footystats_id"])
+    log.info("  updated / would update       : %d", st["updated"])
+    log.info("  no rows returned             : %d", st["no_rows"])
+    log.info("  bad FS record (manual review): %d", st["bad_fs_record"])
+    log.info("  errors                       : %d", st["errors"])
+    if st.get("update_sample"):
+        log.info("  --- sample ---")
+        for s in st["update_sample"]:
+            log.info("    %s", s)
+    log.info("---------------------------------------------")
+
+    return 1 if st["errors"] else 0
+
+
+
 def _run_enrich_test(wp: WPClient, fs: FootyStatsClient, post_ids: list[int]) -> int:
     """Part C test: run the Part A enrich path (dry run, forced) against
     specific WP `matches` posts. Already-enriched posts hit the guard and skip.
@@ -646,6 +683,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="skip Part A match enrichment (score updates only)")
     parser.add_argument("--club-sync", action="store_true",
                         help="run Part B (club reassignment) instead of the match sync")
+    parser.add_argument("--player-stats", action="store_true",
+                        help="run the /player-stats population pass (fills "
+                             "fs_advanced_stats_json) instead of the match sync")
     parser.add_argument("--enrich-test", metavar="POST_IDS",
                         help="Part C test: run the enrich path (dry) against "
                              "these comma-separated `matches` post ids and exit")
@@ -695,6 +735,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.club_sync:
         return _run_club_sync(wp, fs)
+
+    if args.player_stats:
+        return _run_player_stats_sync(wp, fs)
 
     mode = "LIVE" if args.live else "DRY RUN (no writes)"
     log.info("Starting match sync - %s", mode)
