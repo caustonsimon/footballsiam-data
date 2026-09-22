@@ -32,6 +32,7 @@ DEFAULT_BASE = "https://footballsiam.com/wp-json/"
 CPT_REST_BASE = "wp/v2/match"      # the `matches` CPT registers rest_base "match"
 CLUB_REST_BASE = "wp/v2/club"
 PLAYER_REST_BASE = "wp/v2/player"
+HEAD_COACH_REST_BASE = "wp/v2/head_coach"  # Phase 3 - see Code Snippet 143
 MEDIA_REST_BASE = "wp/v2/media"
 DEFAULT_TIMEOUT = 30
 MAX_RETRIES = 3
@@ -256,6 +257,82 @@ class WPClient:
             if page >= total_pages:
                 return
             page += 1
+
+    def get_head_coach(self, post_id: int, fields: str | None = None) -> dict[str, Any]:
+        """Full `head_coach` post by id (context=edit for full meta)."""
+        params: dict[str, Any] = {"context": "edit"}
+        if fields:
+            params["_fields"] = fields
+        resp = self._request("GET", f"{HEAD_COACH_REST_BASE}/{post_id}", params=params)
+        return self._json_or_raise(resp, f"GET {HEAD_COACH_REST_BASE}/{post_id}")
+
+    def iter_all_head_coaches(self, fields: str = "id,title,meta") -> Iterator[dict[str, Any]]:
+        """Yield every published `head_coach` post. `context=edit` for full meta."""
+        page = 1
+        while True:
+            resp = self._request(
+                "GET",
+                HEAD_COACH_REST_BASE,
+                params={
+                    "per_page": PER_PAGE,
+                    "page": page,
+                    "status": "publish",
+                    "context": "edit",
+                    "_fields": fields,
+                    "orderby": "id",
+                    "order": "asc",
+                },
+            )
+            if resp.status_code == 400 and "rest_post_invalid_page_number" in resp.text:
+                return
+            if resp.status_code == 404:
+                # head_coach CPT not registered/active yet (Snippet 143) -
+                # treat as "no head coaches" rather than a hard error.
+                return
+            batch = self._json_or_raise(resp, f"GET {HEAD_COACH_REST_BASE} page {page}")
+            if not batch:
+                return
+            for post in batch:
+                yield post
+            total_pages = int(resp.headers.get("X-WP-TotalPages", "1") or "1")
+            if page >= total_pages:
+                return
+            page += 1
+
+    def index_head_coaches_by_manager_id(self) -> dict[int, dict[str, Any]]:
+        """Map { footystats_manager_id (int) -> head_coach post } - full
+        scan, same robustness reasoning as index_matches_by_footystats_id()
+        (works regardless of whether the server supports REST meta_query
+        filtering).
+        """
+        index: dict[int, dict[str, Any]] = {}
+        for post in self.iter_all_head_coaches(fields="id,title,meta.footystats_manager_id"):
+            raw = (post.get("meta") or {}).get("footystats_manager_id")
+            try:
+                mgr_id = int(str(raw).strip())
+            except (TypeError, ValueError):
+                continue
+            index[mgr_id] = post
+        return index
+
+    def create_head_coach(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """POST a new `head_coach` post. Honours dry_run."""
+        if self.dry_run:
+            return {"_dry_run": True, "would_create": payload}
+        resp = self._request("POST", HEAD_COACH_REST_BASE, json=payload)
+        return self._json_or_raise(resp, f"POST {HEAD_COACH_REST_BASE}")
+
+    def update_head_coach(
+        self, post_id: int, *, meta: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """PATCH a `head_coach` post's meta. Honours dry_run."""
+        if not meta:
+            return {"_noop": True}
+        body = {"meta": meta}
+        if self.dry_run:
+            return {"_dry_run": True, "would_update": post_id, **body}
+        resp = self._request("POST", f"{HEAD_COACH_REST_BASE}/{post_id}", json=body)
+        return self._json_or_raise(resp, f"POST {HEAD_COACH_REST_BASE}/{post_id}")
 
     def iter_all_players(self, fields: str = "id,title,acf") -> Iterator[dict[str, Any]]:
         """Yield every published `player` post. `context=edit` for full acf."""

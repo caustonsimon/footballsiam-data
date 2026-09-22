@@ -1135,6 +1135,61 @@ def _manager_row_name(row: dict[str, Any]) -> str:
     return ""
 
 
+def ensure_head_coach(
+    wp: WPClient,
+    coach_id: int,
+    rows: list[dict[str, Any]],
+    coach_name: str,
+    payload: str,
+    club_wp_id: int,
+    *,
+    index: dict[int, dict[str, Any]],
+    audit: Callable[[str], None],
+) -> int | None:
+    """Create or update the `head_coach` WP post for one resolved FootyStats
+    manager id (mirrors ensure_player()'s auto-create pattern). `index` -
+    from wp.index_head_coaches_by_manager_id(), built once by the caller -
+    is kept in sync so later lookups within the same run see a coach just
+    created. Returns the WP post id, or None in dry-run (nothing is
+    actually created then) or if the CPT/REST meta isn't registered yet
+    (Code Snippet 143 not active - treated as a soft no-op, not an error,
+    since fs_head_coach_json/head_coach on the club post still get written
+    either way).
+    """
+    nat_row = next((r for r in rows if str(r.get("nationality") or "").strip()),
+                    rows[0] if rows else {})
+    nationality = str(nat_row.get("nationality") or "").strip()
+    birthday = nat_row.get("birthday") or 0
+    meta = {
+        "footystats_manager_id": str(coach_id),
+        "fs_head_coach_json": payload,
+        "current_club": str(club_wp_id),
+    }
+    if nationality:
+        meta["nationality"] = nationality
+    if birthday:
+        meta["birthday"] = str(int(birthday))
+
+    existing = index.get(coach_id)
+    if existing is not None:
+        pid = int(existing["id"])
+        if not wp.dry_run:
+            wp.update_head_coach(pid, meta=meta)
+        return pid
+
+    resp = wp.create_head_coach({
+        "title": coach_name,
+        "status": "publish",
+        "meta": meta,
+    })
+    new_id = None if wp.dry_run else int(resp.get("id"))
+    audit(f"HEAD COACH CREATE  {coach_name}  fs={coach_id}  "
+          f"wp={new_id if new_id else '(dry-run)'}  club={club_wp_id}")
+    if new_id is not None:
+        index[coach_id] = {"id": new_id, "title": {"rendered": coach_name}}
+    return new_id
+
+
 def populate_head_coaches(
     wp: WPClient,
     fs: FootyStatsClient,
@@ -1178,6 +1233,18 @@ def populate_head_coaches(
         Club Pages Master Engine (get_field('head_coach', $cid) ?: 'TBA') -
         so this one pass makes that already-built UI show real names with
         no front-end changes needed.
+      - head_coach_post_id: the WP `head_coach` post id, via
+        ensure_head_coach() (Phase 3, mirrors ensure_player()'s auto-create
+        pattern) - the relational link, club -> coach. The coach's own post
+        stores current_club (WP club post id) as the reverse link.
+
+    Every meta field this writes - on `matches`, `club`, and `head_coach` -
+    needs an explicit register_post_meta(..., show_in_rest: true) call to
+    actually persist via the REST API the Python pipeline uses (an
+    unregistered key is silently dropped, no error - found the hard way
+    2026-09-22). See Code Snippets 142 (matches/club fields) and 143 (the
+    head_coach CPT + its own fields) - BOTH must be active in wp-admin
+    before this function's writes do anything at all.
 
     Labeling: always "Head Coach" in any UI-facing text this pass touches
     or documents - never "Manager" (Simon's explicit naming decision,
@@ -1191,6 +1258,8 @@ def populate_head_coaches(
         "rate_limited_stop": False, "update_sample": [], "no_evidence_sample": [],
     }
     now_iso = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    hc_index = wp.index_head_coaches_by_manager_id()
+    log.info("  head_coach index: %d existing coach post(s)", len(hc_index))
 
     # -- Pass 1: most-recent coach id per WP club id ---------------------
     best: dict[int, tuple[str, str]] = {}  # wp_club_id -> (date, coach_id)
@@ -1278,21 +1347,112 @@ def populate_head_coaches(
             "rows": rows,
         }, separators=(",", ":"))
 
+        hc_post_id = ensure_head_coach(
+            wp, coach_id, rows, coach_name, payload, pid,
+            index=hc_index, audit=audit,
+        )
+
+        club_meta = {"fs_head_coach_json": payload}
+        if hc_post_id is not None:
+            club_meta["head_coach_post_id"] = str(hc_post_id)
+
         try:
             if not wp.dry_run:
                 wp.update_club(
                     pid,
-                    meta={"fs_head_coach_json": payload},
+                    meta=club_meta,
                     acf={"head_coach": coach_name} if coach_name else None,
                 )
             stats["updated"] += 1
             if len(stats["update_sample"]) < sample_limit:
                 stats["update_sample"].append(
                     f"HEAD COACH  {name}  (post {pid})  coach={coach_id}  "
-                    f"\"{coach_name}\"  {len(rows)} row(s), {len(payload)} bytes")
+                    f"\"{coach_name}\"  hc_post={hc_post_id}  "
+                    f"{len(rows)} row(s), {len(payload)} bytes")
         except WPError as exc:
             stats["errors"] += 1
             log.error("  head-coach post %s (%s): write failed: %s", pid, name, exc)
+
+        time.sleep(pause)
+
+    return stats
+
+
+def backfill_coach_ids(
+    wp: WPClient,
+    fs: FootyStatsClient,
+    *,
+    audit: Callable[[str], None],
+    pause: float = 0.1,
+) -> dict[str, Any]:
+    """One-time backfill (Phase 2 follow-up, 2026-09-22): for every already-
+    enriched `matches` post missing home_coach_id/away_coach_id, re-fetch
+    /match and write just those two meta fields - raw_match_data / team
+    stats / xG are left alone (same "re-fetch, write a narrow slice" shape
+    as reenrich_raw_match_data(), but for coach ids instead).
+
+    Without this, populate_head_coaches() only has evidence from matches
+    enriched AFTER the coach_meta capture shipped, so coverage would grow
+    one match at a time as the season progresses. Running this once gives
+    immediate coverage across every match already on the site (~1,613 as of
+    2026-09-22 - one FootyStats request each, well inside the 1,800/hour
+    cap for a single run, but stops cleanly on a 429 exactly like
+    populate_player_stats() in case the quota has already been spent on
+    something else this hour).
+    """
+    stats: dict[str, Any] = {
+        "scanned": 0, "already_had_coach_meta": 0, "no_footystats_id": 0,
+        "updated": 0, "no_coach_data": 0, "errors": 0,
+        "rate_limited_stop": False,
+    }
+    for post in wp.iter_all_matches():
+        stats["scanned"] += 1
+        meta = post.get("meta") or {}
+        pid = int(post["id"])
+        title = (post.get("title") or {}).get("rendered", "") or f"match {pid}"
+
+        if str(meta.get("home_coach_id") or "").strip() or str(meta.get("away_coach_id") or "").strip():
+            stats["already_had_coach_meta"] += 1
+            continue
+
+        fs_id = meta.get("footystats_match_id")
+        if not fs_id:
+            stats["no_footystats_id"] += 1
+            continue
+
+        try:
+            md = fs.get_match(int(fs_id))
+        except FootyStatsError as exc:
+            if "429" in str(exc) or "Rate limit" in str(exc):
+                stats["rate_limited_stop"] = True
+                log.warning("  RATE LIMIT reached at post %s (%s) - stopping "
+                            "this run cleanly. %d written this run; re-run "
+                            "to continue.", pid, title, stats["updated"])
+                break
+            stats["errors"] += 1
+            log.error("  coach-backfill post %s (%s) fs=%s: /match fetch failed: %s",
+                      pid, title, fs_id, exc)
+            time.sleep(pause)
+            continue
+
+        coach_meta: dict[str, str] = {}
+        if md.get("coach_a_ID") not in (None, -1):
+            coach_meta["home_coach_id"] = str(md["coach_a_ID"])
+        if md.get("coach_b_ID") not in (None, -1):
+            coach_meta["away_coach_id"] = str(md["coach_b_ID"])
+
+        if not coach_meta:
+            stats["no_coach_data"] += 1
+            time.sleep(pause)
+            continue
+
+        try:
+            if not wp.dry_run:
+                wp.update_match(pid, meta=coach_meta)
+            stats["updated"] += 1
+        except WPError as exc:
+            stats["errors"] += 1
+            log.error("  coach-backfill post %s (%s): write failed: %s", pid, title, exc)
 
         time.sleep(pause)
 

@@ -79,6 +79,7 @@ from wp_client import WPClient, WPError, WPHostChallengeError  # noqa: E402
 # our failure; retry later / allowlist the caller).
 EXIT_HOST_CHALLENGE = 3
 from enrich import (  # noqa: E402
+    backfill_coach_ids,
     build_player_lookup,
     enrich_match,
     populate_head_coaches,
@@ -699,6 +700,40 @@ def _run_head_coach_sync(
     return 1 if st["errors"] else 0
 
 
+def _run_coach_backfill(wp: WPClient, fs: FootyStatsClient) -> int:
+    """One-time: backfill home_coach_id/away_coach_id onto already-enriched
+    matches missing them, so populate_head_coaches() has immediate coverage
+    instead of waiting for new matches. See backfill_coach_ids() docstring.
+    """
+    mode = "LIVE" if not wp.dry_run else "DRY RUN (report only, no writes)"
+    log.info("Starting coach-id backfill - %s", mode)
+    try:
+        st = backfill_coach_ids(wp, fs, audit=_audit)
+    except WPHostChallengeError as exc:
+        log.error("=== HOST CHALLENGE - coach-id backfill did NOT run (not a failure) ===")
+        log.error("  %s", exc)
+        return EXIT_HOST_CHALLENGE
+    except (WPError, FootyStatsError) as exc:
+        log.error("Coach-id backfill aborted: %s", exc)
+        return 2
+
+    log.info("---------------------------------------------")
+    log.info("Coach-id backfill summary (%s)", mode)
+    log.info("  matches scanned               : %d", st["scanned"])
+    log.info("  already had coach meta        : %d", st["already_had_coach_meta"])
+    log.info("  skipped (no footystats id)    : %d", st["no_footystats_id"])
+    log.info("  updated / would update        : %d", st["updated"])
+    log.info("  no coach data on /match        : %d", st["no_coach_data"])
+    log.info("  errors                        : %d", st["errors"])
+    if st.get("rate_limited_stop"):
+        log.warning(
+            "  STOPPED EARLY: FootyStats hourly rate limit reached. "
+            "Re-run later to continue with the remaining matches."
+        )
+    log.info("---------------------------------------------")
+    return 1 if st["errors"] else 0
+
+
 def _run_enrich_test(wp: WPClient, fs: FootyStatsClient, post_ids: list[int]) -> int:
     """Part C test: run the Part A enrich path (dry run, forced) against
     specific WP `matches` posts. Already-enriched posts hit the guard and skip.
@@ -781,6 +816,11 @@ def main(argv: list[str] | None = None) -> int:
                              "club's current Head Coach from captured match coach "
                              "ids, fetches /manager, writes fs_head_coach_json + "
                              "head_coach) instead of the match sync")
+    parser.add_argument("--backfill-coach-ids", action="store_true",
+                        help="one-time: backfill home_coach_id/away_coach_id onto "
+                             "already-enriched matches missing them, so "
+                             "--head-coach-sync has immediate coverage instead of "
+                             "waiting for new matches to be enriched one at a time")
     parser.add_argument("--enrich-test", metavar="POST_IDS",
                         help="Part C test: run the enrich path (dry) against "
                              "these comma-separated `matches` post ids and exit")
@@ -838,6 +878,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.head_coach_sync:
         return _run_head_coach_sync(wp, fs)
+
+    if args.backfill_coach_ids:
+        return _run_coach_backfill(wp, fs)
 
     mode = "LIVE" if args.live else "DRY RUN (no writes)"
     log.info("Starting match sync - %s", mode)
