@@ -579,15 +579,36 @@ def _run_club_sync(
 
 
 def _run_player_stats_sync(
-    wp: WPClient, fs: FootyStatsClient, *, sample_limit: int = 10
+    wp: WPClient,
+    fs: FootyStatsClient,
+    *,
+    sample_limit: int = 10,
+    skip_existing: bool = True,
 ) -> int:
     """Fills fs_advanced_stats_json (full /player-stats row list) for every
     player with a footystats_id. Independent from --club-sync - same data
-    source, different field, no reassignment logic."""
+    source, different field, no reassignment logic.
+
+    FootyStats enforces a 1,800 request/hour cap, so a single run over all
+    ~2,172 players cannot complete in one pass. skip_existing=True (the
+    default) skips any player who already has a populated
+    fs_advanced_stats_json before spending a request on them, so repeat runs
+    (scheduled or manual) make forward progress instead of re-covering the
+    same first ~1,800 players every time. When the rate limit is hit
+    mid-run, populate_player_stats() stops cleanly (rate_limited_stop=True)
+    rather than retry-hammering every remaining player until the job's
+    timeout kills it.
+    """
     mode = "LIVE" if not wp.dry_run else "DRY RUN (report only, no writes)"
-    log.info("Starting player stats population - %s", mode)
+    log.info(
+        "Starting player stats population - %s (skip_existing=%s)",
+        mode, skip_existing,
+    )
     try:
-        st = populate_player_stats(wp, fs, audit=_audit, sample_limit=sample_limit)
+        st = populate_player_stats(
+            wp, fs, audit=_audit, sample_limit=sample_limit,
+            skip_existing=skip_existing,
+        )
     except WPHostChallengeError as exc:
         log.error("=== HOST CHALLENGE - player stats sync did NOT run (not a failure) ===")
         log.error("  %s", exc)
@@ -600,10 +621,18 @@ def _run_player_stats_sync(
     log.info("Player stats population summary (%s)", mode)
     log.info("  players scanned              : %d", st["scanned"])
     log.info("  skipped (no footystats_id)   : %d", st["no_footystats_id"])
+    log.info("  skipped (already had profile): %d", st.get("already_had_profile", 0))
     log.info("  updated / would update       : %d", st["updated"])
     log.info("  no rows returned             : %d", st["no_rows"])
     log.info("  bad FS record (manual review): %d", st["bad_fs_record"])
     log.info("  errors                       : %d", st["errors"])
+    if st.get("rate_limited_stop"):
+        log.warning(
+            "  STOPPED EARLY: FootyStats hourly rate limit reached. "
+            "Re-run later (skip_existing=%s) to continue with the "
+            "remaining players once the quota resets.",
+            skip_existing,
+        )
     if st.get("update_sample"):
         log.info("  --- sample ---")
         for s in st["update_sample"]:
@@ -686,6 +715,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--player-stats", action="store_true",
                         help="run the /player-stats population pass (fills "
                              "fs_advanced_stats_json) instead of the match sync")
+    parser.add_argument("--refresh-player-stats", action="store_true",
+                        help="with --player-stats, re-fetch players that already "
+                             "have fs_advanced_stats_json instead of skipping them "
+                             "(default is to skip, so repeat runs make forward "
+                             "progress against the FootyStats hourly rate limit)")
     parser.add_argument("--enrich-test", metavar="POST_IDS",
                         help="Part C test: run the enrich path (dry) against "
                              "these comma-separated `matches` post ids and exit")
@@ -737,7 +771,9 @@ def main(argv: list[str] | None = None) -> int:
         return _run_club_sync(wp, fs)
 
     if args.player_stats:
-        return _run_player_stats_sync(wp, fs)
+        return _run_player_stats_sync(
+            wp, fs, skip_existing=not args.refresh_player_stats
+        )
 
     mode = "LIVE" if args.live else "DRY RUN (no writes)"
     log.info("Starting match sync - %s", mode)

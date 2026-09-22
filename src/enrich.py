@@ -855,6 +855,7 @@ def populate_player_stats(
     audit: Callable[[str], None],
     sample_limit: int = 10,
     pause: float = 0.1,
+    skip_existing: bool = True,
 ) -> dict[str, Any]:
     """Full pass over every `player`. Fetches live /player-stats per player
     (the same endpoint reassign_clubs() already calls, but this time keeps
@@ -869,17 +870,31 @@ def populate_player_stats(
     own shape - not deduplicated or restructured here, so nothing about the
     original data is lost or reinterpreted). Downstream code (player page
     rendering, reassign_clubs' require_profile gate) picks what it needs.
+
+    skip_existing (default True): skip any player that already has a
+    non-empty fs_advanced_stats_json. FootyStats caps requests at 1,800/hour
+    (2026-09-22: a full run over ~2,200 players hit that cap partway through
+    and the remaining players 429'd for the rest of the run). This flag is
+    what makes repeated runs converge on full coverage instead of re-fetching
+    the same first ~1,800 players every time - a second run an hour later
+    picks up exactly where the first stopped. Pass skip_existing=False to
+    force a full refresh of every player regardless of what's already stored.
     """
     log.info("  config: storing full /player-stats row list per player "
-             "(no filtering - identical shape to what FootyStats returns)")
+             "(no filtering - identical shape to what FootyStats returns); "
+             "skip_existing=%s", skip_existing)
     stats: dict[str, Any] = {
-        "scanned": 0, "no_footystats_id": 0, "updated": 0,
-        "no_rows": 0, "bad_fs_record": 0, "errors": 0,
-        "update_sample": [],
+        "scanned": 0, "no_footystats_id": 0, "already_had_profile": 0,
+        "updated": 0, "no_rows": 0, "bad_fs_record": 0, "errors": 0,
+        "rate_limited_stop": False, "update_sample": [],
     }
     now_iso = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    for p in wp.iter_all_players(fields="id,title,acf.footystats_id"):
+    fields = "id,title,acf.footystats_id"
+    if skip_existing:
+        fields += ",acf.fs_advanced_stats_json"
+
+    for p in wp.iter_all_players(fields=fields):
         stats["scanned"] += 1
         acf = p.get("acf") or {}
         pid = int(p["id"])
@@ -889,9 +904,29 @@ def populate_player_stats(
             stats["no_footystats_id"] += 1
             continue
 
+        if skip_existing and str(acf.get("fs_advanced_stats_json") or "").strip():
+            stats["already_had_profile"] += 1
+            continue
+
         try:
             rows = fs.get_player(int(fs_id))
         except FootyStatsError as exc:
+            # The FootyStats client already retries a 429 with backoff and
+            # only raises once those retries are exhausted - at that point
+            # the hourly quota (1,800 req) is genuinely gone for up to an
+            # hour, so hammering every remaining player with more retries
+            # just burns CI minutes on guaranteed failures. Stop cleanly
+            # instead: what's already written stands, and (with
+            # skip_existing, the default) the next run picks up here.
+            if "429" in str(exc) or "Rate limit" in str(exc):
+                stats["rate_limited_stop"] = True
+                log.warning("  RATE LIMIT reached at post %s (%s) - stopping "
+                            "this run cleanly rather than retrying every "
+                            "remaining player. %d written this run; re-run "
+                            "(skip_existing=%s) once the hourly quota resets "
+                            "to continue from here.",
+                            pid, name, stats["updated"], skip_existing)
+                break
             stats["errors"] += 1
             log.error("  player-stats post %s (%s) fs=%s: /player-stats failed: %s",
                       pid, name, fs_id, exc)
