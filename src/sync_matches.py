@@ -187,9 +187,13 @@ LEAGUES: list[dict[str, Any]] = [
         "taxonomies": {"competition": [139], "categories": [140], "season": [SEASON_TERM_ID]},
         "require_full_club_map": False,
     },
-    # Thai League 3 Central deliberately omitted -- FootyStats has no
-    # current-season data for it (confirmed 2026-09-15). WP taxonomy terms
-    # already exist (competition 133, category 134) for whenever it's ready.
+    {
+        "name": "Thai League 3 Central",
+        "season_id": 17934,
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [133], "categories": [134], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
 ]
 
 log = logging.getLogger("sync_matches")
