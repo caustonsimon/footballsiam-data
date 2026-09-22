@@ -81,6 +81,7 @@ EXIT_HOST_CHALLENGE = 3
 from enrich import (  # noqa: E402
     build_player_lookup,
     enrich_match,
+    populate_head_coaches,
     populate_player_stats,
     reassign_clubs,
     reenrich_raw_match_data,
@@ -642,6 +643,61 @@ def _run_player_stats_sync(
     return 1 if st["errors"] else 0
 
 
+def _run_head_coach_sync(
+    wp: WPClient, fs: FootyStatsClient, *, sample_limit: int = 10
+) -> int:
+    """Phase 2: resolves each club's current head coach from captured
+    match-level coach ids (home_coach_id/away_coach_id, only present on
+    matches enriched since 2026-09-22 - see enrich_match()'s coach_meta
+    block) and stores the coach's managerial record from FootyStats'
+    /manager endpoint. Labeled "Head Coach" everywhere - never "Manager"
+    (Simon's explicit naming decision).
+
+    No FootyStats hourly-cap batching flag here (unlike --player-stats):
+    coverage is naturally bounded by how many clubs have a captured coach
+    id yet (grows as new matches are enriched), which will be well under
+    ~20 clubs for a long time - nowhere near the 1,800/hour cap. Revisit if
+    that changes.
+    """
+    mode = "LIVE" if not wp.dry_run else "DRY RUN (report only, no writes)"
+    log.info("Starting head coach population - %s", mode)
+    try:
+        st = populate_head_coaches(wp, fs, audit=_audit, sample_limit=sample_limit)
+    except WPHostChallengeError as exc:
+        log.error("=== HOST CHALLENGE - head coach sync did NOT run (not a failure) ===")
+        log.error("  %s", exc)
+        return EXIT_HOST_CHALLENGE
+    except (WPError, FootyStatsError) as exc:
+        log.error("Head coach sync aborted: %s", exc)
+        return 2
+
+    log.info("---------------------------------------------")
+    log.info("Head coach population summary (%s)", mode)
+    log.info("  matches scanned               : %d", st["matches_scanned"])
+    log.info("  clubs with a captured coach id: %d", st["clubs_with_evidence"])
+    log.info("  clubs scanned                 : %d", st["clubs_scanned"])
+    log.info("  no evidence yet (skipped)     : %d", st["no_evidence"])
+    log.info("  updated / would update        : %d", st["updated"])
+    log.info("  no rows returned              : %d", st["no_rows"])
+    log.info("  bad FS record (manual review) : %d", st["bad_fs_record"])
+    log.info("  errors                        : %d", st["errors"])
+    if st.get("rate_limited_stop"):
+        log.warning(
+            "  STOPPED EARLY: FootyStats hourly rate limit reached. "
+            "Re-run later to continue with the remaining clubs."
+        )
+    if st.get("update_sample"):
+        log.info("  --- sample ---")
+        for s in st["update_sample"]:
+            log.info("    %s", s)
+    if st.get("no_evidence_sample"):
+        log.info("  --- no-evidence sample ---")
+        for s in st["no_evidence_sample"]:
+            log.info("    %s", s)
+    log.info("---------------------------------------------")
+
+    return 1 if st["errors"] else 0
+
 
 def _run_enrich_test(wp: WPClient, fs: FootyStatsClient, post_ids: list[int]) -> int:
     """Part C test: run the Part A enrich path (dry run, forced) against
@@ -720,6 +776,11 @@ def main(argv: list[str] | None = None) -> int:
                              "have fs_advanced_stats_json instead of skipping them "
                              "(default is to skip, so repeat runs make forward "
                              "progress against the FootyStats hourly rate limit)")
+    parser.add_argument("--head-coach-sync", action="store_true",
+                        help="run the head-coach population pass (resolves each "
+                             "club's current Head Coach from captured match coach "
+                             "ids, fetches /manager, writes fs_head_coach_json + "
+                             "head_coach) instead of the match sync")
     parser.add_argument("--enrich-test", metavar="POST_IDS",
                         help="Part C test: run the enrich path (dry) against "
                              "these comma-separated `matches` post ids and exit")
@@ -774,6 +835,9 @@ def main(argv: list[str] | None = None) -> int:
         return _run_player_stats_sync(
             wp, fs, skip_existing=not args.refresh_player_stats
         )
+
+    if args.head_coach_sync:
+        return _run_head_coach_sync(wp, fs)
 
     mode = "LIVE" if args.live else "DRY RUN (no writes)"
     log.info("Starting match sync - %s", mode)

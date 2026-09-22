@@ -220,6 +220,43 @@ class WPClient:
         resp = self._request("GET", f"{PLAYER_REST_BASE}/{post_id}", params=params)
         return self._json_or_raise(resp, f"GET {PLAYER_REST_BASE}/{post_id}")
 
+    def get_club(self, post_id: int, fields: str | None = None) -> dict[str, Any]:
+        """Full `club` post by id (context=edit so all acf/meta is returned)."""
+        params: dict[str, Any] = {"context": "edit"}
+        if fields:
+            params["_fields"] = fields
+        resp = self._request("GET", f"{CLUB_REST_BASE}/{post_id}", params=params)
+        return self._json_or_raise(resp, f"GET {CLUB_REST_BASE}/{post_id}")
+
+    def iter_all_clubs(self, fields: str = "id,title,acf") -> Iterator[dict[str, Any]]:
+        """Yield every published `club` post. `context=edit` for full acf."""
+        page = 1
+        while True:
+            resp = self._request(
+                "GET",
+                CLUB_REST_BASE,
+                params={
+                    "per_page": PER_PAGE,
+                    "page": page,
+                    "status": "publish",
+                    "context": "edit",
+                    "_fields": fields,
+                    "orderby": "id",
+                    "order": "asc",
+                },
+            )
+            if resp.status_code == 400 and "rest_post_invalid_page_number" in resp.text:
+                return
+            batch = self._json_or_raise(resp, f"GET {CLUB_REST_BASE} page {page}")
+            if not batch:
+                return
+            for post in batch:
+                yield post
+            total_pages = int(resp.headers.get("X-WP-TotalPages", "1") or "1")
+            if page >= total_pages:
+                return
+            page += 1
+
     def iter_all_players(self, fields: str = "id,title,acf") -> Iterator[dict[str, Any]]:
         """Yield every published `player` post. `context=edit` for full acf."""
         page = 1
@@ -316,6 +353,26 @@ class WPClient:
             return {"_dry_run": True, "would_update": post_id, **body}
         resp = self._request("POST", f"{PLAYER_REST_BASE}/{post_id}", json=body)
         return self._json_or_raise(resp, f"POST {PLAYER_REST_BASE}/{post_id}")
+
+    def update_club(
+        self,
+        post_id: int,
+        *,
+        meta: dict[str, Any] | None = None,
+        acf: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """PATCH a `club` post with `meta` and/or `acf`. Honours dry_run."""
+        body: dict[str, Any] = {}
+        if meta:
+            body["meta"] = meta
+        if acf:
+            body["acf"] = acf
+        if not body:
+            return {"_noop": True}
+        if self.dry_run:
+            return {"_dry_run": True, "would_update": post_id, **body}
+        resp = self._request("POST", f"{CLUB_REST_BASE}/{post_id}", json=body)
+        return self._json_or_raise(resp, f"POST {CLUB_REST_BASE}/{post_id}")
 
     def upload_media(
         self,

@@ -139,6 +139,26 @@ class FootyStatsClient:
             raise FootyStatsError(f"/match {match_id}: unexpected data shape")
         return data
 
+    def get_manager(self, manager_id: int) -> list[dict[str, Any]]:
+        """All per-season/league rows for one manager (GET /manager).
+
+        Same shape as get_player()/`/player-stats`: `data` is a list, one
+        entry per season+competition the manager was in charge for (wins/
+        draws/losses, goals for/against, BTTS/over-under splits, cards,
+        min_per_goal/card/assist, total_matches_managed, etc. - see
+        footystats.org/api/documentations/manager-individual). Live-verified
+        2026-09-22 against a real manager_id (21976, from a real match's
+        coach_a_ID) - confirmed `data` is a list of per-season rows with
+        `known_as`/`full_name` present, matching this method's docstring.
+        """
+        payload = self._get("manager", {"manager_id": int(manager_id)})
+        data = payload.get("data")
+        if isinstance(data, dict):
+            return [data]
+        if not isinstance(data, list):
+            raise FootyStatsError(f"/manager {manager_id}: unexpected data shape")
+        return data
+
     def get_player(self, player_id: int) -> list[dict[str, Any]]:
         """All per-season/competition rows for one player (GET /player-stats).
 

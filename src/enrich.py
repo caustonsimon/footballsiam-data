@@ -440,6 +440,19 @@ def enrich_match(
     if md.get("team_b_xg_prematch") is not None:
         xg_meta["away_xg_prematch"] = str(md["team_b_xg_prematch"])
 
+    # -- head coach IDs (Phase 2: Head Coach data) -----------------------
+    # /match-details carries coach_a_ID/coach_b_ID directly (confirmed via
+    # FootyStats' own manager-individual docs, which tie back to these same
+    # ids). Stored as plain match meta - resolving them into an actual head
+    # coach per club is a separate pass (populate_head_coaches(), below),
+    # since a coach can be correct for many matches and we don't want to
+    # call /manager once per match.
+    coach_meta: dict[str, str] = {}
+    if md.get("coach_a_ID") not in (None, -1):
+        coach_meta["home_coach_id"] = str(md["coach_a_ID"])
+    if md.get("coach_b_ID") not in (None, -1):
+        coach_meta["away_coach_id"] = str(md["coach_b_ID"])
+
     # -- auto-create any missing players ------------------------------
     ymd = _bangkok_ymd(md.get("date_unix") or fs_match.get("date_unix"))
     home_club_wp = club_map.get(int(md.get("homeID", 0) or 0))
@@ -457,7 +470,7 @@ def enrich_match(
     # -- raw_match_data --------------------------------------------
     rmd, own_goals = _build_raw_match_data(md, lookup)
 
-    meta = {**stat_meta, **xg_meta, "raw_match_data": rmd}
+    meta = {**stat_meta, **xg_meta, **coach_meta, "raw_match_data": rmd}
     try:
         wp.update_match(post_id, meta=meta, acf=xg_acf or None)
     except WPError as exc:
@@ -469,6 +482,7 @@ def enrich_match(
         f"ENRICH  post {post_id}  fs {fs_id}  "
         f"stats={len(stat_meta)}  xg={xg_acf.get('home_xg')}-{xg_acf.get('away_xg')}  "
         f"xg_pre={xg_meta.get('home_xg_prematch')}-{xg_meta.get('away_xg_prematch')}  "
+        f"coaches={coach_meta.get('home_coach_id')}-{coach_meta.get('away_coach_id')}  "
         f"players={n_players}  own_goals={own_goals}"
     )
 
@@ -1081,6 +1095,204 @@ def populate_player_stats(
         except WPError as exc:
             stats["errors"] += 1
             log.error("  player-stats post %s (%s): write failed: %s", pid, name, exc)
+
+        time.sleep(pause)
+
+    return stats
+
+
+# --------------------------------------------------------------------------
+# Head coach population (Phase 2, new 2026-09-22 - resolves each club's
+# current head coach from captured match-level coach ids, then fetches and
+# stores the coach's managerial record from FootyStats' /manager endpoint)
+# --------------------------------------------------------------------------
+
+def _club_ids(meta: dict[str, Any]) -> tuple[int | None, int | None]:
+    """(home_wp_club_id, away_wp_club_id) from a match post's meta. Both are
+    plain string-encoded WP post ids (see sync_matches.py's match-creation
+    meta, e.g. "home_team": str(home_wp)) - not a serialized array or ACF
+    relationship object.
+    """
+    def _pid(v: Any) -> int | None:
+        try:
+            iv = int(str(v).strip())
+        except (TypeError, ValueError):
+            return None
+        return iv or None
+    return _pid(meta.get("home_team")), _pid(meta.get("away_team"))
+
+
+def _manager_row_name(row: dict[str, Any]) -> str:
+    """Best-effort display name from one /manager row. Live-verified
+    2026-09-22: real rows carry both "known_as" and "full_name" (e.g.
+    "Worrawoot Srimaka" for manager id 21976) - the extra fallbacks are
+    just defensive.
+    """
+    for k in ("known_as", "full_name", "manager_name", "name"):
+        v = row.get(k)
+        if v:
+            return str(v).strip()
+    return ""
+
+
+def populate_head_coaches(
+    wp: WPClient,
+    fs: FootyStatsClient,
+    *,
+    audit: Callable[[str], None],
+    sample_limit: int = 10,
+    pause: float = 0.1,
+) -> dict[str, Any]:
+    """Two-pass. Honours wp.dry_run (no writes when dry).
+
+    Pass 1: scan wp.iter_all_matches() once to find, per WP club id, the
+    most recent match (by the "date" meta - YYYYMMDD string, safe to sort
+    lexically) carrying a captured home_coach_id/away_coach_id for that
+    side. "Most recent evidence wins" - same pattern reassign_clubs() uses
+    for current_club, but keyed off our own match CPT meta rather than
+    FootyStats' own team-stats blob, since coach ids are only ever captured
+    match-by-match (see enrich_match()'s coach_meta block).
+
+    Coverage note: only matches enriched AFTER the coach_meta capture
+    shipped (2026-09-22) carry home_coach_id/away_coach_id -
+    enrich_match() never re-enriches an already-enriched match
+    (raw_match_data guard), so this will NOT retroactively resolve coaches
+    from historical matches. Coverage grows as new matches are played and
+    enriched; a one-off backfill re-enrich pass could close that gap later
+    if wanted, but is out of scope here.
+
+    Pass 2: for each club, resolve its coach id from pass 1, call
+    fs.get_manager() (endpoint + coach_a_ID/coach_b_ID field names and the
+    /manager row shape all live-verified 2026-09-22), apply the same
+    bad-record sanity check and 429-clean-stop pattern as
+    populate_player_stats(), and write:
+      - fs_head_coach_json: the full /manager row list, as plain WP post
+        META (deliberately NOT acf - unlike fs_team_stats_json /
+        fs_advanced_stats_json, no fs_head_coach_json ACF field has been
+        registered on the club CPT yet, and post meta needs no such
+        registration to write or to read back via get_post_meta() /
+        get_field()'s meta fallback - same approach already used for
+        raw_match_data on the matches CPT).
+      - head_coach: the coach's best-effort display name into the existing
+        plain-text ACF field already rendered by fs_club_top_bar() in the
+        Club Pages Master Engine (get_field('head_coach', $cid) ?: 'TBA') -
+        so this one pass makes that already-built UI show real names with
+        no front-end changes needed.
+
+    Labeling: always "Head Coach" in any UI-facing text this pass touches
+    or documents - never "Manager" (Simon's explicit naming decision,
+    2026-09-22) - even though the underlying FootyStats endpoint and field
+    names are /manager, manager_id, etc.
+    """
+    stats: dict[str, Any] = {
+        "matches_scanned": 0, "clubs_with_evidence": 0,
+        "clubs_scanned": 0, "no_evidence": 0, "bad_coach_id": 0,
+        "updated": 0, "no_rows": 0, "bad_fs_record": 0, "errors": 0,
+        "rate_limited_stop": False, "update_sample": [], "no_evidence_sample": [],
+    }
+    now_iso = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # -- Pass 1: most-recent coach id per WP club id ---------------------
+    best: dict[int, tuple[str, str]] = {}  # wp_club_id -> (date, coach_id)
+    for m in wp.iter_all_matches():
+        stats["matches_scanned"] += 1
+        meta = m.get("meta") or {}
+        date = str(meta.get("date") or "").strip()
+        if not date:
+            continue
+        home_id, away_id = _club_ids(meta)
+        home_coach = str(meta.get("home_coach_id") or "").strip()
+        away_coach = str(meta.get("away_coach_id") or "").strip()
+        if home_id and home_coach:
+            cur = best.get(home_id)
+            if cur is None or date > cur[0]:
+                best[home_id] = (date, home_coach)
+        if away_id and away_coach:
+            cur = best.get(away_id)
+            if cur is None or date > cur[0]:
+                best[away_id] = (date, away_coach)
+    stats["clubs_with_evidence"] = len(best)
+    log.info("  pass 1: %d matches scanned, %d clubs have a captured coach id",
+             stats["matches_scanned"], stats["clubs_with_evidence"])
+
+    # -- Pass 2: resolve + fetch + write ---------------------------------
+    for c in wp.iter_all_clubs(fields="id,title,acf.head_coach"):
+        stats["clubs_scanned"] += 1
+        pid = int(c["id"])
+        name = (c.get("title") or {}).get("rendered", "") or f"club {pid}"
+
+        evidence = best.get(pid)
+        if evidence is None:
+            stats["no_evidence"] += 1
+            if len(stats["no_evidence_sample"]) < sample_limit:
+                stats["no_evidence_sample"].append(
+                    f"{name} (post {pid}): no captured coach id yet "
+                    f"(needs a newly-enriched match)")
+            continue
+
+        _, coach_id_str = evidence
+        try:
+            coach_id = int(coach_id_str)
+        except ValueError:
+            stats["bad_coach_id"] += 1
+            continue
+
+        try:
+            rows = fs.get_manager(coach_id)
+        except FootyStatsError as exc:
+            if "429" in str(exc) or "Rate limit" in str(exc):
+                stats["rate_limited_stop"] = True
+                log.warning("  RATE LIMIT reached at club %s (%s) - stopping "
+                            "this run cleanly. %d written this run; re-run "
+                            "once the hourly quota resets to continue.",
+                            pid, name, stats["updated"])
+                break
+            stats["errors"] += 1
+            log.error("  head-coach post %s (%s) coach=%s: /manager failed: %s",
+                      pid, name, coach_id, exc)
+            time.sleep(pause)
+            continue
+
+        if not rows:
+            stats["no_rows"] += 1
+            time.sleep(pause)
+            continue
+
+        # Same sanity check as populate_player_stats()/reassign_clubs() - a
+        # bogus id shouldn't come back with named rows; never store that.
+        if not any(_manager_row_name(r) for r in rows):
+            stats["bad_fs_record"] += 1
+            line = (f"BAD-FS-RECORD  {name}  (post {pid})  coach={coach_id}  "
+                    f"- /manager has no named rows; skipped, needs manual review")
+            audit(line)
+            if len(stats["update_sample"]) < sample_limit:
+                stats["update_sample"].append(line)
+            time.sleep(pause)
+            continue
+
+        coach_name = next((n for n in (_manager_row_name(r) for r in rows) if n), "")
+
+        payload = json.dumps({
+            "synced_at": now_iso,
+            "manager_id": coach_id,
+            "rows": rows,
+        }, separators=(",", ":"))
+
+        try:
+            if not wp.dry_run:
+                wp.update_club(
+                    pid,
+                    meta={"fs_head_coach_json": payload},
+                    acf={"head_coach": coach_name} if coach_name else None,
+                )
+            stats["updated"] += 1
+            if len(stats["update_sample"]) < sample_limit:
+                stats["update_sample"].append(
+                    f"HEAD COACH  {name}  (post {pid})  coach={coach_id}  "
+                    f"\"{coach_name}\"  {len(rows)} row(s), {len(payload)} bytes")
+        except WPError as exc:
+            stats["errors"] += 1
+            log.error("  head-coach post %s (%s): write failed: %s", pid, name, exc)
 
         time.sleep(pause)
 
