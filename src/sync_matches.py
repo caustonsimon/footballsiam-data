@@ -194,6 +194,13 @@ LEAGUES: list[dict[str, Any]] = [
         "taxonomies": {"competition": [133], "categories": [134], "season": [SEASON_TERM_ID]},
         "require_full_club_map": False,
     },
+    {
+        "name": "Laos Premier League",
+        "season_id": 15549,          # FootyStats: "Laos Laos Premier League", 2025/26 season
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [211], "categories": [210], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
 ]
 
 log = logging.getLogger("sync_matches")
