@@ -198,7 +198,15 @@ LEAGUES: list[dict[str, Any]] = [
         "name": "Laos Premier League",
         "season_id": 15549,          # FootyStats: "Laos Laos Premier League", 2025/26 season
         "club_map": CLUB_MAP,
-        "taxonomies": {"competition": [211], "categories": [210], "season": [SEASON_TERM_ID]},
+        # This is FootyStats' real, already-concluded 2025/26 Laos season --
+        # unlike every other league here, it is NOT the site's current
+        # 2026/27 season, so it needs its own season postmeta/term rather
+        # than the global SEASON_LABEL/SEASON_TERM_ID (season taxonomy term
+        # 115 = "2025", paired with postmeta "2025/2026" -- same pairing
+        # already used by the site's 240 archived 2025/26 Thai League 1
+        # matches, confirmed 2026-09-22).
+        "taxonomies": {"competition": [211], "categories": [210], "season": [115]},
+        "season_label": "2025/2026",
         "require_full_club_map": False,
     },
 ]
@@ -296,7 +304,7 @@ def build_create_payload(
             "date": ymd,                       # YYYYMMDD - required by fs_get_matches()
             "kick_off_time": kickoff,          # H:i, 24h, Asia/Bangkok
             "match_week": str(match_week_of(match)),
-            "season": SEASON_LABEL,
+            "season": league.get("season_label", SEASON_LABEL),
             "footystats_match_id": str(int(match["id"])),
         },
     }
