@@ -234,6 +234,92 @@ def ensure_player(
     return entry
 
 
+def ensure_national_team(
+    wp: WPClient,
+    team_row: dict[str, Any],
+    lookup: dict[int, dict[str, Any]],
+    *,
+    audit: Callable[[str], None],
+) -> dict[str, Any] | None:
+    """Return the lookup entry for a FootyStats team id, creating the WP
+    `national_team` post first if it does not exist yet. Mutates `lookup`.
+
+    Mirrors ensure_player()'s lookup-or-create shape, but for international
+    sides (FIFA ASEAN Cup, International Friendlies) -- these are NOT `club`
+    posts (Simon, 2026-09-23: "they should not be counted as clubs as it is
+    confusing"), they're the new `national_team` CPT (Code Snippet 160).
+    `team_row` is one element of FootyStatsClient.get_league_teams()'s
+    result list.
+    """
+    fs_id = team_row.get("id")
+    try:
+        fs_id = int(fs_id)
+    except (TypeError, ValueError):
+        return None
+
+    if fs_id in lookup:
+        return lookup[fs_id]
+
+    name = str(team_row.get("name") or team_row.get("cleanName") or "").strip()
+    if not name:
+        log.warning("  national_team %s: FootyStats row has no name - not created", fs_id)
+        return None
+
+    meta = {"footystats_id": str(fs_id)}
+    country_code = str(team_row.get("country") or "").strip()
+    if country_code:
+        meta["country_code"] = country_code
+
+    resp = wp.create_national_team({
+        "title": name,
+        "status": "publish",
+        "meta": meta,
+    })
+    new_id = None if wp.dry_run else int(resp.get("id"))
+    audit(f"NATIONAL TEAM CREATE  {name}  fs={fs_id}  wp={new_id if new_id else '(dry-run)'}")
+
+    entry = {"wp_id": new_id, "title": name}
+    lookup[fs_id] = entry
+    return entry
+
+
+def build_national_team_map(
+    wp: WPClient,
+    fs: FootyStatsClient,
+    season_id: int,
+    *,
+    audit: Callable[[str], None],
+) -> dict[int, int]:
+    """{ footystats_team_id -> wp `national_team` post id } for every team
+    in a FootyStats season, auto-creating any national_team post that
+    doesn't exist yet. Used to build the `club_map` for an international
+    LEAGUES entry in sync_matches.py (International ASEAN Cup, International
+    Friendlies) the same way CLUB_MAP_TL1/TL2 are hand-built for domestic
+    leagues, except this one is generated automatically rather than typed in
+    by hand, since there's no reason to hand-maintain a list of national
+    sides the way the original club batch had to be hand-created one at a
+    time before this CPT/auto-create pattern existed.
+    """
+    lookup = wp.index_national_teams_by_footystats_id()
+    try:
+        teams = fs.get_league_teams(season_id)
+    except FootyStatsError as exc:
+        log.warning("  national team map for season %s: FootyStats lookup failed (%s)",
+                    season_id, exc)
+        return {}
+
+    out: dict[int, int] = {}
+    for row in teams:
+        entry = ensure_national_team(wp, row, lookup, audit=audit)
+        if entry and entry.get("wp_id"):
+            fs_id = row.get("id")
+            try:
+                out[int(fs_id)] = int(entry["wp_id"])
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
 def _side_of(md: dict[str, Any], fs_pid: int) -> str | None:
     """Which side ('Home'/'Away') a FootyStats player id lined up / benched on."""
     for side, key in (("Home", "team_a"), ("Away", "team_b")):

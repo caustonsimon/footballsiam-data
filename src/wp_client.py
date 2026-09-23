@@ -33,6 +33,7 @@ CPT_REST_BASE = "wp/v2/match"      # the `matches` CPT registers rest_base "matc
 CLUB_REST_BASE = "wp/v2/club"
 PLAYER_REST_BASE = "wp/v2/player"
 HEAD_COACH_REST_BASE = "wp/v2/head_coach"  # Phase 3 - see Code Snippet 143
+NATIONAL_TEAM_REST_BASE = "wp/v2/national_team"  # see Code Snippet 160
 MEDIA_REST_BASE = "wp/v2/media"
 DEFAULT_TIMEOUT = 30
 MAX_RETRIES = 3
@@ -314,6 +315,72 @@ class WPClient:
                 continue
             index[mgr_id] = post
         return index
+
+    def iter_all_national_teams(self, fields: str = "id,title,meta") -> Iterator[dict[str, Any]]:
+        """Yield every published `national_team` post. `context=edit` for full meta."""
+        page = 1
+        while True:
+            resp = self._request(
+                "GET",
+                NATIONAL_TEAM_REST_BASE,
+                params={
+                    "per_page": PER_PAGE,
+                    "page": page,
+                    "status": "publish",
+                    "context": "edit",
+                    "_fields": fields,
+                    "orderby": "id",
+                    "order": "asc",
+                },
+            )
+            if resp.status_code == 400 and "rest_post_invalid_page_number" in resp.text:
+                return
+            if resp.status_code == 404:
+                # national_team CPT not registered/active yet (Snippet 160) -
+                # treat as "no national teams" rather than a hard error.
+                return
+            batch = self._json_or_raise(resp, f"GET {NATIONAL_TEAM_REST_BASE} page {page}")
+            if not batch:
+                return
+            for post in batch:
+                yield post
+            total_pages = int(resp.headers.get("X-WP-TotalPages", "1") or "1")
+            if page >= total_pages:
+                return
+            page += 1
+
+    def index_national_teams_by_footystats_id(self) -> dict[int, dict[str, Any]]:
+        """Map { footystats_id (int) -> national_team post } - full scan,
+        same robustness reasoning as index_head_coaches_by_manager_id().
+        """
+        index: dict[int, dict[str, Any]] = {}
+        for post in self.iter_all_national_teams(fields="id,title,meta.footystats_id"):
+            raw = (post.get("meta") or {}).get("footystats_id")
+            try:
+                fs_id = int(str(raw).strip())
+            except (TypeError, ValueError):
+                continue
+            index[fs_id] = post
+        return index
+
+    def create_national_team(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """POST a new `national_team` post. Honours dry_run."""
+        if self.dry_run:
+            return {"_dry_run": True, "would_create": payload}
+        resp = self._request("POST", NATIONAL_TEAM_REST_BASE, json=payload)
+        return self._json_or_raise(resp, f"POST {NATIONAL_TEAM_REST_BASE}")
+
+    def update_national_team(
+        self, post_id: int, *, meta: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """PATCH a `national_team` post's meta. Honours dry_run."""
+        if not meta:
+            return {"_noop": True}
+        body = {"meta": meta}
+        if self.dry_run:
+            return {"_dry_run": True, "would_update": post_id, **body}
+        resp = self._request("POST", f"{NATIONAL_TEAM_REST_BASE}/{post_id}", json=body)
+        return self._json_or_raise(resp, f"POST {NATIONAL_TEAM_REST_BASE}/{post_id}")
 
     def create_head_coach(self, payload: dict[str, Any]) -> dict[str, Any]:
         """POST a new `head_coach` post. Honours dry_run."""

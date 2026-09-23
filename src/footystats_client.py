@@ -123,6 +123,31 @@ class FootyStatsClient:
             page += 1
         return out
 
+    def get_league_teams(self, season_id: int) -> list[dict[str, Any]]:
+        """Every team row for a FootyStats season_id (GET /league-teams).
+
+        Used for auto-creating `national_team` WP posts for international
+        competitions (FIFA ASEAN Cup, International Friendlies) -- mirrors
+        get_league_matches()'s pagination shape. Domestic club leagues don't
+        need this: their WP club posts were created/mapped by hand into
+        CLUB_MAP_* in sync_matches.py, not auto-populated from this endpoint.
+        """
+        page = 1
+        out: list[dict[str, Any]] = []
+        while True:
+            payload = self._get(
+                "league-teams", {"season_id": season_id, "page": page}
+            )
+            data = payload.get("data") or []
+            out.extend(data)
+
+            pager = payload.get("pager") or {}
+            max_page = int(pager.get("max_page", 1) or 1)
+            if page >= max_page:
+                break
+            page += 1
+        return out
+
     def get_match(self, match_id: int) -> dict[str, Any]:
         """Full detail for one match (GET /match?match_id=...).
 

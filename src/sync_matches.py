@@ -112,6 +112,21 @@ CLUB_MAP_TL2: dict[int, int] = {
 # Used by Part B (club reassignment) as the set of "clubs we track".
 CLUB_MAP: dict[int, int] = {**CLUB_MAP_TL1, **CLUB_MAP_TL2}
 
+# FootyStats team id -> WP `national_team` post id. Deliberately separate
+# from CLUB_MAP: national sides (Thailand, Cambodia, Laos etc. playing as
+# countries, not their domestic clubs) get their own CPT (Code Snippet 160)
+# rather than inflating/confusing the club count -- Simon, 2026-09-23: "lets
+# create a new setup for international teams they should not be counted as
+# clubs as it is confusing". Populated by build_national_team_map() in
+# enrich.py (mirrors ensure_player()/ensure_head_coach() -- auto-created on
+# sync, no hand-typed backfill like the old club maps needed). Starts empty:
+# FootyStats has not yet served the team lists for these two leagues (both
+# still within its post-"choose league" activation delay as of 2026-09-23),
+# so until it's populated both leagues fall back to plain-text
+# home_team_name/away_team_name rendering, exactly like Cambodian League did
+# on its first day.
+NATIONAL_TEAM_MAP: dict[int, int] = {}
+
 LEAGUES: list[dict[str, Any]] = [
     {
         "name": "Thai League 1",
@@ -217,6 +232,26 @@ LEAGUES: list[dict[str, Any]] = [
         # uses the site's global SEASON_LABEL/SEASON_TERM_ID like every
         # other current-season league -- no season_label override needed.
         "taxonomies": {"competition": [213], "categories": [212], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    # -- Added 2026-09-23: international/national-team competitions. Simon
+    # added both to his FootyStats account; club_map here resolves to
+    # `national_team` WP posts (not `club`), see NATIONAL_TEAM_MAP above.
+    # require_full_club_map False, same reasoning as every other
+    # not-yet-fully-mapped league: falls back to text-only rendering for any
+    # side not yet in the map rather than aborting the sync.
+    {
+        "name": "International ASEAN Cup",
+        "season_id": 17950,          # FootyStats: "International ASEAN Cup", 2026 season
+        "club_map": NATIONAL_TEAM_MAP,
+        "taxonomies": {"competition": [215], "categories": [217], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
+    {
+        "name": "International Friendlies",
+        "season_id": 16519,          # FootyStats: "International International Friendlies", 2026 season
+        "club_map": NATIONAL_TEAM_MAP,
+        "taxonomies": {"competition": [216], "categories": [218], "season": [SEASON_TERM_ID]},
         "require_full_club_map": False,
     },
 ]
