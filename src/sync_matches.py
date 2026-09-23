@@ -209,6 +209,16 @@ LEAGUES: list[dict[str, Any]] = [
         "season_label": "2025/2026",
         "require_full_club_map": False,
     },
+    {
+        "name": "Cambodian League",
+        "season_id": 17484,          # FootyStats: "Cambodia Cambodian League", 2026/27 season
+        "club_map": CLUB_MAP,
+        # Unlike Laos, this IS FootyStats' current 2026/27 season, so it
+        # uses the site's global SEASON_LABEL/SEASON_TERM_ID like every
+        # other current-season league -- no season_label override needed.
+        "taxonomies": {"competition": [213], "categories": [212], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+    },
 ]
 
 log = logging.getLogger("sync_matches")
