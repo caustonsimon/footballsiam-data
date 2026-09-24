@@ -676,7 +676,7 @@ def reenrich_raw_match_data(
     skips posts that already have raw_match_data.
     """
     stats = {"posts": len(post_ids), "changed": 0, "unchanged": 0,
-             "errors": 0, "verify_failures": 0}
+             "errors": 0, "verify_failures": 0, "rate_limited_stop": False}
     lookup = build_player_lookup(wp)
     log.info("  player lookup: %d", len(lookup))
 
@@ -698,6 +698,15 @@ def reenrich_raw_match_data(
         try:
             md = fs.get_match(int(fs_id))
         except FootyStatsError as exc:
+            if "429" in str(exc) or "Rate limit" in str(exc):
+                # hourly quota gone: stop cleanly rather than failing every
+                # remaining post. Re-run after the hourly reset (already-updated
+                # posts come back "unchanged", so a re-run is safe).
+                stats["rate_limited_stop"] = True
+                log.warning("  RATE LIMIT reached at post %s - stopping cleanly. "
+                            "%d changed so far; re-run the same list after the "
+                            "hourly reset to continue.", pid, stats["changed"])
+                break
             stats["errors"] += 1
             log.error("  post %s fs %s: /match fetch failed: %s", pid, fs_id, exc)
             continue
@@ -1499,6 +1508,7 @@ def backfill_coach_ids(
     *,
     audit: Callable[[str], None],
     pause: float = 0.1,
+    season: str | None = "2026/2027",
 ) -> dict[str, Any]:
     """One-time backfill (Phase 2 follow-up, 2026-09-22): for every already-
     enriched `matches` post missing home_coach_id/away_coach_id, re-fetch
@@ -1518,8 +1528,14 @@ def backfill_coach_ids(
     stats: dict[str, Any] = {
         "scanned": 0, "already_had_coach_meta": 0, "no_footystats_id": 0,
         "updated": 0, "no_coach_data": 0, "errors": 0,
-        "rate_limited_stop": False,
+        "rate_limited_stop": False, "skipped_unplayed": 0, "skipped_other_season": 0,
     }
+    # Quota fix (2026-09-24): this runs hourly, and every match that never gets
+    # coach meta was being re-fetched every hour - 1,485 unplayed fixtures plus
+    # 230 old-season results with no coach data, ~1,760 /match calls an hour,
+    # i.e. the whole 1,800/hour FootyStats quota. Unplayed fixtures get their
+    # coach ids from enrich_match() when they complete, and old seasons won't
+    # gain coach data, so both are skipped. season=None scans every season.
     for post in wp.iter_all_matches():
         stats["scanned"] += 1
         meta = post.get("meta") or {}
@@ -1528,6 +1544,13 @@ def backfill_coach_ids(
 
         if str(meta.get("home_coach_id") or "").strip() or str(meta.get("away_coach_id") or "").strip():
             stats["already_had_coach_meta"] += 1
+            continue
+
+        if not str(meta.get("home_score") or "").strip():
+            stats["skipped_unplayed"] += 1
+            continue
+        if season and str(meta.get("season") or "").strip() != season:
+            stats["skipped_other_season"] += 1
             continue
 
         fs_id = meta.get("footystats_match_id")

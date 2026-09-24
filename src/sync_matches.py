@@ -821,7 +821,7 @@ def _run_coach_backfill(wp: WPClient, fs: FootyStatsClient) -> int:
     mode = "LIVE" if not wp.dry_run else "DRY RUN (report only, no writes)"
     log.info("Starting coach-id backfill - %s", mode)
     try:
-        st = backfill_coach_ids(wp, fs, audit=_audit)
+        st = backfill_coach_ids(wp, fs, audit=_audit, season=SEASON_LABEL)
     except WPHostChallengeError as exc:
         log.error("=== HOST CHALLENGE - coach-id backfill did NOT run (not a failure) ===")
         log.error("  %s", exc)
@@ -835,6 +835,8 @@ def _run_coach_backfill(wp: WPClient, fs: FootyStatsClient) -> int:
     log.info("  matches scanned               : %d", st["scanned"])
     log.info("  already had coach meta        : %d", st["already_had_coach_meta"])
     log.info("  skipped (no footystats id)    : %d", st["no_footystats_id"])
+    log.info("  skipped (not played yet)      : %d", st["skipped_unplayed"])
+    log.info("  skipped (other seasons)       : %d", st["skipped_other_season"])
     log.info("  updated / would update        : %d", st["updated"])
     log.info("  no coach data on /match        : %d", st["no_coach_data"])
     log.info("  errors                        : %d", st["errors"])
@@ -898,6 +900,8 @@ def _run_reenrich(wp: WPClient, fs: FootyStatsClient, post_ids: list[int]) -> in
     log.info("  unchanged (no-op)    : %d", st["unchanged"])
     log.info("  errors               : %d", st["errors"])
     log.info("  verify failures      : %d", st["verify_failures"])
+    if st.get("rate_limited_stop"):
+        log.warning("  STOPPED EARLY: FootyStats hourly limit hit - re-run after the reset")
     log.info("---------------------------------------------")
     return 1 if (st["errors"] or st["verify_failures"]) else 0
 

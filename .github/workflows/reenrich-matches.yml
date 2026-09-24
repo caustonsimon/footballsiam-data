@@ -1,0 +1,62 @@
+name: reenrich-matches
+
+# One-off backfill: rebuild raw_match_data on already-enriched matches after
+# a change to the event-building logic (e.g. adding assists, Sep 2026).
+# New matches don't need this - enrich_match() builds the new format as they
+# complete. The normal enrich guard skips posts that already have
+# raw_match_data, which is why existing matches need this pass.
+#
+# Cost: one FootyStats /match request per post (1,800/hour cap shared with the
+# other syncs). Stops cleanly if the cap is hit; re-run the same list later.
+# Manual only. Defaults to a dry run (reports what would change, no writes).
+
+on:
+  workflow_dispatch:
+    inputs:
+      list:
+        description: 'Which matches'
+        type: choice
+        options:
+          - backfill/reenrich_2026_27.txt
+          - backfill/reenrich_2025_26.txt
+        default: backfill/reenrich_2026_27.txt
+      live:
+        description: 'Write changes (unchecked = dry run / report only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: reenrich-matches
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  reenrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Re-enrich raw_match_data
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          INPUT_LIST: ${{ inputs.list }}
+          INPUT_LIVE: ${{ inputs.live }}
+        run: |
+          set -euo pipefail
+          ARGS=(--reenrich "@$INPUT_LIST")
+          [ "$INPUT_LIVE" = "true" ] && ARGS+=(--live)
+          echo "Running: sync_matches.py ${ARGS[*]}"
+          python src/sync_matches.py "${ARGS[@]}"
