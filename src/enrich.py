@@ -143,6 +143,22 @@ def _minute_variants(m: Any) -> set[str]:
     return {s, s.split("+")[0].strip()}
 
 
+def _assist_map(md: dict[str, Any]) -> dict[tuple[str, str], Any]:
+    """(scorer FootyStats id, minute) -> assister FootyStats id, from
+    team_a_goal_details / team_b_goal_details. Minute is stored both as given
+    ("90+5") and as its base ("90") so either form of event_time matches.
+    Goals with no assist (assist_player_id -1 / null / 0) are left out."""
+    out: dict[tuple[str, str], Any] = {}
+    for key in ("team_a_goal_details", "team_b_goal_details"):
+        for g in md.get(key) or []:
+            aid = g.get("assist_player_id")
+            if aid in (None, "", -1, "-1", 0, "0"):
+                continue
+            for mv in _minute_variants(g.get("time")):
+                out.setdefault((str(g.get("player_id")), mv), aid)
+    return out
+
+
 def _pick_player_row(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Best per-season row for identity fields (name / position / dob)."""
     if not rows:
@@ -421,6 +437,11 @@ def _build_raw_match_data(
     for g in md.get("awayGoals", []) or []:
         away_goal_mins |= _minute_variants(g)
 
+    # Assists: team_a/b_goal_details carry assist_player_id per goal, keyed here
+    # by (scorer id, minute). The match-report shortcode already renders
+    # p2_name / p2_wp_id on goal events as the assist line.
+    assists = _assist_map(md)
+
     events: list[dict[str, Any]] = []
     dedupe: set[tuple[str, str, str]] = set()
     own_goals = 0
@@ -433,11 +454,19 @@ def _build_raw_match_data(
             return
         dedupe.add(k)
         w, nm, _ = slot(pid, team)
-        events.append({
+        ev: dict[str, Any] = {
             "event_type": et, "event_detail": detail, "event_minute": mn,
             "p1_id": pid, "p1_wp_id": w, "p1_name": nm,
             "event_team": team,
-        })
+        }
+        if et == "Goal" and "own" not in detail:
+            aid = assists.get((str(pid), mn)) or assists.get((str(pid), mn.split("+")[0].strip()))
+            if aid is not None and str(aid) != str(pid):
+                aw, an, _ = slot(aid, team)
+                # skip unresolved ids (placeholder "Unknown" or a bare number)
+                if an and an != "Unknown" and not an.isdigit():
+                    ev.update({"p2_id": aid, "p2_wp_id": aw, "p2_name": an})
+        events.append(ev)
 
     def handle(pid: Any, ev: dict[str, Any], team: str) -> None:
         nonlocal own_goals
