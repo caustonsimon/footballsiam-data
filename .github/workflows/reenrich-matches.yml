@@ -19,6 +19,7 @@ on:
         options:
           - backfill/reenrich_2026_27.txt
           - backfill/reenrich_2025_26.txt
+          - backfill/reenrich_names_fix.txt
         default: backfill/reenrich_2026_27.txt
       live:
         description: 'Write changes (unchecked = dry run / report only)'

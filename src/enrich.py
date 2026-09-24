@@ -390,10 +390,39 @@ def _placeholder_ids(md: dict[str, Any], side_key: str) -> set[Any]:
     return {pid for pid, s in shirts.items() if len(s) >= 2}
 
 
+_FS_NAME_CACHE: dict[int, dict[str, str]] = {}
+
+
+def fs_player_names(fs: FootyStatsClient, season_id: Any) -> dict[str, str]:
+    """FootyStats player id -> display name for one competition-season, from
+    /league-players (a few paged requests, cached per run). Fallback for players
+    with no WP post yet, so a match report never shows a bare id number as a
+    scorer (seen 2026-09-24 on re-enriched Thai League 2 matches)."""
+    try:
+        sid = int(season_id)
+    except (TypeError, ValueError):
+        return {}
+    if sid not in _FS_NAME_CACHE:
+        names: dict[str, str] = {}
+        try:
+            for r in fs.get_league_players(sid):
+                nm = (r.get("known_as") or r.get("full_name") or "").strip()
+                if nm and r.get("id") not in (None, -1):
+                    names[str(r["id"])] = nm
+        except FootyStatsError as exc:
+            log.warning("  league-players %s for names failed: %s", sid, exc)
+        _FS_NAME_CACHE[sid] = names
+    return _FS_NAME_CACHE[sid]
+
+
 def _build_raw_match_data(
-    md: dict[str, Any], lookup: dict[str, dict[str, Any]]
+    md: dict[str, Any], lookup: dict[str, dict[str, Any]],
+    names: Callable[[], dict[str, str]] | None = None,
 ) -> tuple[str, int]:
-    """(base64 JSON string, own_goal_count)."""
+    """(base64 JSON string, own_goal_count). `names` (FootyStats id -> name)
+    is used for players not in `lookup` (a zero-arg callable, only called on a
+    miss, so matches where everyone resolves cost no extra requests); with
+    neither, the slot reads Unknown."""
 
     # Once an id is exposed as a placeholder anywhere in the match (2+ shirt
     # numbers within one team), treat it as a placeholder for EVERY slot in
@@ -409,7 +438,10 @@ def _build_raw_match_data(
         e = lookup.get(str(pid)) if pid is not None else None
         if e:
             return e["wp_id"], e["title"], e["position"]
-        return None, str(pid), ""
+        nm = (names() if names else {}).get(str(pid))
+        if nm:
+            return None, nm, ""
+        return None, "Unknown", ""
 
     player_stats: list[dict[str, Any]] = []
     for side, key in (("Home", "team_a"), ("Away", "team_b")):
@@ -620,7 +652,8 @@ def enrich_match(
         )
 
     # -- raw_match_data --------------------------------------------
-    rmd, own_goals = _build_raw_match_data(md, lookup)
+    rmd, own_goals = _build_raw_match_data(
+        md, lookup, lambda: fs_player_names(fs, md.get("competition_id")))
 
     meta = {**stat_meta, **xg_meta, **coach_meta, "raw_match_data": rmd}
     try:
@@ -749,7 +782,8 @@ def reenrich_raw_match_data(
             continue
 
         old_rmd = str(meta.get("raw_match_data") or "")
-        new_rmd, _ = _build_raw_match_data(md, lookup)
+        new_rmd, _ = _build_raw_match_data(
+            md, lookup, lambda: fs_player_names(fs, md.get("competition_id")))
         if new_rmd == old_rmd:
             stats["unchanged"] += 1
             continue
