@@ -429,6 +429,13 @@ def _build_raw_match_data(
     # that match - a single lone occurrence on the other side is the same
     # sentinel, not a real player.
     placeholder_ids = _placeholder_ids(md, "team_a") | _placeholder_ids(md, "team_b")
+    # An id listed for BOTH teams can't be one real player either (e.g. 42458
+    # in Port v Ayutthaya United, 2025/26) - same placeholder, one shirt each.
+    def _ids(side_key: str) -> set[Any]:
+        out = {p.get("player_id") for p in (md.get("lineups") or {}).get(side_key, []) or []}
+        out |= {b.get("player_in_id") for b in (md.get("bench") or {}).get(side_key, []) or []}
+        return out - {None, -1}
+    placeholder_ids |= _ids("team_a") & _ids("team_b")
 
     def slot(pid: Any, team: str) -> tuple[Any, str, str]:
         """(wp_id, player_name, position) for a lineup/event slot. A detected
