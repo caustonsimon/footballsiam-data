@@ -445,6 +445,7 @@ def _build_raw_match_data(
     events: list[dict[str, Any]] = []
     dedupe: set[tuple[str, str, str]] = set()
     own_goals = 0
+    fallback_og: list[int] = []   # indices of events flagged OG by the minute fallback
 
     def add_event(etype: Any, minute: Any, pid: Any, team: str, detail: str = "") -> None:
         et = str(etype)
@@ -460,13 +461,17 @@ def _build_raw_match_data(
             "event_team": team,
         }
         if et == "Goal" and "own" not in detail:
-            aid = assists.get((str(pid), mn)) or assists.get((str(pid), mn.split("+")[0].strip()))
-            if aid is not None and str(aid) != str(pid):
-                aw, an, _ = slot(aid, team)
-                # skip unresolved ids (placeholder "Unknown" or a bare number)
-                if an and an != "Unknown" and not an.isdigit():
-                    ev.update({"p2_id": aid, "p2_wp_id": aw, "p2_name": an})
+            attach_assist(ev)
         events.append(ev)
+
+    def attach_assist(ev: dict[str, Any]) -> None:
+        pid, mn, team = ev["p1_id"], ev["event_minute"], ev["event_team"]
+        aid = assists.get((str(pid), mn)) or assists.get((str(pid), mn.split("+")[0].strip()))
+        if aid is not None and str(aid) != str(pid):
+            aw, an, _ = slot(aid, team)
+            # skip unresolved ids (placeholder "Unknown" or a bare number)
+            if an and an != "Unknown" and not an.isdigit():
+                ev.update({"p2_id": aid, "p2_wp_id": aw, "p2_name": an})
 
     def handle(pid: Any, ev: dict[str, Any], team: str) -> None:
         nonlocal own_goals
@@ -486,6 +491,13 @@ def _build_raw_match_data(
             if not (mv & own) and (mv & opp):
                 detail = "own goal"
                 own_goals += 1
+                n_before = len(events)
+                add_event(norm_type, minute, pid, team, detail)
+                if len(events) > n_before:
+                    fallback_og.append(n_before)
+                else:
+                    own_goals -= 1   # duplicate event, not added
+                return
         add_event(norm_type, minute, pid, team, detail)
 
     for side, key in (("Home", "team_a"), ("Away", "team_b")):
@@ -495,6 +507,31 @@ def _build_raw_match_data(
         for b in (md.get("bench") or {}).get(key, []) or []:
             for ev in b.get("player_in_events", []) or []:
                 handle(b.get("player_in_id"), ev, side)
+
+    # Sanity check on the minute-based own-goal fallback: a team's players
+    # can't have scored more genuine goals than the team's score. If a side's
+    # player goals (excluding explicit own goals) fit within its score, none of
+    # them are hidden own goals - undo the fallback (seen 2026-09-24: Nong Bua
+    # Pitchaya 4-3 Satun had all three Satun goals flagged as own goals).
+    score = {"Home": md.get("homeGoalCount"), "Away": md.get("awayGoalCount")}
+    for side in ("Home", "Away"):
+        try:
+            side_score = int(score[side])
+        except (TypeError, ValueError):
+            continue
+        if side_score < 0:
+            continue
+        idx = [i for i in fallback_og
+               if i < len(events) and events[i]["event_team"] == side
+               and events[i]["event_detail"] == "own goal"]
+        player_goals = sum(1 for i, e in enumerate(events) if e["event_team"] == side
+                           and e["event_type"] == "Goal"
+                           and (e["event_detail"] != "own goal" or i in idx))
+        keep = max(0, player_goals - side_score)   # at most this many can be OGs
+        for i in idx[keep:]:
+            events[i]["event_detail"] = ""
+            own_goals -= 1
+            attach_assist(events[i])
     for key, side in (("team_a_card_details", "Home"), ("team_b_card_details", "Away")):
         for c in md.get(key, []) or []:
             nt, dt = _normalize_event(c.get("card_type"))
