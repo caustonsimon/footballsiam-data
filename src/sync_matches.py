@@ -176,6 +176,35 @@ NATIONAL_TEAM_MAP: dict[int, int] = {
     8700: 28991, 8740: 28992,
 }
 
+# The 11 ASEAN Football Federation (AFF) member nations, exactly as
+# FootyStats' International Friendlies (season 16519) home_name/away_name
+# fields spell them (confirmed 2026-09-23 via a live pull of all 377
+# matches -- plain country names, no "National Team" suffix). Used only to
+# filter International Friendlies at sync time -- see country_filter below.
+# Not applied to International ASEAN Cup (season 17950): that competition
+# is inherently ASEAN-scoped already (plus a handful of invited guest
+# nations, e.g. Pakistan) and low-volume, so it needs no filtering.
+#
+# Simon, 2026-09-23 (site-wide Fixtures/Results page, not just the
+# national_team profile page filter already built for Snippets 163/164):
+# "still pulling too much" -- of 377 International Friendlies matches
+# pulled from FootyStats, only 18 involved an ASEAN nation at all; the
+# other 359 (e.g. Kazakhstan vs Cameroon, Lebanon vs Sudan) are pure noise
+# for a Thai/Southeast Asian football site and were never supposed to be
+# synced in the first place. Fixed at the source per this project's
+# "thoughtless and app-ready data" principle, rather than patched again at
+# display time in Snippet 158.
+ASEAN_MEMBERS: frozenset[str] = frozenset({
+    "brunei darussalam", "cambodia", "indonesia", "laos", "malaysia",
+    "myanmar", "philippines", "singapore", "thailand", "timor-leste",
+    "vietnam",
+})
+
+
+def is_asean_country(name: str | None) -> bool:
+    return str(name or "").strip().lower() in ASEAN_MEMBERS
+
+
 LEAGUES: list[dict[str, Any]] = [
     {
         "name": "Thai League 1",
@@ -302,6 +331,9 @@ LEAGUES: list[dict[str, Any]] = [
         "club_map": NATIONAL_TEAM_MAP,
         "taxonomies": {"competition": [216], "categories": [218], "season": [SEASON_TERM_ID]},
         "require_full_club_map": False,
+        # Only sync a friendly if at least one side is an ASEAN nation --
+        # see ASEAN_MEMBERS above. Applied in sync()'s per-league loop.
+        "country_filter": "asean",
     },
 ]
 
@@ -535,6 +567,17 @@ def sync(
             stats["errors"] += 1
             continue
         log.info("  %d matches from FootyStats", len(matches))
+
+        if league.get("country_filter") == "asean":
+            before = len(matches)
+            matches = [
+                m for m in matches
+                if is_asean_country(m.get("home_name")) or is_asean_country(m.get("away_name"))
+            ]
+            log.info(
+                "  country_filter=asean: kept %d/%d (dropped %d with no ASEAN side)",
+                len(matches), before, before - len(matches),
+            )
 
         if limit:
             matches = matches[:limit]
