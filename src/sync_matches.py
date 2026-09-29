@@ -38,6 +38,7 @@ Safety: writes only happen with --live. Without it the run is a dry run
 
 from __future__ import annotations
 
+import re
 import argparse
 import datetime as dt
 import logging
@@ -335,6 +336,34 @@ LEAGUES: list[dict[str, Any]] = [
         # see ASEAN_MEMBERS above. Applied in sync()'s per-league loop.
         "country_filter": "asean",
     },
+    # -- Added 2026-09-29: ASEAN Club Championship (sponsored as the Shopee
+    # Cup; house name drops the sponsor). FootyStats added it on request
+    # 2026-09-28. The 42 group-stage posts (33171-33212) were seeded by hand
+    # on 2026-09-28 and have since been given their footystats_match_id, so
+    # this entry UPDATES them (scores/enrichment) rather than creating
+    # duplicates. competition term 122 (pre-existing "ASEAN Club
+    # Championship"), category term 235.
+    {
+        "name": "ASEAN Club Championship",
+        "season_id": 17970,          # FootyStats: "Asia ASEAN Club Championship", 2026/27
+        "club_map": {**CLUB_MAP, 9481: 28792},   # + Svay Rieng (Cambodian club post)
+        "taxonomies": {"competition": [122], "categories": [235], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+        # FootyStats still carries several clubs under old/sponsor names;
+        # map them to house names for any post the sync creates itself
+        # (qualifying play-offs, knockout rounds). Existing posts' names are
+        # never touched by the update path.
+        "name_overrides": {
+            "Home United": "Lion City Sailors",
+            "Công An Nhân Dân": "Công An Hà Nội",
+            "Ho Chi Minh City": "Công An Hồ Chí Minh City",
+            "Kuching FA": "Kuching City",
+            "Persib": "Persib Bandung",
+            "Port FC": "Port",
+            "Tampines Rovers": "Tampines Rovers",
+        },
+        "skip_placeholder_teams": True,
+    },
 ]
 
 log = logging.getLogger("sync_matches")
@@ -349,6 +378,18 @@ def is_empty_score(value: Any) -> bool:
     if value is None:
         return True
     return str(value).strip() == ""
+
+
+_PLACEHOLDER_TEAM_RE = re.compile(r"\b(ranked|winner|winners|loser|runner-up|tbd|tbc)\b", re.IGNORECASE)
+
+
+def is_placeholder_team(name: str | None) -> bool:
+    """True for FootyStats knockout-slot placeholders such as "2nd ranked Group A"
+    or "Winner QF1" -- fixtures whose sides aren't known yet. Syncing those would
+    create posts titled with the placeholder, then leave them orphaned once
+    FootyStats swaps in the real teams under a different match id. Added
+    2026-09-29 for the ASEAN Club Championship (season 17970)."""
+    return bool(_PLACEHOLDER_TEAM_RE.search(str(name or "")))
 
 
 def match_week_of(match: dict[str, Any]) -> int:
@@ -381,13 +422,16 @@ def build_create_payload(
     home_wp = league["club_map"].get(match["homeID"])
     away_wp = league["club_map"].get(match["awayID"])
     ymd, kickoff = bangkok_date_time(match["date_unix"])
+    overrides = league.get("name_overrides") or {}
+    home_raw = str(match.get("home_name", "")).strip()
+    away_raw = str(match.get("away_name", "")).strip()
     home_title = (
         (wp.get_club_title(home_wp) if home_wp else None)
-        or str(match.get("home_name", "")).strip()
+        or overrides.get(home_raw, home_raw)
     )
     away_title = (
         (wp.get_club_title(away_wp) if away_wp else None)
-        or str(match.get("away_name", "")).strip()
+        or overrides.get(away_raw, away_raw)
     )
 
     # All meta is registered as `string` on the site (see README) and the existing
@@ -578,6 +622,18 @@ def sync(
                 "  country_filter=asean: kept %d/%d (dropped %d with no ASEAN side)",
                 len(matches), before, before - len(matches),
             )
+
+        if league.get("skip_placeholder_teams"):
+            before = len(matches)
+            matches = [
+                m for m in matches
+                if not (is_placeholder_team(m.get("home_name")) or is_placeholder_team(m.get("away_name")))
+            ]
+            if before != len(matches):
+                log.info(
+                    "  skip_placeholder_teams: dropped %d knockout slot(s) with no real team yet",
+                    before - len(matches),
+                )
 
         if limit:
             matches = matches[:limit]
