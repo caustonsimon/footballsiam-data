@@ -28,7 +28,7 @@ jobs:
       - name: Build and post
         working-directory: src
         env:
-          FOOTYSTATS_KEY: ${{ secrets.FOOTYSTATS_KEY }}
+          FOOTYSTATS_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
           FS_HUB_TOKEN: ${{ secrets.FS_HUB_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: python stats_hub.py
