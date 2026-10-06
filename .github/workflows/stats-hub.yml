@@ -1,0 +1,34 @@
+name: Stats hub refresh
+
+on:
+  schedule:
+    - cron: "0 16 * * *"   # 23:00 Bangkok, after the 22:15 sync (catches weekend evening games)
+    - cron: "45 20 * * *"  # 03:45 Bangkok, after the 03:00 sync (catches late results)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and print only, don't post"
+        type: boolean
+        default: false
+
+concurrency:
+  group: stats-hub
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas requests
+      - name: Build and post
+        working-directory: src
+        env:
+          FOOTYSTATS_KEY: ${{ secrets.FOOTYSTATS_KEY }}
+          FS_HUB_TOKEN: ${{ secrets.FS_HUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: python stats_hub.py
