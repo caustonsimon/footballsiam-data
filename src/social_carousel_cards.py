@@ -123,7 +123,11 @@ DPI = 150
 LEAGUE_LABELS = {
     "thai-league-1": "Thai League 1",
     "thai-league-2": "Thai League 2",
+    "asean-club-championship": "ASEAN Club Championship",
+    "afc-champions-league-elite": "AFC Champions League Elite",
+    "afc-champions-league-two": "AFC Champions League Two",
 }
+GREY = "#888888"
 
 # -- Fonts: matched to footballsiam.com's real stylesheet (see module
 # docstring). Bundled TTFs beside this script, loaded by explicit path
@@ -177,13 +181,19 @@ def _footer(ax, height_px, footer_h=50):
 
 def render_fixtures_card(data, out_path):
     league = data.get("league", "thai-league-1")
-    league_name = LEAGUE_LABELS.get(league, league)
+    league_name = data.get("label") or LEAGUE_LABELS.get(league, league)
     mode = data.get("mode", "fixtures")
     mw = data.get("mw", "")
     matches = data.get("matches", [])
 
     badge_label = "RESULTS" if mode == "results" else "FIXTURES"
-    sub_label = f"Match Week {mw}" if mw else None
+    # "sub" (added 2026-10-10, Matchday Watcher card data) overrides the
+    # Thai League "Match Week N" label, e.g. "Matchday 2" for continental games.
+    if "sub" in data:
+        sub_label = data.get("sub") or None
+    else:
+        sub_label = f"Match Week {mw}" if mw else None
+    show_groups = len({m.get("group") for m in matches if m.get("group")}) > 1
 
     header_h = 100
     footer_h = 50
@@ -231,8 +241,14 @@ def render_fixtures_card(data, out_path):
             is_scored = m.get("is_scored")
             if is_scored:
                 center_text = f"{m.get('home_score')} - {m.get('away_score')}"
+            elif m.get("status") == "postponed":
+                center_text = "P - P"
             else:
                 center_text = m.get("time", "TBC")
+            if show_groups and m.get("group"):
+                # Small group tag at the far left, only when the card mixes groups.
+                ax.text(32, mid, str(m["group"]).replace("Group ", ""), fontsize=10.5,
+                         color=GREY, ha="left", va="center", fontproperties=FONT_BOLD)
 
             # Team-name anchors sit just outside the (now wider) centre
             # badge -- BADGE_W/2 + a fixed clearance, not a hand-picked
@@ -258,9 +274,17 @@ def render_fixtures_card(data, out_path):
 
 def render_table_card(data, out_path):
     league = data.get("league", "thai-league-1")
-    league_name = LEAGUE_LABELS.get(league, league)
+    league_name = data.get("label") or LEAGUE_LABELS.get(league, league)
     season = data.get("season", "")
     standings = data.get("standings", [])
+    # Added 2026-10-10 for group tables: "title" (e.g. "Group A", "League stage: East")
+    # goes in the header badge, "qualify" draws a dashed line under that position,
+    # "note" is a one-line explanation under the table.
+    title = data.get("title")
+    if title and title.lower() == "table":
+        title = None
+    qualify = int(data.get("qualify") or 0)
+    note = data.get("note") or ""
 
     header_h = 100
     footer_h = 50
@@ -268,12 +292,17 @@ def render_table_card(data, out_path):
     row_h = 40
     top_pad = 6
     bottom_pad = 6
+    note_h = 40 if note else 0
 
-    body_h = top_pad + bottom_pad + col_header_h + row_h * max(len(standings), 1)
+    body_h = top_pad + bottom_pad + col_header_h + row_h * max(len(standings), 1) + note_h
     total_h = header_h + body_h + footer_h
 
     fig, ax = _fig_for_height(total_h)
-    _header(ax, total_h, league_name, f"{season} Season".upper() if season else "", header_h=header_h)
+    if title:
+        _header(ax, total_h, league_name, title.upper(),
+                sub_label=f"{season} Season" if season else None, header_h=header_h)
+    else:
+        _header(ax, total_h, league_name, f"{season} Season".upper() if season else "", header_h=header_h)
     _footer(ax, total_h, footer_h=footer_h)
 
     # column x-positions (pixels from left)
@@ -316,16 +345,45 @@ def render_table_card(data, out_path):
                          color=DARK_TEXT, ha="center", va="center", fontproperties=font)
 
             y += row_h
+            if qualify and i + 1 == qualify and i + 1 < len(standings):
+                ax.plot([24, CARD_WIDTH_PX - 24], [y, y], color=DARK_GREEN, linewidth=1.6,
+                        linestyle=(0, (5, 4)), solid_capstyle="butt")
+
+    if note:
+        ax.text(36, y + bottom_pad + note_h / 2, note, fontsize=11, color=GREY,
+                 ha="left", va="center", fontproperties=FONT_REGULAR)
 
     fig.savefig(out_path, dpi=DPI, facecolor=WHITE, transparent=False)
     plt.close(fig)
 
 
+def render_matchday_cards(data, out_dir, prefix):
+    """One results card plus one table card per table, from the raw response of
+    fs/v1/matchday-card-data (Snippet 192, added 2026-10-10). Returns the paths in
+    carousel order: results first, then the tables."""
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+    res = dict(data["results"])
+    res.setdefault("label", data.get("label"))
+    p = out_dir / f"{prefix}_results.png"
+    render_fixtures_card(res, str(p))
+    paths.append(str(p))
+    for i, t in enumerate(data.get("tables") or [], 1):
+        p = out_dir / f"{prefix}_table_{i}.png"
+        render_table_card(t, str(p))
+        paths.append(str(p))
+    return paths
+
+
 def main():
     parser = argparse.ArgumentParser(description="Render Football Siam social carousel cards (fixtures/results or table).")
-    parser.add_argument("kind", choices=["fixtures", "table"], help="Which card to render.")
+    parser.add_argument("kind", choices=["fixtures", "table", "matchday"],
+                        help="Which card to render. 'matchday' renders the results card plus every table from fs/v1/matchday-card-data.")
+    parser.add_argument("--out-dir", help="matchday only: folder for the PNGs.")
+    parser.add_argument("--prefix", default="card", help="matchday only: file name prefix.")
     parser.add_argument("--data-file", required=True, help="Path to the raw JSON response from the corresponding fs/v1/social-*-data endpoint.")
-    parser.add_argument("--out", required=True, help="Output PNG path.")
+    parser.add_argument("--out", help="Output PNG path (fixtures/table).")
     args = parser.parse_args()
 
     data_path = Path(args.data_file)
@@ -336,6 +394,17 @@ def main():
     with open(data_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    if args.kind == "matchday":
+        if not args.out_dir:
+            print("ERROR: matchday needs --out-dir", file=sys.stderr)
+            sys.exit(1)
+        for path in render_matchday_cards(data, args.out_dir, args.prefix):
+            print(f"Wrote {path}")
+        return
+
+    if not args.out:
+        print("ERROR: --out is required", file=sys.stderr)
+        sys.exit(1)
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
