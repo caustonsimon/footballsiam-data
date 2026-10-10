@@ -412,6 +412,37 @@ def bangkok_date_time(unix_ts: int) -> tuple[str, str]:
     return d.strftime("%Y%m%d"), d.strftime("%H:%M")
 
 
+POSTPONED_STATUSES = {"postponed", "suspended", "canceled", "cancelled", "abandoned"}
+
+
+def unplayed_status_update(match: dict[str, Any], meta: dict[str, Any]) -> dict[str, str]:
+    """Meta changes for a game FootyStats has not marked complete (added 2026-10-10).
+
+    * match_status: the FootyStats status when it is postponed / suspended /
+      cancelled / abandoned, otherwise "" (so a rescheduled game drops its flag).
+    * date / kick_off_time: the Bangkok date and time from FootyStats' date_unix,
+      when they differ from what the post holds (a rescheduled game moves).
+    Returns {} when nothing changed, so a re-run writes nothing (idempotent).
+    """
+    upd: dict[str, str] = {}
+    status = str(match.get("status", "")).strip().lower()
+    want_status = status if status in POSTPONED_STATUSES else ""
+    if str(meta.get("match_status") or "").strip().lower() != want_status:
+        upd["match_status"] = want_status
+    unix = match.get("date_unix")
+    try:
+        unix_i = int(unix)
+    except (TypeError, ValueError):
+        unix_i = 0
+    if unix_i > 0:
+        ymd, kickoff = bangkok_date_time(unix_i)
+        if str(meta.get("date") or "").strip() != ymd:
+            upd["date"] = ymd
+        if str(meta.get("kick_off_time") or "").strip() != kickoff:
+            upd["kick_off_time"] = kickoff
+    return upd
+
+
 def build_create_payload(
     match: dict[str, Any], league: dict[str, Any], wp: WPClient
 ) -> dict[str, Any]:
@@ -566,6 +597,7 @@ def sync(
         "created": 0,
         "skipped_recorded": 0,
         "skipped_incomplete": 0,
+        "status_updated": 0,
         "unmapped_team": 0,
         "text_only_team": 0,
         "enriched": 0,
@@ -694,8 +726,30 @@ def sync(
                         )
                     else:
                         stats["skipped_incomplete"] += 1
+                        # -- unplayed game: status + reschedule (added 2026-10-10)
+                        # The Matchday Watcher (Snippet 192) treats a game as done
+                        # once it has a score OR match_status is postponed /
+                        # suspended / cancelled / abandoned, and it reads the
+                        # game's date to know which matchday it belongs to. So for
+                        # an unplayed game, keep match_status and the Bangkok
+                        # date/kick-off in step with FootyStats (authoritative,
+                        # matched by footystats_match_id, never by name). Only
+                        # writes when something actually changed.
+                        upd = unplayed_status_update(match, meta)
+                        if upd:
+                            wp.update_match_meta(existing["id"], upd)
+                            stats["status_updated"] += 1
+                            _audit(
+                                f"STATUS post {existing['id']}  fs {fs_id}  {upd}  "
+                                f"({match.get('home_name')} v {match.get('away_name')})"
+                            )
                 else:
                     stats["skipped_recorded"] += 1
+                    # A game that has been played clears any old postponed flag.
+                    if str(meta.get("match_status") or "").strip() and status == "complete":
+                        wp.update_match_meta(existing["id"], {"match_status": ""})
+                        stats["status_updated"] += 1
+                        _audit(f"STATUS post {existing['id']}  fs {fs_id}  cleared (played)")
 
                 # -- full enrichment (Part A) ----------------------
                 # Independent of the score trigger: fires whenever a completed
@@ -1127,6 +1181,7 @@ def main(argv: list[str] | None = None) -> int:
     log.info("  players auto-created   : %d", stats["players_created"])
     log.info("  skipped (has score)    : %d", stats["skipped_recorded"])
     log.info("  skipped (not complete) : %d", stats["skipped_incomplete"])
+    log.info("  status/date updated    : %d", stats["status_updated"])
     log.info("  unmapped team (skip)   : %d", stats["unmapped_team"])
     log.info("  text-only team (no page): %d", stats["text_only_team"])
     log.info("  errors                 : %d", stats["errors"])
