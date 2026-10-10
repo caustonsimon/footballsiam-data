@@ -103,6 +103,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.font_manager as fm
+from PIL import Image
+import numpy as np
 
 # House colours -- matched to the WP shortcode cards (Snippet 130/132),
 # which Simon has already seen and approved, rather than the slightly
@@ -137,6 +139,17 @@ FONT_HEADLINE = fm.FontProperties(fname=str(_FONT_DIR / "PlayfairDisplay-Bold.tt
 FONT_BOLD = fm.FontProperties(fname=str(_FONT_DIR / "Lato-Bold.ttf"))
 FONT_REGULAR = fm.FontProperties(fname=str(_FONT_DIR / "Lato-Regular.ttf"))
 
+# House mark (added 2026-10-10): the gold three-headed Erawan elephant, rendered
+# from the traced vector used on the article slides (assets/branding/elephant-gold.svg).
+# Every social image carries it; on these cards it sits in the green header band,
+# left of the competition name.
+_ELEPHANT_PATH = Path(__file__).resolve().parent.parent / "assets" / "branding" / "elephant-gold.png"
+try:
+    _ELEPHANT = np.asarray(Image.open(_ELEPHANT_PATH).convert("RGBA"))
+except (FileNotFoundError, OSError):
+    _ELEPHANT = None
+ELEPHANT_H = 62
+
 # -- Kickoff-time / score badge sizing: measured (not guessed) from the
 # actual rendered width of "19:00"-style and "10 - 0"-style strings at
 # BADGE_FONTSIZE in FONT_BOLD (~67px wide, ~24px tall at 150 DPI) with
@@ -156,12 +169,21 @@ def _fig_for_height(height_px):
     ax.set_ylim(0, height_px)
     ax.invert_yaxis()  # y=0 at the top, growing downward, like pixel coords
     ax.axis("off")
+    ax.set_autoscale_on(False)
     return fig, ax
 
 
 def _header(ax, height_px, league_name, badge_label, sub_label=None, header_h=100):
     ax.add_patch(patches.Rectangle((0, 0), CARD_WIDTH_PX, header_h, facecolor=DARK_GREEN, edgecolor="none"))
-    ax.text(36, header_h / 2 - (8 if sub_label else 0), league_name,
+    title_x = 36
+    if _ELEPHANT is not None:
+        eh = ELEPHANT_H
+        ew = eh * _ELEPHANT.shape[1] / _ELEPHANT.shape[0]
+        top = (header_h - eh) / 2
+        # y axis is inverted (pixel coords), so extent is (left, right, bottom, top)
+        ax.imshow(_ELEPHANT, extent=(30, 30 + ew, top + eh, top), interpolation="antialiased", zorder=3)
+        title_x = 30 + ew + 18
+    ax.text(title_x, header_h / 2 - (8 if sub_label else 0), league_name,
              fontsize=24, color=WHITE, ha="left", va="center",
              fontproperties=FONT_HEADLINE)
     ax.text(CARD_WIDTH_PX - 36, header_h / 2 - (10 if sub_label else 0), badge_label,
