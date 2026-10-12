@@ -12,6 +12,8 @@ Sources
 - Clubs: FootyStats /league-teams?include=stats.
 - Display names: the player's `fs_known_as` field on footballsiam.com, else the player page title.
   Players are matched to site pages by FootyStats ID only (never by name).
+- Nationality: the player page's `nationality` field on footballsiam.com wins over FootyStats,
+  so a correction made on the site (e.g. Ben Davis = Thailand, not Singapore) sticks.
 """
 import datetime as dt
 import json
@@ -40,7 +42,7 @@ def site_players():
     out, page = {}, 1
     while True:
         r = requests.get(f"{SITE}/wp-json/wp/v2/player", headers=UA, timeout=60, params={
-            "per_page": 100, "page": page, "_fields": "id,title,link,acf.footystats_id,meta.fs_known_as"})
+            "per_page": 100, "page": page, "_fields": "id,title,link,acf.footystats_id,acf.nationality,meta.fs_known_as"})
         r.raise_for_status()
         rows = r.json()
         for x in rows:
@@ -49,7 +51,8 @@ def site_players():
                 continue
             known = ((x.get("meta") or {}).get("fs_known_as") or "").strip()
             title = x["title"]["rendered"].replace("&#8217;", "'").replace("&amp;", "&")
-            out[int(fid)] = {"name": known or title, "link": x["link"], "has_known": bool(known)}
+            nat = ((x.get("acf") or {}).get("nationality") or "").strip()
+            out[int(fid)] = {"name": known or title, "link": x["link"], "has_known": bool(known), "nat": nat}
         if page >= int(r.headers.get("X-WP-TotalPages", 1)):
             return out
         page += 1
@@ -87,10 +90,17 @@ def build():
         return person(r["id"], r["name"], r["club_team_id"], r["nationality"], r.get("position_group") or r.get("position"),
                       r["minutes_played_overall"])
 
+    def site_nat(df):
+        """Site nationality overrides FootyStats where the player page has one."""
+        df = df.copy()
+        df["nationality"] = [((wp.get(int(i)) or {}).get("nat") or n) for i, n in zip(df["id"], df["nationality"])]
+        return df
+
+    lp = site_nat(lp)
+    co = site_nat(fs.all_positions(SEASON, threshold))
     g = lp[lp.goals_overall > 0].sort_values(["goals_overall", "minutes_played_overall"], ascending=[False, True]).head(10)
     a = lp[lp.assists_overall > 0].sort_values(["assists_overall", "minutes_played_overall"], ascending=[False, True]).head(10)
 
-    co = fs.all_positions(SEASON, threshold)
     co["rating"] = pd.to_numeric(co["average_rating_overall"], errors="coerce")
     co = co[co["rating"] > 0]
 
