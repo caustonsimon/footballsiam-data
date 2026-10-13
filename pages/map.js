@@ -6,7 +6,7 @@ var f='all', sel=null, markers={};
 var map=L.map('mx-map',{worldCopyJump:true,scrollWheelZoom:false,zoomSnap:0.5}).setView([38,25],2.5);
 var RG={'World':[[-45,-130],[70,150]],'Europe':[[35,-12],[68,32]],'Asia':[[-12,90],[45,145]],'Americas':[[10,-125],[55,-65]]};
 var rc=L.control({position:'topright'}); rc.onAdd=function(){var d=L.DomUtil.create('div','mx-rg'); d.innerHTML=Object.keys(RG).map(function(k){return '<button data-r="'+k+'">'+k+'</button>'}).join(''); L.DomEvent.disableClickPropagation(d); d.querySelectorAll('button').forEach(function(b){b.onclick=function(){map.flyToBounds(RG[b.getAttribute('data-r')],{duration:0.6})}}); return d}; rc.addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap contributors &copy; CARTO',subdomains:'abcd',maxZoom:8}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri, HERE, Garmin, OpenStreetMap contributors',maxZoom:10}).addTo(map);
 function vis(r){return f==='all'||r.g===f}
 function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function counts(){var c={};R.forEach(function(r){if(vis(r)){c[r.c]=(c[r.c]||0)+1}});return c}
