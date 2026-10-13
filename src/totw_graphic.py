@@ -20,7 +20,7 @@ Usage:
 Requires (relative to this script's location, i.e. the footballsiam-data repo root):
     assets/shirts/<club-slug>.png   — one per club, transparent background
     assets/branding/thai-league-1.png
-    assets/branding/football-siam.png
+    assets/branding/elephant-gold.png (house mark; football-siam.png is retired)
 
 Requires Playwright + a Chromium install. On this project's machines, Chromium
 lives at /opt/pw-browsers/chromium-*/chrome-linux/chrome (cloud sandbox) —
@@ -105,7 +105,8 @@ def build_html(selection: dict) -> str:
     players = {p["slot"]: p for p in selection["players"]}
     potw = selection["player_of_the_week"]
 
-    fs_logo = data_uri(os.path.join(BRANDING_DIR, "football-siam.png"))
+    # House mark: the gold Erawan elephant (Simon, 13 Oct 2026). football-siam.png is retired.
+    fs_logo = data_uri(os.path.join(BRANDING_DIR, "elephant-gold.png"))
     tl_logo = data_uri(os.path.join(BRANDING_DIR, "thai-league-1.png"))
 
     def render_card(slot):
