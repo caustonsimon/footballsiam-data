@@ -70,7 +70,7 @@ GEO={'Sweden':(62.0,15.5),'Thailand':(15.0,101.0),'Germany':(51.2,10.4),'Norway'
 'Faroe Islands':(62.0,-6.9),'Malta':(35.9,14.4),'Iceland':(64.9,-18.6),'Morocco':(31.8,-7.1),'Finland':(64.5,26.0),'Portugal':(39.6,-8.0),'Italy':(42.8,12.5)}
 miss={r['c'] for r in rows if r['c'] not in GEO}
 print('missing geo',miss)
-IMGS={'skogmar':'https://footballsiam.com/wp-content/uploads/2026/10/skogmar.jpeg','marinc':'https://footballsiam.com/wp-content/uploads/2026/10/Apolo-Marinch.jpg','mexes':'https://footballsiam.com/wp-content/uploads/2026/10/Silva-Mexes.jpg'}
+IMGS={'skogmar':'https://footballsiam.com/wp-content/uploads/2026/10/skogmar.jpeg','marinc':'https://footballsiam.com/wp-content/uploads/2026/10/Apolo-Marinch.jpg','mexes':'https://footballsiam.com/wp-content/uploads/2026/10/Silva-Mexes.jpg','warneryd':'https://footballsiam.com/wp-content/uploads/2026/10/Alexander-Warneryd.jpeg','brisco':'https://footballsiam.com/wp-content/uploads/2026/10/Yanis-Brisco.webp','fletcher':'https://footballsiam.com/wp-content/uploads/2026/10/Jake-Fletcher.jpeg'}
 for r in rows:
     if r['k'] in IMGS: r['img']=IMGS[r['k']]
     if r['k']=='mexes':
