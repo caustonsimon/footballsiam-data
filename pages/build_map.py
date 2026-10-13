@@ -103,9 +103,12 @@ def build(mode,out):
     '<div class="mx-wrap"><div id="mx-map" class="mx-map" role="application" aria-label="World map of players"></div><div class="mx-panel"><div class="mx-ph">Tap a country on the map</div><div class="mx-top"></div><div class="mx-list"></div></div></div>'
     '<p class="mx-end">Compiled by Football Siam from <a href="https://www.instagram.com/half_thailand.123/" rel="nofollow noopener" target="_blank">@half_thailand.123</a>, which follows dual heritage Thai players around the world, and from Transfermarkt, club and federation sites, FotMob and the press. Entries marked unconfirmed rest on one source. %s Spotted a player we have missed? Message us on LINE.</p>'%reads+
     '</div>')
-    html=('<!-- wp:html -->\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">'
-     '<style>%s</style>%s<script type="application/json" id="mx-data">%s</script>'
-     '<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script><script>%s</script>\n<!-- /wp:html -->')%(
-     ' '.join(CSS.split()),body,json.dumps({'rows':rs,'geo':geo},ensure_ascii=False).replace('</','<\\/'),' '.join(JS.split('\n')))
+    import base64
+    d64=base64.b64encode(json.dumps({'rows':rs,'geo':geo},ensure_ascii=False).encode('utf-8')).decode()
+    j64=base64.b64encode(' '.join(JS.split('\n')).encode('ascii')).decode()
+    html=('<!-- wp:html --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">'
+     '<style>%s</style>%s<div id="mx-data" hidden data-d="%s"></div>'
+     '<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script><script>eval(atob("%s"))</script><!-- /wp:html -->')%(
+     ' '.join(CSS.split()),body,d64,j64)
     open(out,'w').write(html); print(mode,len(html),len(rs))
 build('dual','/home/claude/t2/map/dual.html'); build('abroad','/home/claude/t2/map/abroad.html')

@@ -1,7 +1,7 @@
 (function(){
 function start(){
 var root=document.getElementById('mx'); if(!root||!window.L) return;
-var D=JSON.parse(document.getElementById('mx-data').textContent), R=D.rows, G=D.geo;
+var D=JSON.parse(new TextDecoder('utf-8').decode(Uint8Array.from(atob(document.getElementById('mx-data').getAttribute('data-d')),function(c){return c.charCodeAt(0)}))), R=D.rows, G=D.geo;
 var f='all', sel=null, markers={};
 var map=L.map('mx-map',{worldCopyJump:true,scrollWheelZoom:false,zoomSnap:0.5}).setView([38,25],2.5);
 var RG={'World':[[-45,-130],[70,150]],'Europe':[[35,-12],[68,32]],'Asia':[[-12,90],[45,145]],'Americas':[[10,-125],[55,-65]]};
