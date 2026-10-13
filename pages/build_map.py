@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import json,re,datetime
-P='/home/claude/t2/players/'
+import os
+HERE=os.path.dirname(os.path.abspath(__file__))
+P=os.path.join(HERE,'data')+'/'
 v=json.load(open(P+'verified_all.json'))
 ft=json.load(open(P+'full_thai_abroad.json'))
 DROP={'watts','eklund','paschke'}
@@ -82,7 +84,7 @@ rows.sort(key=lambda r:(order.get(r['lv'],8),r['n'].split()[-1]))
 for r in rows:
     if r['cat']=='dual': r['g']={'Thailand international':'int','Thailand youth':'yth'}.get(r['lv'],'elig')
     else: r['g']='low' if r['lv']=='Lower leagues' else 'pro'
-CSS=open('/home/claude/t2/map/map.css').read(); JS=open('/home/claude/t2/map/map.js').read()
+CSS=open(os.path.join(HERE,'map.css')).read(); JS=open(os.path.join(HERE,'map.js')).read()
 DUAL='https://footballsiam.com/dual-heritage-players/'; ABR='https://footballsiam.com/thai-overseas-players/'
 def build(mode,out):
     rs=[r for r in rows if r['cat']==mode]
@@ -121,4 +123,5 @@ def build(mode,out):
      '<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script><script>eval(atob("%s"))</script><!-- /wp:html -->')%(
      ' '.join(CSS.split()),body,d64,j64)
     open(out,'w').write(html); print(mode,len(html),len(rs))
-build('dual','/home/claude/t2/map/dual.html'); build('abroad','/home/claude/t2/map/abroad.html')
+OUT=os.environ.get('OUT',HERE)
+build('dual',os.path.join(OUT,'dual.html')); build('abroad',os.path.join(OUT,'abroad.html'))
