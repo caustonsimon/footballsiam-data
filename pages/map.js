@@ -21,11 +21,12 @@ function draw(){
  top.innerHTML=arr.map(function(k){return '<button data-c="'+esc(k)+'">'+esc(k)+' <b>'+c[k]+'</b></button>'}).join('');
  top.querySelectorAll('button').forEach(function(b){b.onclick=function(){pick(b.getAttribute('data-c'),true)}});
 }
+function ini(n){var p=String(n).split(' ').filter(function(x){return x});return ((p.length?p.slice(0,1).join(''):'').charAt(0)+(p.length>1?p.slice(-1).join('').charAt(0):'')).toUpperCase()}
 function tagc(r){return r.lv==='Thailand international'?'int':(r.lv==='Thailand youth'?'yth':(r.cat==='abroad'?'ab':''))}
 function rowHtml(r){
  var dl='<dt>'+(r.cat==='abroad'?'Player':'Heritage')+'</dt><dd>'+esc(r.cat==='abroad'?'Thai':r.her)+'</dd><dt>Thailand</dt><dd>'+esc(r.th)+'</dd>'+(r.oi?'<dt>Also</dt><dd>'+esc(r.oi)+'</dd>':'')+(r.lg?'<dt>League</dt><dd>'+esc(r.lg)+'</dd>':'');
  var s=(r.s||[]).map(function(x){return '<a href="'+esc(x.u)+'" target="_blank" rel="nofollow noopener">'+esc(x.l)+'</a>'}).join(', ');
- return '<div class="mx-row" id="p-'+esc(r.k)+'"><button class="mx-rh" aria-expanded="false"><span><span class="mx-nm">'+esc(r.n)+'</span><span class="mx-cl">'+esc(r.club)+(r.tl?' &middot; '+esc(r.tl):'')+(r.pos?' &middot; '+esc(r.pos):'')+(r.age?' &middot; '+esc(r.age):'')+'</span></span><span class="mx-tag '+tagc(r)+'">'+esc(r.cat==='abroad'&&r.lv==='Professional'?'Thai abroad':r.lv)+'</span></button><div class="mx-det"><dl>'+dl+'</dl><p>'+esc(r.bio)+'</p>'+(r.unc?'<div class="u">Unconfirmed: from a single source</div>':'')+(s?'<div class="s">Sources: '+s+'</div>':'')+'</div></div>';
+ return '<div class="mx-row" id="p-'+esc(r.k)+'"><button class="mx-rh" aria-expanded="false"><span class="mx-av">'+(r.img?'<img src="'+esc(r.img)+'" alt="">':esc(ini(r.n)))+'</span><span><span class="mx-nm">'+esc(r.n)+'</span><span class="mx-cl">'+esc(r.club)+(r.tl?' &middot; '+esc(r.tl):'')+(r.pos?' &middot; '+esc(r.pos):'')+(r.age?' &middot; '+esc(r.age):'')+'</span></span><span class="mx-tag '+tagc(r)+'">'+esc(r.cat==='abroad'&&r.lv==='Professional'?'Thai abroad':r.lv)+'</span></button><div class="mx-det"><dl>'+dl+'</dl><p>'+esc(r.bio)+'</p>'+(r.unc?'<div class="u">Unconfirmed: from a single source</div>':'')+(s?'<div class="s">Sources: '+s+'</div>':'')+'</div></div>';
 }
 function pick(k,fly,open){
  sel=k; draw();
