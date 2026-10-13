@@ -46,9 +46,13 @@ rows.append({'k':'jonah-duchowny','n':'Jonah Duchowny','cat':'dual','c':'Thailan
   'bio':'Jonah Duchowny is an attacking midfielder who made his name with Los Cabos United in Mexico, scoring eight goals with seven assists in 2025/26, before joining Pattaya United in Thai League 2 in July 2026. He has two caps for Thailand U20 and is also eligible for the United States.',
   's':[{'u':'https://www.transfermarkt.com/jonah-duchowny/profil/spieler/1167018','l':'Transfermarkt'},{'u':'https://footballsiam.com/the-ones-that-got-away-thailand-diaspora/','l':'Football Siam'}],'unc':False})
 rows.append({'k':'micah-duchowny','n':'Micah Duchowny','cat':'dual','c':'Mexico','club':'Los Cabos United','tl':'','pos':'Right-back','age':'Age 23',
-  'lv':'Professional','her':'Thai parent; brother of Jonah Duchowny','th':'Eligible, not yet called up','oi':'',
-  'bio':'Micah Duchowny is a right-back, who can also play centre-back, at Los Cabos United in Mexico, where he joined in August 2025. He is the older brother of Jonah Duchowny and holds Thai citizenship.',
+  'lv':'Thailand youth','her':'Thai parent; brother of Jonah Duchowny','th':'Thailand youth international','oi':'',
+  'bio':'Micah Duchowny is a right-back, who can also play centre-back, at Los Cabos United in Mexico, where he joined in August 2025. He is the older brother of Jonah Duchowny, holds Thai citizenship and, like his brother, has played for Thailand at youth level.',
   's':[{'u':'https://www.transfermarkt.com/micah-duchowny/profil/spieler/1167019','l':'Transfermarkt'}],'unc':False})
+rows.append({'k':'yapp','n':'Siam Yapp','cat':'dual','c':'Thailand','club':'Police Tero','tl':'','pos':'Left winger','age':'Age 22',
+  'lv':'Thailand youth','her':'Thai parent','th':'Thailand U23 (2 caps)','oi':'',
+  'bio':'Siam Yapp is a Phuket-born left winger who joined Police Tero in Thai League 2 in August 2026. He has two caps for Thailand at under-23 level.',
+  's':[{'u':'https://www.transfermarkt.com/siam-yapp/profil/spieler/971138','l':'Transfermarkt'}],'unc':False})
 for p in ft:
     b=p.get('bio') or ''
     low=b.startswith('[Amateur') or b.startswith('[Parentage')
