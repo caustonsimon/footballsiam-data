@@ -14,6 +14,11 @@ cuts to its middle half. The featured image stays for the website only.
 
 --headline is set in Playfair caps, 84-110px, up to four lines; if it will
 not fit at 84px the script stops and says so (cut words, do not shrink).
+--image puts an existing chart, table or photo (any shape) on a data slide
+under a green header instead: give --headline as the slide title, and
+optionally --caption (e.g. "Data FootyStats"). Use it to turn landscape
+charts into carousel slides; it never crops the image.
+
 --photo fills the card with the photo cropped to 4:5 and puts the type on a
 green scrim in the lower half; --focus is where the subject's face sits,
 as a fraction of the photo's height (0 top, 1 bottom).
@@ -38,11 +43,17 @@ def main(argv=None):
     p.add_argument("--big", help="short figure or score set large above the headline, e.g. 6,111")
     p.add_argument("--photo")
     p.add_argument("--focus", type=float, default=0.35)
+    p.add_argument("--image", help="chart/table/photo to set on a data slide (not cropped)")
+    p.add_argument("--caption")
     p.add_argument("--page", help="slide number for the footer when this is a carousel cover, e.g. 1/3")
     a = p.parse_args(argv)
     card = fs.Card()
     try:
-        fs.cover(card, a.kicker, a.headline, a.sub, a.big, a.page, a.photo, a.focus)
+        if a.image:
+            card = fs.Card(bg=fs.GREEN)
+            fs.image_slide(card, a.kicker, a.headline, a.image, a.sub, a.page, a.caption)
+        else:
+            fs.cover(card, a.kicker, a.headline, a.sub, a.big, a.page, a.photo, a.focus)
         print("wrote", card.save(a.out))
     except fs.LayoutError as e:
         print("LAYOUT ERROR:", e, file=sys.stderr)

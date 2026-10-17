@@ -339,3 +339,35 @@ def _photo_fill(card: Card, photo, focus_y: float):
     over.putalpha(mask.resize((W, H)))
     card.im = Image.alpha_composite(card.im.convert("RGBA"), over).convert("RGB")
     card.d = ImageDraw.Draw(card.im)
+
+
+def image_slide(card: Card, kicker: str, title: str, image, sub: str | None = None,
+                page: str | None = None, caption: str | None = None):
+    """Any existing chart, table or photo (landscape or not) set into a 4:5
+    data slide: green header with elephant, kicker and title, the image
+    scaled to fit the white body inside the side margins (never cropped,
+    never upscaled past 2x), an optional caption, the gold footer."""
+    top = data_header(card, kicker, title, sub)
+    raw = Image.open(image) if not isinstance(image, Image.Image) else image
+    if raw.mode in ("RGBA", "LA", "P"):
+        raw = raw.convert("RGBA")
+        flat = Image.new("RGB", raw.size, WHITE)
+        flat.paste(raw, (0, 0), raw)
+        src = flat
+    else:
+        src = raw.convert("RGB")
+    cap_h = 50 if caption else 0
+    box_w, box_h = CONTENT_W, FOOTER_Y - top - 60 - cap_h
+    scale = min(box_w / src.width, box_h / src.height, 2.0)
+    w, h = round(src.width * scale), round(src.height * scale)
+    if w < CONTENT_W * 0.6 and h < box_h * 0.6:
+        raise LayoutError("image is too small to read on a slide; export it larger")
+    src = src.resize((w, h), Image.LANCZOS)
+    x = MARGIN_X + (CONTENT_W - w) // 2
+    y = top + 30 + (box_h - h) // 2
+    card.im.paste(src, (x, y))
+    card._rec("image", (x, y, x + w, y + h))
+    if caption:
+        f = fit_one(card, caption, lato, 26, MIN_SMALL, CONTENT_W)
+        card.text((MARGIN_X, y + h + 30), caption, f, MUTED, anchor="lm")
+    footer(card, page)
