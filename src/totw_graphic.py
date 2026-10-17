@@ -203,8 +203,8 @@ body {{
   width:auto;
   filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35));
 }}
-.corner-logo.left {{ left:36px; }}
-.corner-logo.right {{ right:36px; }}
+.corner-logo.left {{ left:80px; }}
+.corner-logo.right {{ right:80px; }}
 
 .header {{
   position:relative; z-index:5;
@@ -215,8 +215,8 @@ body {{
   font-family:'Lato', sans-serif;
   font-weight:900;
   letter-spacing:3px;
-  color:#ffde59;
-  font-size:22px;
+  color:#e3c567;
+  font-size:30px;
   text-transform:uppercase;
 }}
 .title {{
@@ -232,8 +232,8 @@ body {{
   font-family:'Lato', sans-serif;
   font-weight:700;
   letter-spacing:2px;
-  color:#ffde59;
-  font-size:24px;
+  color:#e3c567;
+  font-size:30px;
   margin-top:6px;
   text-transform:uppercase;
 }}
@@ -244,7 +244,7 @@ body {{
   display:flex;
   flex-direction:column;
   justify-content:space-evenly;
-  padding:10px 60px 20px;
+  padding:10px 80px 20px;
 }}
 
 .row {{
@@ -265,7 +265,7 @@ body {{
 }}
 
 .card.potw {{
-  border:8px solid #ffde59;
+  border:8px solid #e3c567;
   box-shadow:0 0 0 4px rgba(255,222,89,0.35), 0 10px 22px rgba(0,0,0,0.35);
 }}
 
@@ -273,7 +273,7 @@ body {{
   position:absolute;
   top:-16px; left:50%;
   transform:translateX(-50%);
-  background:#ffde59;
+  background:#e3c567;
   color:#004d25;
   font-family:'Lato', sans-serif;
   font-weight:900;

@@ -85,6 +85,7 @@ the design first in case a future placeholder box size differs slightly).
 from __future__ import annotations
 
 import argparse
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -465,6 +466,10 @@ def main(argv: list[str] | None = None) -> int:
                          "missing attendance data (by default the script refuses "
                          "and exits 1, printing what's missing, so a partial chart "
                          "is never shipped by accident).")
+    ap.add_argument("--social-out-dir", default=None,
+                    help="also write the Instagram-first 1080x1350 carousel "
+                         "(src/social_charts.py) and its data JSON here. This "
+                         "carousel is what gets posted; the inset is for the site.")
     args = ap.parse_args(argv)
 
     session = _session()
@@ -511,6 +516,23 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.outputs) / f"attendance_mw{args.match_week}_{args.competition}_inset.png"
     render(have, table_rows, out)
     print(f"\n  saved {out}")
+
+    if args.social_out_dir:
+        import json
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import social_charts
+        data = {
+            "league": COMPETITIONS[args.competition][1], "mw": args.match_week,
+            "matches": [{"home": team_info(m["home_team_name_en"])[0],
+                         "away": team_info(m["away_team_name_en"])[0],
+                         "att": int(m["attendance_number"])} for m in have],
+            "season": [{"club": c, "total": t, "games": g} for c, t, g in table_rows],
+        }
+        sd = Path(args.social_out_dir); sd.mkdir(parents=True, exist_ok=True)
+        jp = sd / f"attendance_mw{args.match_week}.json"
+        jp.write_text(json.dumps(data, ensure_ascii=False, indent=1))
+        for path in social_charts.attendance_deck(data).render(sd, f"attendance_mw{args.match_week}"):
+            print(f"  social slide {path}")
     return 0
 
 

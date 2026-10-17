@@ -467,6 +467,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="fold nationalities with fewer than this many starters "
                          "into 'Other' (default: 5 — tuned for a ~6-row legend "
                          "at this layout's font size; see module docstring)")
+    ap.add_argument("--social-out-dir", default=None,
+                    help="also write the Instagram-first 1080x1350 carousel "
+                         "(src/social_charts.py) and its data JSON here.")
     ap.add_argument("--outputs", default=str(_ROOT / "outputs"),
                     help="output directory (default: ./outputs)")
     ap.add_argument("--no-site-api", action="store_true",
@@ -556,6 +559,16 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.outputs) / f"nationality_mw{args.match_week}_{args.competition}_inset.png"
     render(rows, out)
     print(f"\n  saved {out}")
+
+    if args.social_out_dir:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import social_charts
+        data = {"league": comp_name, "mw": args.match_week,
+                "rows": [{"label": k, "count": v} for k, v in rows]}
+        sd = Path(args.social_out_dir); sd.mkdir(parents=True, exist_ok=True)
+        (sd / f"nationality_mw{args.match_week}.json").write_text(json.dumps(data, ensure_ascii=False, indent=1))
+        for path in social_charts.nationality_deck(data).render(sd, f"nationality_mw{args.match_week}"):
+            print(f"  social slide {path}")
     return 0
 
 
