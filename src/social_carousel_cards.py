@@ -315,6 +315,51 @@ def auto_cover(data, final, label):
     return kicker, head.strip(), sub, big
 
 
+def story_line(m):
+    """A short, factual headline for one result. Uses only the score and the
+    two names, so it can never claim anything the data does not show."""
+    h, a = m["home"], m["away"]
+    hs, as_ = int(m["home_score"]), int(m["away_score"])
+    win, lose, ws, ls = (h, a, hs, as_) if hs > as_ else (a, h, as_, hs)
+    if hs == as_:
+        return f"{h} and {a} share {num(hs)} each" if hs >= 2 else f"Honours even at {h}"
+    if ws >= 4 and ws - ls >= 3:
+        return f"{win} hit {num(ws)}"
+    if ws - ls >= 3:
+        return f"{win} thrash {lose}" if win == h else f"{win} run riot at {h}"
+    if win == a:
+        return f"{win} win at {h}"
+    return f"{win} beat {lose}"
+
+
+def day_cover(data, card_date_label, final, label=None):
+    """Matchday cover: built ONLY from the games played on the card's own
+    date, so Friday, Saturday and Sunday each get a different headline and
+    big scoreline (Simon, 19 Oct 2026). The kicker names the day."""
+    league = data.get("label") or label or LEAGUE_LABELS.get(data.get("league"), "")
+    rnd = round_name(data.get("sub") or data.get("round_label"), data.get("mw"))
+    day_name = (card_date_label or "").split()[0] if card_date_label else ""
+    today = [m for m in data.get("matches", []) if m.get("date") == card_date_label and m.get("is_scored")]
+    kicker = " · ".join(x for x in (league, rnd, day_name) if x)
+    if not today:
+        return kicker, f"{rnd} results" if final else f"{rnd} so far", None, None
+    best = max(today, key=lambda m: (abs(int(m["home_score"]) - int(m["away_score"])),
+                                    int(m["home_score"]) + int(m["away_score"]), -int(m.get("ts") or 0)))
+    big = f"{best['home_score']}-{best['away_score']}"
+    head = story_line(best)
+    n = len(today)
+    when = {"Friday": "Friday night", "Saturday": "Saturday", "Sunday": "Sunday"}.get(day_name, day_name)
+    others = n - 1
+    lead = f"{best['home']} {big} {best['away']}"
+    if final:
+        sub = f"{lead}. The full matchweek and the final table inside."
+    elif others:
+        sub = f"{lead}, plus {num(others)} more from {when}. Every result so far, and the table."
+    else:
+        sub = f"{lead}, {when}'s only game. Every result so far, and the table."
+    return kicker, head, sub, big
+
+
 def build_carousel(fx, tb, final=False, over=None):
     over = over or {}
     deck = Deck()
@@ -330,6 +375,20 @@ def build_carousel(fx, tb, final=False, over=None):
     return deck
 
 
+def _is_last_day(data):
+    """True when the card's results (the round up to the card's date) hold
+    every game of the round: in a single-table league that is half the
+    teams. For group stages, trust round_complete."""
+    tables = data.get("tables") or []
+    res = (data.get("results") or {}).get("matches", [])
+    if len(tables) == 1:
+        teams = len(tables[0].get("standings") or [])
+        if teams:
+            done = [m for m in res if m.get("is_scored") or m.get("status") in ("postponed", "cancelled", "abandoned", "suspended")]
+            return len(done) >= teams // 2
+    return True
+
+
 def build_matchday(data, over=None):
     over = over or {}
     res = dict(data["results"])
@@ -337,15 +396,18 @@ def build_matchday(data, over=None):
     res.setdefault("mode", "results")
     if data.get("round_label") and not res.get("sub"):
         res["sub"] = data["round_label"]
-    final = bool(data.get("round_complete"))
+    # round_complete reflects the round NOW, not on the card's date, so only
+    # treat the card as the round's last day when no later date has games.
+    final = bool(data.get("round_complete")) and _is_last_day(data)
     deck = Deck()
-    kicker, head, sub, big = auto_cover(res, final, data.get("label"))
+    kicker, head, sub, big = day_cover(res, data.get("date_label"), final, data.get("label"))
     add_cover(deck, over.get("kicker") or kicker, over.get("headline") or head,
               over.get("sub") or sub, over.get("big") if over.get("big") is not None else big)
     rnd = round_name(res.get("sub") or data.get("round_label"))
-    add_matches(deck, res, f"{kicker} · {rnd}" if rnd else kicker, "Results")
+    league = res.get("label") or data.get("label") or ""
+    add_matches(deck, res, f"{league} · {rnd}" if rnd else league, "Results")
     for t in data.get("tables") or []:
-        add_table(deck, t, f"{t.get('label') or kicker}", "After " + rnd if final else "As it stands")
+        add_table(deck, t, f"{t.get('label') or league}", "After " + rnd if final else "As it stands")
     return deck
 
 
