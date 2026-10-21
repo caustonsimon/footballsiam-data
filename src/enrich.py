@@ -934,10 +934,16 @@ def reassign_clubs(
     }
 
     for p in wp.iter_all_players(
-        fields="id,title,acf.footystats_id,acf.current_club,acf.fs_advanced_stats_json"
+        fields="id,title,acf.footystats_id,acf.current_club,acf.fs_advanced_stats_json,meta.fotmob_id"
     ):
         stats["scanned"] += 1
         acf = p.get("acf") or {}
+        # Squads built from FotMob (src/fotmob_squads.py, Port from 21 Oct
+        # 2026) own current_club for their players: FootyStats must not
+        # move them back.
+        if str((p.get("meta") or {}).get("fotmob_id") or "").strip():
+            stats["fotmob_managed"] = stats.get("fotmob_managed", 0) + 1
+            continue
         pid = int(p["id"])
         name = (p.get("title") or {}).get("rendered", "") or f"player {pid}"
         fs_id = acf.get("footystats_id")
