@@ -23,6 +23,7 @@ on:
           - both
           - Thai League 1
           - Thai League 2
+          - Thai FA Cup
 
 concurrency:
   group: daily-sync

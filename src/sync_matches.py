@@ -364,9 +364,84 @@ LEAGUES: list[dict[str, Any]] = [
         },
         "skip_placeholder_teams": True,
     },
+    # -- Added 2026-10-21: Thai FA Cup 2026/27. Simon: "add the Thai FA Cup
+    # to the site, all the fixtures and results, going back to the first
+    # round". Season 17874 already sits in his FootyStats chosen leagues.
+    # Competition term 118 (pre-existing "Thai FA Cup", slug thai-fa-cup,
+    # already in the Fixtures/Results dropdown as "FA Cup"), category 251
+    # ("Thai FA Cup 2026/27", created 2026-10-21).
+    #
+    # Rounds: FootyStats gives every cup game game_week 0, so match_week is
+    # replaced by a round number (see round_index_by_roundid()): 0 =
+    # Qualifying Round, 1 = First Round, 2 = Second Round, 3 = Third Round,
+    # 4 = Quarter-final, 5 = Semi-final, 6 = Final. The site shows the round
+    # name instead of "MW n" via the "FS Thai FA Cup round labels" snippet.
+    #
+    # Penalty shoot-outs are NOT in FootyStats (winningTeam -1, pens_recorded
+    # -1 on every drawn tie), so a drawn tie shows the 120-minute score only.
+    {
+        "name": "Thai FA Cup",
+        "season_id": 17874,          # FootyStats: "Thailand Thai FA Cup", 2026/27
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [118], "categories": [251], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+        "skip_placeholder_teams": True,
+        "rounds_by_roundid": True,
+        # Text-only sides (T3 and below) get house names at write time.
+        # T3 entries mirror Snippet 153 (T3 Club Name Corrections), which
+        # only filters t3_* competition posts, so cup posts need them
+        # stored directly. Every pairing below was checked by FootyStats
+        # team ID against the six 2026/27 T3 feeds, not by name. The rest
+        # drop "FC" per the house rule. T1/T2 sides use their WP club title.
+        "name_overrides": {
+            "Ayutthaya": "Ayutthaya PK",                   # 8387, T3 Central
+            "Kasem Bundit University": "Kasembundit University",
+            "Lopburi City": "Lopburi Poma",
+            "Cha Choeng Sao FC": "Chachoengsao Hi-Tek",
+            "Marines Eureka": "Marines",
+            "Kamphaeng Phet": "Kamphaengphet",
+            "Surin": "Surin City",
+            "Udon Banchan": "Udon Banjan United",
+            "Nakhon Si Thammarat": "Nakhon Si United",
+            "Samut Sakhon City": "Samutsakhon City",
+            "Thap Luang United": "Thapluang United",
+            "Nara FC": "Nara",
+            "Navy FC": "Navy",
+            "Nongkhae Police FC": "Nongkhae Police",
+            "Nonthaburi FC": "Nonthaburi",
+            "FC Mahasarakham": "Mahasarakham",             # 1026375, not Mahasarakham SBT
+        },
+    },
 ]
 
 log = logging.getLogger("sync_matches")
+
+
+def round_index_by_roundid(matches: list[dict[str, Any]]) -> dict[int, int]:
+    """For a knockout cup: FootyStats roundID -> round number (0-based),
+    ordered by each round's earliest kick-off. Cup rounds never overlap in
+    time, so ordering by date is exact and needs no hand-kept ID table; a
+    new round FootyStats adds later simply slots in after the others."""
+    first: dict[int, int] = {}
+    for m in matches:
+        try:
+            rid, ts = int(m.get("roundID") or 0), int(m.get("date_unix") or 0)
+        except (TypeError, ValueError):
+            continue
+        if rid and ts and (rid not in first or ts < first[rid]):
+            first[rid] = ts
+    return {rid: i for i, rid in enumerate(sorted(first, key=first.get))}
+
+
+def week_for(match: dict[str, Any], round_index: dict[int, int] | None) -> int:
+    """match_week to store: the cup round number when the league uses rounds,
+    otherwise FootyStats' (revised) game week."""
+    if round_index is not None:
+        try:
+            return round_index.get(int(match.get("roundID") or 0), 0)
+        except (TypeError, ValueError):
+            return 0
+    return match_week_of(match)
 
 
 # --------------------------------------------------------------------------
@@ -444,7 +519,8 @@ def unplayed_status_update(match: dict[str, Any], meta: dict[str, Any]) -> dict[
 
 
 def build_create_payload(
-    match: dict[str, Any], league: dict[str, Any], wp: WPClient
+    match: dict[str, Any], league: dict[str, Any], wp: WPClient,
+    round_index: dict[int, int] | None = None,
 ) -> dict[str, Any]:
     # .get(), not [] -- for a require_full_club_map=False league (AFC CL,
     # T3) being unmapped is the expected case, not an error. sync() already
@@ -504,7 +580,7 @@ def build_create_payload(
             "away_score": away_score,
             "date": ymd,                       # YYYYMMDD - required by fs_get_matches()
             "kick_off_time": kickoff,          # H:i, 24h, Asia/Bangkok
-            "match_week": str(match_week_of(match)),
+            "match_week": str(week_for(match, round_index)),
             "season": league.get("season_label", SEASON_LABEL),
             "footystats_match_id": str(int(match["id"])),
         },
@@ -644,6 +720,11 @@ def sync(
             continue
         log.info("  %d matches from FootyStats", len(matches))
 
+        # Cup leagues: round numbers from the FULL feed, before any filtering.
+        round_index = round_index_by_roundid(matches) if league.get("rounds_by_roundid") else None
+        if round_index is not None:
+            log.info("  rounds (roundID -> round no.): %s", round_index)
+
         if league.get("country_filter") == "asean":
             before = len(matches)
             matches = [
@@ -697,7 +778,7 @@ def sync(
 
             try:
                 if existing is None:
-                    payload = build_create_payload(match, league, wp)
+                    payload = build_create_payload(match, league, wp, round_index)
                     wp.create_match(payload)
                     stats["created"] += 1
                     log.info("  CREATE  %s  %s  [wk %s]",
@@ -712,7 +793,7 @@ def sync(
                         new_meta = {
                             "home_score": str(int(match.get("homeGoalCount", 0) or 0)),
                             "away_score": str(int(match.get("awayGoalCount", 0) or 0)),
-                            "match_week": str(match_week_of(match)),
+                            "match_week": str(week_for(match, round_index)),
                         }
                         wp.update_match_meta(existing["id"], new_meta)
                         stats["scores_updated"] += 1
