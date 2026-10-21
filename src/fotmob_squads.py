@@ -413,6 +413,33 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                                       "candidates": [(c[1]["id"], (c[1].get("title") or {}).get("rendered")) for c in cands]})
                 continue
 
+        if not wp_hit:
+            # e. already on this club's books on the site with the same name
+            #    (date of birth missing or wrong on one side -- e.g. FootyStats
+            #    has Suphanan Bureerat born 10 Oct, FotMob 10 Dec).
+            cands = []
+            for p in wp_players:
+                if int(p["id"]) in used_wp:
+                    continue
+                acf_p, meta_p = p.get("acf") or {}, p.get("meta") or {}
+                at_club = club_id_of(acf_p.get("current_club")) == wp_club or \
+                    str(meta_p.get("last_confirmed_club") or "") == str(wp_club)
+                if not at_club:
+                    continue
+                sc = name_score(name, (p.get("title") or {}).get("rendered", ""))
+                if sc >= 0.8:
+                    cands.append((sc, p))
+            cands.sort(key=lambda x: -x[0])
+            if len(cands) == 1 or (len(cands) > 1 and cands[0][0] - cands[1][0] >= 0.15):
+                wp_hit = cands[0][1]
+                site_dob = unix_to_date((wp_hit.get("meta") or {}).get("birthday"))
+                how = f"same club + name (site DOB {site_dob}, FotMob {dob})"
+            elif cands:
+                rep["review"].append({"fotmob": name, "fotmob_id": m["id"], "why":
+                                      "two player pages at this club fit the name",
+                                      "candidates": [(c[1]["id"], (c[1].get("title") or {}).get("rendered")) for c in cands]})
+                continue
+
         if wp_hit and int(wp_hit["id"]) in used_wp:
             rep["review"].append({"fotmob": name, "fotmob_id": m["id"],
                                   "why": f"player page {wp_hit['id']} already claimed by another squad player"})
@@ -449,6 +476,11 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
             wp_id = int(hit["id"])
             title = (hit.get("title") or {}).get("rendered", "") or m["name"]
             known = str(hmeta.get("fs_known_as") or "").strip()
+            if not known and nat != "Thailand":
+                # Thai names keep the site's romanisation (Simon's corrections);
+                # foreign players go by the name they are known by on FotMob
+                # (Kaka Mendes, not Francisco Clailson Mendes da Silva).
+                known = m["name"]
             wp.update_player(wp_id, meta=meta, acf=acf)
             rep["matched"].append({"wp": wp_id, "site": title, "fotmob": m["name"], "how": how})
         else:
@@ -519,7 +551,7 @@ def main() -> int:
     log.info("FootyStats TL1 players: %d", len(fs_rows))
     wp_players = list(wp.iter_all_players(
         fields="id,title,acf.footystats_id,acf.current_club,acf.nationality,meta.birthday,"
-               "meta.fotmob_id,meta.fs_known_as"))
+               "meta.fotmob_id,meta.fs_known_as,meta.last_confirmed_club"))
     log.info("WP players: %d", len(wp_players))
 
     report: dict[str, Any] = {}
