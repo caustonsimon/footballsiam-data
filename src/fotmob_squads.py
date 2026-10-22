@@ -55,6 +55,8 @@ import requests
 
 import sync_matches  # noqa: F401  (loads .env)
 from footystats_client import FootyStatsClient
+from fotmob_player import build_player_hub
+from thaileague import TL_CLUB_IDS, ThaiLeague, has_thai
 from wp_client import WPClient, WPError, WPHostChallengeError
 
 log = logging.getLogger("fotmob_squads")
@@ -135,6 +137,9 @@ class FotMob:
 
     def match(self, match_id: int) -> dict[str, Any]:
         return self._get("matchDetails", matchId=match_id)["content"]
+
+    def player(self, player_id: int) -> dict[str, Any]:
+        return self._get("playerData", id=player_id)
 
 
 # --------------------------------------------------------------------------
@@ -342,8 +347,35 @@ def _blank() -> dict[str, Any]:
 # Main pass
 # --------------------------------------------------------------------------
 
+def match_registry(squad: list[dict[str, Any]], regs: list[dict[str, Any]]) -> dict[int, tuple[dict[str, Any], str]]:
+    """FotMob squad member id -> (Thai League registration, how). Date of
+    birth first; then shirt number + name (dates disagree for a handful:
+    day/month swapped or a day out); never name alone."""
+    out: dict[int, tuple[dict[str, Any], str]] = {}
+    used: set[int] = set()
+    for m in squad:
+        dob = iso_date(m.get("dateOfBirth"))
+        en = lambda r: r.get("full_name_en") or ""
+        c = [r for r in regs if r["id"] not in used and iso_date(r.get("birth_date")) == dob]
+        c = [r for r in c if name_score(m["name"], en(r)) >= 0.4 or str(r.get("shirt_number")) == str(m.get("shirtNumber"))]
+        how = "dob"
+        if len(c) != 1:
+            c = [r for r in regs if r["id"] not in used and str(r.get("shirt_number")) == str(m.get("shirtNumber"))
+                 and name_score(m["name"], en(r)) >= 0.5]
+            how = "shirt+name"
+        if len(c) != 1:
+            c = [r for r in regs if r["id"] not in used and dob_relation(dob, iso_date(r.get("birth_date")))
+                 and name_score(m["name"], en(r)) >= 0.6]
+            how = "dob~+name"
+        if len(c) == 1:
+            out[int(m["id"])] = (c[0], how)
+            used.add(c[0]["id"])
+    return out
+
+
 def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
-             wp_players: list[dict[str, Any]], report: dict[str, Any]) -> None:
+             wp_players: list[dict[str, Any]], report: dict[str, Any],
+             tl: ThaiLeague | None = None) -> None:
     fm_id, wp_club, fs_club = FOTMOB_TEAMS[key]
     tj = fm.team(fm_id)
     club_title = wp.get_club_title(wp_club)
@@ -448,6 +480,16 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
             used_wp.add(int(wp_hit["id"]))
         plan.append((m, wp_hit, how or "new", fs_id))
 
+    # -- Thai League registry (Thai names, official DOB/nationality, photo) --
+    reg_by: dict[int, tuple[dict[str, Any], str]] = {}
+    if tl and key in TL_CLUB_IDS:
+        regs = tl.club_players(TL_CLUB_IDS[key])
+        reg_by = match_registry([m for m, *_ in plan], regs)
+        rep["registry"] = {"registered": len(regs), "matched": len(reg_by)}
+        for m, *_ in plan:
+            if int(m["id"]) not in reg_by:
+                rep["review"].append({"fotmob": m["name"], "why": "not found in the Thai League registry"})
+
     # -- season stats ------------------------------------------------------
     season = team_season(fm, fm_id, tj)
 
@@ -464,13 +506,33 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
             acf["height_cm"] = str(m["height"])
         meta: dict[str, Any] = {"fotmob_id": str(m["id"]), "fotmob_name": m["name"]}
         dob = iso_date(m.get("dateOfBirth"))
+        reg, reg_how = reg_by.get(int(m["id"]), (None, ""))
+        name_th = ""
+        if reg:
+            # The league registry is authoritative for DOB and nationality.
+            meta["tl_player_id"] = str(reg["id"])
+            if has_thai(reg.get("full_name")):
+                name_th = " ".join(str(reg["full_name"]).split())
+                meta["name_th"] = name_th
+            rdob = iso_date(reg.get("birth_date"))
+            if rdob and rdob != dob:
+                rep.setdefault("dob_fixed", []).append({"player": m["name"], "fotmob": str(dob), "thai_league": str(rdob)})
+            dob = rdob or dob
+            rnat = ((reg.get("nationality") or {}).get("name") or "").strip()
+            if rnat:
+                nat = NAT_FIX.get(rnat, rnat)
+            if reg.get("height"):
+                acf["height_cm"] = str(reg["height"])
 
         if hit:
             hacf = hit.get("acf") or {}
             hmeta = hit.get("meta") or {}
-            if not str(hacf.get("nationality") or "").strip() and nat:
+            old_nat = str(hacf.get("nationality") or "").strip()
+            if nat and (not old_nat or (reg and old_nat != nat)):
                 acf["nationality"] = nat
-            if not str(hmeta.get("birthday") or "").strip() and dob:
+                if old_nat and old_nat != nat:
+                    rep.setdefault("nationality_fixed", []).append({"player": m["name"], "was": old_nat, "now": nat})
+            if dob and (reg or not str(hmeta.get("birthday") or "").strip()):
                 meta["birthday"] = str(int(dt.datetime(dob.year, dob.month, dob.day,
                                                        tzinfo=dt.timezone.utc).timestamp()))
             wp_id = int(hit["id"])
@@ -499,11 +561,53 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
             rep["created"].append({"wp": wp_id, "fotmob": m["name"], "footystats_id": fs_id})
 
         st = season["players"].get(int(m["id"]), {"total": None, "by_comp": {}})
+
+        # -- official photo (Thai League registration) -----------------------
+        if wp_id and tl and reg and reg.get("photo"):
+            old_src = str(((hit or {}).get("meta") or {}).get("tl_photo_src") or "")
+            if old_src != reg["photo"]:
+                try:
+                    tmp = Path("out/photos"); tmp.mkdir(parents=True, exist_ok=True)
+                    slug = norm(known or title).replace(" ", "-") or str(wp_id)
+                    fn = tmp / f"{slug}-{key}-2026-27.png"
+                    fn.write_bytes(tl.photo_bytes(reg["photo"]))
+                    media = wp.upload_media(str(fn), title=f"{known or title} ({club_title}, {SEASON_LABEL})",
+                                            alt_text=f"{known or title}, {club_title}")
+                    if not wp.dry_run:
+                        wp._json_or_raise(wp._request("POST", f"wp/v2/player/{wp_id}", json={
+                            "featured_media": int(media["id"]),
+                            "acf": {"player_photo_url": media.get("source_url", "")},
+                            "meta": {"tl_photo_src": reg["photo"]}}), f"photo {wp_id}")
+                    rep.setdefault("photos", []).append(known or title)
+                except Exception as exc:  # noqa: BLE001 - a photo must not stop the squad
+                    log.warning("  photo for %s failed: %s", known or title, exc)
+
+        # -- profile page feed (FotMob playerData) -----------------------------
+        if wp_id:
+            try:
+                ph = build_player_hub(fm.player(int(m["id"])), SEASON_START)
+                time.sleep(0.3)
+                ph.update({
+                    "name": known or title, "name_th": name_th, "number": m.get("shirtNumber"),
+                    "pos": pos, "pos_label": POS_LABEL.get(pos, ""), "nat": nat,
+                    "dob": dob.isoformat() if dob else None,
+                    "height": (reg or {}).get("height") or m.get("height"), "weight": (reg or {}).get("weight"),
+                    "club": club_title, "wp_club": wp_club, "season_label": SEASON_LABEL,
+                    "season": st["total"], "by_comp": st["by_comp"],
+                    "updated": dt.datetime.now(dt.timezone(dt.timedelta(hours=7))).strftime("%Y-%m-%d %H:%M"),
+                })
+                wp.update_player(wp_id, meta={"fs_player_hub_json": json.dumps(ph, ensure_ascii=False)})
+                Path("out/players").mkdir(parents=True, exist_ok=True)
+                Path(f"out/players/{wp_id}.json").write_text(json.dumps(ph, ensure_ascii=False, indent=1))
+            except Exception as exc:  # noqa: BLE001
+                log.warning("  profile feed for %s failed: %s", known or title, exc)
+
         hub_squad.append({
             "wp_id": wp_id, "fotmob_id": m["id"], "name": known or title,
             "number": m.get("shirtNumber"), "pos": pos, "pos_label": POS_LABEL.get(pos, ""),
             "detail": m.get("positionIdsDesc"), "nat": nat, "ccode": m.get("ccode"),
-            "dob": m.get("dateOfBirth"), "height": m.get("height"),
+            "name_th": name_th, "dob": dob.isoformat() if dob else m.get("dateOfBirth"),
+            "height": (reg or {}).get("height") or m.get("height"), "weight": (reg or {}).get("weight"),
             "injury": bool(m.get("injury")), "stats": st["total"], "by_comp": st["by_comp"],
         })
 
@@ -511,7 +615,7 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
     for p in wp_players:
         if club_id_of((p.get("acf") or {}).get("current_club")) == wp_club and int(p["id"]) not in used_wp \
                 and int(p["id"]) not in {h["wp_id"] for h in hub_squad if h["wp_id"]}:
-            wp.update_player(int(p["id"]), acf={"current_club": None})
+            wp.update_player(int(p["id"]), acf={"current_club": None}, meta={"fs_player_hub_json": ""})
             rep["left"].append({"wp": int(p["id"]), "site": (p.get("title") or {}).get("rendered", "")})
 
     hub = {
@@ -546,18 +650,19 @@ def main() -> int:
     wp = WPClient(dry_run=not args.live)
     fs = FootyStatsClient()
     fm = FotMob()
+    tl = ThaiLeague()
     log.info("Mode: %s", "LIVE" if args.live else "DRY RUN")
     fs_rows = fs.get_league_players(TL1_FS_SEASON)
     log.info("FootyStats TL1 players: %d", len(fs_rows))
     wp_players = list(wp.iter_all_players(
         fields="id,title,acf.footystats_id,acf.current_club,acf.nationality,meta.birthday,"
-               "meta.fotmob_id,meta.fs_known_as,meta.last_confirmed_club"))
+               "meta.fotmob_id,meta.fs_known_as,meta.last_confirmed_club,meta.tl_photo_src"))
     log.info("WP players: %d", len(wp_players))
 
     report: dict[str, Any] = {}
     try:
         for k in keys:
-            run_club(k, wp, fm, fs_rows, wp_players, report)
+            run_club(k, wp, fm, fs_rows, wp_players, report, tl)
     except WPHostChallengeError:
         log.error("SiteGround challenge - nothing more written")
         return 3
@@ -568,6 +673,9 @@ def main() -> int:
         log.info("%s: squad %s | matched %d | created %d | review %d | left %d | matches %s",
                  r["club"], r.get("squad_size"), len(r["matched"]), len(r["created"]),
                  len(r["review"]), len(r["left"]), r.get("matches_counted"))
+        for k2 in ("registry", "photos", "dob_fixed", "nationality_fixed"):
+            if r.get(k2):
+                log.info("  %s: %s", k2.upper(), r[k2])
         for x in r["review"]:
             log.warning("  REVIEW %s", x)
         for x in r["created"]:
