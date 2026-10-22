@@ -22,7 +22,10 @@ TL_BASE = "https://competition.tl.prod.c0d1um.io/thaileague/api/"
 # FOTMOB_TEAMS key -> Thai League registry club id (the `club` field on
 # player-public/all_players_search). Add a club here to switch it on.
 TL_CLUB_IDS: dict[str, int] = {
-    "port": 46,
+    "port": 46, "buriram-united": 11, "bangkok-united": 40, "pathum-united": 21,
+    "ratchaburi": 109, "chiangrai-united": 26, "chonburi": 18, "prachuap": 107,
+    "rayong": 31, "uthai-thani": 114, "sisaket-united": 100, "rasisalai-united": 196,
+    "lamphun-warrior": 45, "sukhothai": 108, "ayutthaya-united": 128, "pattani": 82,
 }
 
 

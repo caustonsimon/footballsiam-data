@@ -694,7 +694,13 @@ def main() -> int:
     report: dict[str, Any] = {}
     try:
         for k in keys:
-            run_club(k, wp, fm, fs_rows, wp_players, report, tl)
+            try:
+                run_club(k, wp, fm, fs_rows, wp_players, report, tl)
+            except WPHostChallengeError:
+                raise
+            except Exception as exc:  # noqa: BLE001 - one club must not stop the rest
+                log.error("%s FAILED: %s", k, exc)
+                report.setdefault(k, {"club": k, "matched": [], "created": [], "review": [], "left": []})["error"] = str(exc)
     except WPHostChallengeError:
         log.error("SiteGround challenge - nothing more written")
         return 3

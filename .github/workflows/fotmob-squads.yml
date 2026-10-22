@@ -27,7 +27,7 @@ permissions:
 jobs:
   squads:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -51,8 +51,8 @@ jobs:
             ARGS+=(--club "${INPUT_CLUB:-port}")
             [ "$INPUT_DRY_RUN" = "true" ] || ARGS+=(--live)
           else
-            # scheduled: only clubs already switched over to FotMob squads
-            ARGS+=(--club port --live)
+            # scheduled: every Thai League 1 club (rolled out 22 Oct 2026)
+            ARGS+=(--club all --live)
           fi
           python fotmob_squads.py "${ARGS[@]}"
       - uses: actions/upload-artifact@v4
