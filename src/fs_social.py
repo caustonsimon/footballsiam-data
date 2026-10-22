@@ -237,7 +237,7 @@ def data_header(card: Card, kicker: str, title: str, sub: str | None = None) -> 
 
 def cover(card: Card, kicker: str, headline: str, sub: str | None = None,
           big: str | None = None, page: str | None = None, photo=None,
-          focus_y: float = 0.35):
+          focus_y: float = 0.35, credit: str | None = None):
     """A cover / single card on green: elephant top-left, gold kicker, an
     optional big gold figure, the headline (84-110px, up to 4 lines, inside
     the top 60% of the card), a gold rule and the sub-line. With a photo,
@@ -297,6 +297,9 @@ def cover(card: Card, kicker: str, headline: str, sub: str | None = None,
         y += round(sf.size * 1.3)
     if y > FOOTER_Y - 20:
         raise LayoutError("cover text runs into the footer; cut the sub-line")
+    if credit:
+        cf = fit_one(card, credit, lato, 24, 24, CONTENT_W)
+        card.text((CONTENT_R, FOOTER_Y - 16), credit, cf, (200, 212, 205), anchor="rb")
     footer(card, page)
 
 

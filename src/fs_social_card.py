@@ -45,6 +45,7 @@ def main(argv=None):
     p.add_argument("--focus", type=float, default=0.35)
     p.add_argument("--image", help="chart/table/photo to set on a data slide (not cropped)")
     p.add_argument("--caption")
+    p.add_argument("--credit", help="photo credit set small above the footer on a photo cover")
     p.add_argument("--page", help="slide number for the footer when this is a carousel cover, e.g. 1/3")
     a = p.parse_args(argv)
     card = fs.Card()
@@ -53,7 +54,7 @@ def main(argv=None):
             card = fs.Card(bg=fs.GREEN)
             fs.image_slide(card, a.kicker, a.headline, a.image, a.sub, a.page, a.caption)
         else:
-            fs.cover(card, a.kicker, a.headline, a.sub, a.big, a.page, a.photo, a.focus)
+            fs.cover(card, a.kicker, a.headline, a.sub, a.big, a.page, a.photo, a.focus, a.credit)
         print("wrote", card.save(a.out))
     except fs.LayoutError as e:
         print("LAYOUT ERROR:", e, file=sys.stderr)
