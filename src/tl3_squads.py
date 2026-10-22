@@ -251,6 +251,14 @@ def name_key(s: str) -> str:
     return " ".join(sorted(norm(s).replace("-", " ").split()))
 
 
+def other_reg(p: dict[str, Any], rid: str) -> bool:
+    """The page already belongs to a DIFFERENT registered player (its
+    tl_player_id is someone else's): twins share a birthday and nearly a name
+    (Kittikon / Kittiphong Khetpara, Thitathorn / Thitawee Auksornsri)."""
+    t = str((p.get("meta") or {}).get("tl_player_id") or "").strip()
+    return bool(t) and t != rid
+
+
 def title_of(p: dict[str, Any]) -> str:
     import html
     return html.unescape((p.get("title") or {}).get("rendered", "") or "")
@@ -319,7 +327,7 @@ def run_club(c: T3Club, wp: WPClient, reg: Registry, team: dict[str, Any] | None
                         {dt.date(dob.year, dob.day, dob.month)} if dob.day <= 12 else set()):
                     near += idx["dob"].get(d, [])
             for p in near:
-                if int(p["id"]) in claimed:
+                if int(p["id"]) in claimed or other_reg(p, rid):
                     continue
                 rel = dob_relation(dob, unix_to_date((p.get("meta") or {}).get("birthday")))
                 if not rel:
@@ -337,7 +345,7 @@ def run_club(c: T3Club, wp: WPClient, reg: Registry, team: dict[str, Any] | None
         if hit is None:
             cands = []
             for p in idx["name"].get(name_key(name_en), []):
-                if int(p["id"]) in claimed:
+                if int(p["id"]) in claimed or other_reg(p, rid):
                     continue
                 sdob = unix_to_date((p.get("meta") or {}).get("birthday"))
                 if sdob and dob and not dob_relation(dob, sdob):
