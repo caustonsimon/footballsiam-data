@@ -533,7 +533,10 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                 names = [title_of(p), str(meta_p.get("fs_known_as") or "")]
                 sc = max(strict_name(name, n) for n in names if n) if any(names) else 0.0
                 sdob = unix_to_date(meta_p.get("birthday"))
-                if sdob and dob and not dob_relation(dob, sdob):
+                # A clashing DOB only blocks a near-miss name: the site's DOBs
+                # came from FootyStats, which gets them wrong (Jordan Gele,
+                # Steven van Dijk), so the same name at the same club still wins.
+                if sdob and dob and not dob_relation(dob, sdob) and sc < 0.95:
                     continue
                 if sc >= 0.8:
                     cands.append((sc, p))
