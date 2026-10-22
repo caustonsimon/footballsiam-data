@@ -67,6 +67,7 @@ SEASON_LABEL = "2026/27"
 SEASON_START = dt.date(2026, 8, 15)   # excludes pre-season (President's Cup, July/Aug)
 TL1_FS_SEASON = 17367
 TL2_FS_SEASON = 17896
+FA_CUP_TOURNAMENT = 230   # Thai League registry: Thai FA Cup 2026/27
 
 # key -> (FotMob team id, WP club post id, FootyStats team id)
 FOTMOB_TEAMS: dict[str, tuple[int, int, int]] = {
@@ -657,6 +658,40 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
 
     # -- season stats ------------------------------------------------------
     season = team_season(fm, fm_id, tj)
+
+    # FA Cup totals from the Thai League registry (Simon, 22 Oct 2026): FotMob
+    # has no scorers for many early-round ties (Muangthong 8-0 Phrae FC), the
+    # registry has every registered player's apps, minutes, goals and cards.
+    # FotMob keeps ratings and assists (the registry barely records assists).
+    if tl and key in TL_CLUB_IDS and reg_by:
+        try:
+            fa = {int(r["id"]): r for r in tl.club_players(TL_CLUB_IDS[key], FA_CUP_TOURNAMENT)}
+        except Exception as exc:  # noqa: BLE001
+            fa = {}
+            log.warning("  registry FA Cup totals failed: %s", exc)
+        fixed = 0
+        for m, *_ in plan:
+            rr = fa.get(int(reg_by.get(int(m["id"]), ({"id": 0}, ""))[0]["id"]))
+            if not rr or not rr.get("match_count"):
+                continue
+            row = season["players"].setdefault(int(m["id"]), {"total": None, "by_comp": {}})
+            old = row["by_comp"].get("Thai FA Cup") or {}
+            red = int(rr.get("red_card_serious_foul_play") or 0) + int(rr.get("red_card_violent_conduct") or 0) \
+                + int(rr.get("second_yellow_count") or 0)
+            new = {"apps": int(rr["match_count"]), "starts": int(rr.get("total_line_up") or 0),
+                   "mins": int(rr.get("total_time") or 0), "goals": int(rr.get("goal_for") or 0),
+                   "assists": max(int(old.get("assists") or 0), int(rr.get("total_assist") or 0)),
+                   "yellow": int(rr.get("yellow_card") or 0), "red": red, "rating": old.get("rating")}
+            if new != {k: old.get(k) for k in new}:
+                row["by_comp"]["Thai FA Cup"] = new
+                fixed += 1
+                tot = {k: 0 for k in ("apps", "starts", "mins", "goals", "assists", "yellow", "red")}
+                for b in row["by_comp"].values():
+                    for k in tot:
+                        tot[k] += int(b.get(k) or 0)
+                tot["rating"] = (row["total"] or {}).get("rating")
+                row["total"] = tot
+        rep["fa_cup_from_registry"] = fixed
 
     hub_squad = []
     for m, hit, how, fs_id in plan:

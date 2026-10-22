@@ -40,10 +40,15 @@ class ThaiLeague:
         self.s = requests.Session()
         self.s.headers["User-Agent"] = "Mozilla/5.0 (footballsiam.com squad sync)"
 
-    def club_players(self, club_id: int) -> list[dict[str, Any]]:
-        """Every player currently registered to the club."""
+    def club_players(self, club_id: int, tournament: int | None = None) -> list[dict[str, Any]]:
+        """Every player currently registered to the club. With `tournament`, the
+        rows also carry that competition's season totals (match_count,
+        total_time, goal_for, cards): 224 T1, 226 T2, 228 T3, 230 FA Cup,
+        231 League Cup (2026/27)."""
         url = f"{TL_BASE}player-public/all_players_search/"
         params: dict[str, Any] | None = {"club": club_id, "page_size": 100}
+        if tournament:
+            params["tournament"] = tournament
         out: list[dict[str, Any]] = []
         while url:
             for attempt in range(3):
