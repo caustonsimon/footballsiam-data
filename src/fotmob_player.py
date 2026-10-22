@@ -44,6 +44,11 @@ COMP_HOUSE = {
 SKIP_COMPS = ("President's Cup", "Piala Presiden", "Club Friendlies")
 
 
+def uk(s: str | None) -> str | None:
+    """FotMob's position labels are US English."""
+    return s.replace("Center", "Centre").replace("center", "centre") if isinstance(s, str) else s
+
+
 def house_club(n: str | None) -> str:
     n = str(n or "").strip()
     if n in CLUB_HOUSE:
@@ -91,9 +96,9 @@ def build_player_hub(pd: dict[str, Any], season_start: dt.date) -> dict[str, Any
 
     # positions (pitch map)
     posd = pd.get("positionDescription") or {}
-    out["primary_position"] = ((posd.get("primaryPosition") or {}).get("label"))
+    out["primary_position"] = uk((posd.get("primaryPosition") or {}).get("label"))
     out["positions"] = [
-        {"label": (p.get("strPos") or {}).get("label"), "short": (p.get("strPosShort") or {}).get("label"),
+        {"label": uk((p.get("strPos") or {}).get("label")), "short": (p.get("strPosShort") or {}).get("label"),
          "top": (p.get("pitchPositionData") or {}).get("top"), "right": (p.get("pitchPositionData") or {}).get("right"),
          "main": bool(p.get("isMainPosition")), "n": p.get("occurences")}
         for p in posd.get("positions") or [] if p.get("pitchPositionData")

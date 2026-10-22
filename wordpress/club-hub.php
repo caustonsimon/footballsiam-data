@@ -250,7 +250,7 @@ function fs_hub_render( $d ) {
 
 	ob_start();
 	?>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:wght@700;900&family=Noto+Sans+Thai:wght@600&display=swap">
 <div class="fsh" id="fsh-top">
 <style>
 .fsh{--g:#0A3B25;--gd:#e3c567;--ink:#111;--tx:#333;--mu:#767676;--hl:#e6e6e6;--tint:#f6f6f4;font-family:'Lato',sans-serif;color:var(--tx);background:#fdfdfd}
@@ -315,6 +315,7 @@ function fs_hub_render( $d ) {
 .fsh-no img{width:100%;height:100%;object-fit:cover;object-position:top}
 .fsh-no i{position:absolute;right:0;bottom:0;background:var(--gd);color:var(--g);font-style:normal;font-size:10px;padding:1px 4px;border-radius:4px 0 0 0;font-family:'Lato',sans-serif}
 .fsh-pn{font-weight:900;color:var(--ink);font-size:14px;line-height:1.25}
+.fsh-pth{font-family:'Noto Sans Thai',sans-serif;font-weight:600;color:var(--g);font-size:12px;line-height:1.4}
 .fsh-pm{font-size:11px;color:var(--mu);margin-top:2px}
 .fsh-ps{font-size:11px;color:var(--tx);margin-top:5px;display:flex;gap:10px}
 .fsh-ps b{color:var(--g)}
@@ -475,6 +476,7 @@ function fs_hub_render( $d ) {
     <div class="fsh-no"><?php if ( $p['photo'] ) : ?><img src="<?php echo $e( $p['photo'] ); ?>" alt=""><i><?php echo $e( $p['number'] ); ?></i><?php else : echo $e( $p['number'] ); endif; ?></div>
     <div style="min-width:0">
      <div class="fsh-pn"><?php echo $e( $p['name'] ); ?></div>
+     <?php if ( ! empty( $p['name_th'] ) ) : ?><div class="fsh-pth" lang="th"><?php echo $e( $p['name_th'] ); ?></div><?php endif; ?>
      <div class="fsh-pm"><?php echo $e( implode( ' · ', array_filter( array( $p['nat'], $p['age'] ? $p['age'] . ' yrs' : '', $p['height'] ? $p['height'] . ' cm' : '' ) ) ) ); ?></div>
      <?php if ( $p['injury'] ) : ?><div class="fsh-inj">Injured</div><?php endif; ?>
      <div class="fsh-ps"><?php if ( $s && $s['apps'] ) : ?><span><b><?php echo (int) $s['apps']; ?></b> apps</span><span><b><?php echo (int) $s['mins']; ?></b> mins</span><?php if ( $gk !== 'GK' ) : ?><span><b><?php echo (int) $s['goals']; ?></b> G</span><span><b><?php echo (int) $s['assists']; ?></b> A</span><?php endif; else : ?><span>No appearances yet</span><?php endif; ?></div>
