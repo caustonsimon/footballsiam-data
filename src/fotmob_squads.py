@@ -127,6 +127,14 @@ THAI_NAMES_FOREIGN: dict[int, str] = {
 
 FOTMOB_PHOTO = "https://images.fotmob.com/image_resources/playerimages/{}.png"
 
+# Further names (all Thai League 1 clubs) sourced 22 Oct 2026, kept as data.
+try:
+    _tn = json.loads((Path(__file__).resolve().parent / "data" / "thai_names.json").read_text())
+    for _k, _v in _tn.get("names", {}).items():
+        THAI_NAMES_FOREIGN.setdefault(int(_k), _v["th"])
+except FileNotFoundError:
+    pass
+
 CLUB_NAME_FIX = {  # FotMob opponent names -> house names
     "BG Pathum United": "Pathum United", "Port FC": "Port", "Ratchaburi FC": "Ratchaburi",
     "Chonburi FC": "Chonburi", "Prachuap FC": "Prachuap", "Rayong FC": "Rayong",
@@ -203,6 +211,10 @@ def strict_name(a: str, b: str) -> float:
         return 0.0
     if na == nb or sorted(na.split()) == sorted(nb.split()):
         return 1.0
+    ta, tb = na.split(), nb.split()
+    short, long_ = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
+    if set(short) <= set(long_) and (len(short) >= 2 or len(short[0]) >= 5):
+        return 0.95   # one name is the other's short form: "Felipe Nunes" / "Felipe Nunes Silva"
     return difflib.SequenceMatcher(None, na, nb).ratio()
 
 
@@ -516,7 +528,13 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                     str(meta_p.get("last_confirmed_club") or "") == str(wp_club)
                 if not at_club:
                     continue
-                sc = name_score(name, (p.get("title") or {}).get("rendered", ""))
+                # whole-name similarity, not name_score(): one shared-looking
+                # token ("Thanawat"/"Thanawit") must not tie two players
+                names = [title_of(p), str(meta_p.get("fs_known_as") or "")]
+                sc = max(strict_name(name, n) for n in names if n) if any(names) else 0.0
+                sdob = unix_to_date(meta_p.get("birthday"))
+                if sdob and dob and not dob_relation(dob, sdob):
+                    continue
                 if sc >= 0.8:
                     cands.append((sc, p))
             cands.sort(key=lambda x: -x[0])

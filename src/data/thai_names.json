@@ -1,0 +1,655 @@
+{
+ "_about": "Thai-script names keyed by FotMob player id, for players the Thai League registry holds only in English (or not at all). Source per entry; checked 22 Oct 2026. A name_th already on a player page always wins.",
+ "names": {
+  "600079": {
+   "th": "ฮวัง ฮยอน ซู",
+   "source": "soccerway"
+  },
+  "1826824": {
+   "th": "อนุศักดิ์ ใจเพชร",
+   "source": "soccerway",
+   "note": "Soccerway lists him at Sisaket (#39), not Ayutthaya; name unmistakable"
+  },
+  "826597": {
+   "th": "เดยัน เคอร์เคซ",
+   "source": "soccerway"
+  },
+  "1525190": {
+   "th": "ดิโอโก บริโต",
+   "source": "soccerway"
+  },
+  "1174810": {
+   "th": "เคริม ปาลิช",
+   "source": "soccerway"
+  },
+  "331762": {
+   "th": "เอเวอร์ตัน",
+   "source": "soccerway",
+   "note": "Soccerway spells Ewerton as เอเวอร์ตัน"
+  },
+  "353470": {
+   "th": "ฮิโรทากะ มิตะ",
+   "source": "soccerway"
+  },
+  "1837325": {
+   "th": "ชินเงิน ภู่ตันหยง",
+   "source": "soccerway",
+   "note": "from Soccerway player page (free transfer Chiangrai to Ayutthaya 01.07.2026); no shirt number shown"
+  },
+  "885488": {
+   "th": "ลูคัส ดิอาส",
+   "source": "soccerway"
+  },
+  "915244": {
+   "th": "วิลเลน โมต้า",
+   "source": "soccerway"
+  },
+  "1011557": {
+   "th": "ยูกิ คุซาโนะ",
+   "source": "soccerway"
+  },
+  "851056": {
+   "th": "ไคเก้ เลเมส",
+   "source": "soccerway"
+  },
+  "791914": {
+   "th": "เอเวอร์ตัน",
+   "source": "soccerway",
+   "note": "Soccerway full: เอเวอร์ตัน กอนคัลเวส"
+  },
+  "637562": {
+   "th": "ฟิลิป ไมอา",
+   "source": "soccerway"
+  },
+  "309485": {
+   "th": "ลี คี-เจ",
+   "source": "soccerway"
+  },
+  "554931": {
+   "th": "จอห์น-แพทริค สเตราสส์",
+   "source": "soccerway"
+  },
+  "318866": {
+   "th": "แอนโธนี คาเซเรส",
+   "source": "soccerway"
+  },
+  "1007680": {
+   "th": "มูห์เซ็น อัล กาสซานี่",
+   "source": "soccerway"
+  },
+  "686786": {
+   "th": "โยนาตาน โคเฮน",
+   "source": "soccerway"
+  },
+  "637672": {
+   "th": "พ็อพพ์",
+   "source": "soccerway",
+   "note": "Soccerway full: วิลเลี่ยน พ็อพพ์ (Willian Popp)"
+  },
+  "792249": {
+   "th": "มาร์ก การ์โดน่า",
+   "source": "soccerway"
+  },
+  "214938": {
+   "th": "นีล เอเธอร์ริดจ์",
+   "source": "soccerway"
+  },
+  "291854": {
+   "th": "เคอร์ติส กู๊ด",
+   "source": "soccerway"
+  },
+  "687568": {
+   "th": "ลูคัส อาฮิฆาโด",
+   "source": "soccerway"
+  },
+  "364855": {
+   "th": "อูรอส ราดาโควิช",
+   "source": "soccerway"
+  },
+  "946441": {
+   "th": "เอดูอาร์โด มานชา",
+   "source": "soccerway"
+  },
+  "428266": {
+   "th": "วูคาน ซาวิเชวิช",
+   "source": "soccerway"
+  },
+  "630651": {
+   "th": "คิงสลีย์ ชินด์เลอร์",
+   "source": "soccerway"
+  },
+  "822808": {
+   "th": "โทนี โมยา",
+   "source": "soccerway"
+  },
+  "640486": {
+   "th": "มาร์ก นาบาร์โร",
+   "source": "soccerway"
+  },
+  "359697": {
+   "th": "โกรัน เคาซิช",
+   "source": "soccerway"
+  },
+  "1050409": {
+   "th": "ดาร์ลัน",
+   "source": "soccerway",
+   "note": "Soccerway full: ดาร์ลัน เมนเดส"
+  },
+  "902692": {
+   "th": "บิสโซลี่",
+   "source": "soccerway"
+  },
+  "522577": {
+   "th": "เซบัสเตียน โมยาโน",
+   "source": "soccerway",
+   "note": "Soccerway uses full first name Sebastián, not Sebas"
+  },
+  "641206": {
+   "th": "รูเบน ซานเชซ",
+   "source": "soccerway",
+   "note": "from Soccerway player page (not on the squad page)"
+  },
+  "767730": {
+   "th": "สเตฟาน ชิมเมอร์",
+   "source": "soccerway"
+  },
+  "462963": {
+   "th": "อเล็กซานดรู ทูโดรี",
+   "source": "soccerway"
+  },
+  "825013": {
+   "th": "วิคเตอร์ คาร์โดโซ่",
+   "source": "soccerway"
+  },
+  "185948": {
+   "th": "เฮลิโอ",
+   "source": "soccerway",
+   "note": "Soccerway full: เฮลิโอ มอนเตโร่"
+  },
+  "1283004": {
+   "th": "ฮาร์ฮีส สจ๊วร์ต",
+   "source": "soccerway"
+  },
+  "934704": {
+   "th": "ดูดู้",
+   "source": "soccerway",
+   "note": "Soccerway full: ดูดู้ ซิลวา"
+  },
+  "287688": {
+   "th": "เควิน เมนโดซ่า",
+   "source": "soccerway",
+   "note": "Soccerway omits middle name Ray"
+  },
+  "1368618": {
+   "th": "กีเก้ ลินาเรส",
+   "source": "soccerway"
+  },
+  "730779": {
+   "th": "เวลลิงตัน ปริโอรี่",
+   "source": "soccerway"
+  },
+  "920519": {
+   "th": "ฮอร์เก้ ฟิลิปเป้",
+   "source": "soccerway"
+  },
+  "966414": {
+   "th": "บรูโน่ ริตเตอร์",
+   "source": "soccerway"
+  },
+  "450277": {
+   "th": "เดนนิส มูริลโล่",
+   "source": "soccerway"
+  },
+  "237651": {
+   "th": "เนเกบา",
+   "source": "soccerway"
+  },
+  "1137381": {
+   "th": "โทโมยูกิ โดอิ",
+   "source": "soccerway"
+  },
+  "433621": {
+   "th": "สเตนิโอ จูเนียร์",
+   "source": "soccerway"
+  },
+  "1689685": {
+   "th": "เรียวมะ อิโตะ",
+   "source": "soccerway"
+  },
+  "662074": {
+   "th": "โดมินิก ชาด",
+   "source": "soccerway"
+  },
+  "121666": {
+   "th": "ชาร์ลี คลัฟ",
+   "source": "soccerway"
+  },
+  "407313": {
+   "th": "โอซาเรนเรน โอคุงโบวา",
+   "source": "soccerway"
+  },
+  "581121": {
+   "th": "คริสเตียน อิลิช",
+   "source": "soccerway"
+  },
+  "660157": {
+   "th": "โมฮัมเหม็ด ออสมาน",
+   "source": "soccerway"
+  },
+  "785765": {
+   "th": "ราล์ฟ",
+   "source": "soccerway"
+  },
+  "1437170": {
+   "th": "แอนเดอร์สัน ชาเวส",
+   "source": "soccerway"
+  },
+  "1842222": {
+   "th": "หลุยส์ เฟลลิเป",
+   "source": "soccerway"
+  },
+  "630608": {
+   "th": "อาร์โนลด์ ซูว์",
+   "source": "soccerway"
+  },
+  "727420": {
+   "th": "ทาคาฮิโระ ยานากิ",
+   "source": "soccerway"
+  },
+  "951046": {
+   "th": "มาร์โก นิโคลิช",
+   "source": "soccerway"
+  },
+  "1178392": {
+   "th": "เอดิน ออสมาโนวิช",
+   "source": "soccerway"
+  },
+  "1759880": {
+   "th": "มาเธอุส คอสต้า",
+   "source": "soccerway"
+  },
+  "354490": {
+   "th": "อ็องโตนี เบลมงต์",
+   "source": "soccerway"
+  },
+  "425251": {
+   "th": "ไรอัน เอ็ดเวิร์ดส์",
+   "source": "soccerway"
+  },
+  "458599": {
+   "th": "ฟาบิโอ คอฟมันน์",
+   "source": "soccerway"
+  },
+  "252969": {
+   "th": "ลูคัส แอนเดอร์เซ่น",
+   "source": "soccerway"
+  },
+  "1245842": {
+   "th": "แอชลีย์ คอฟฟีย์",
+   "source": "soccerway"
+  },
+  "955788": {
+   "th": "เจา มักโน่",
+   "source": "soccerway"
+  },
+  "937114": {
+   "th": "ดามยัน ดามยานอฟ",
+   "source": "soccerway"
+  },
+  "1107279": {
+   "th": "โรดอลโฟ ฟิเลมอน",
+   "source": "soccerway"
+  },
+  "1819164": {
+   "th": "รัฐกร ทองแกะ",
+   "source": "soccerway",
+   "note": "from Soccerway player page; it shows him moving Pattani to Pathum Thani University 22.07.2026"
+  },
+  "517289": {
+   "th": "อิกนาซิโอ อาเบเลโด",
+   "source": "soccerway",
+   "note": "Soccerway uses Ignacio, not the nickname Nacho"
+  },
+  "1125743": {
+   "th": "ไมคอน ดักลาส",
+   "source": "soccerway"
+  },
+  "1831832": {
+   "th": "มาร์ลอน ซิลวา",
+   "source": "soccerway"
+  },
+  "320081": {
+   "th": "เฟลิเป้ นูเนส",
+   "source": "soccerway"
+  },
+  "406329": {
+   "th": "เคลย์ตัน",
+   "source": "soccerway"
+  },
+  "1663484": {
+   "th": "อิกอร์ เนเวส",
+   "source": "soccerway"
+  },
+  "913345": {
+   "th": "ฌอง-ปิแอร์ ดา ซิลวา",
+   "source": "soccerway"
+  },
+  "1356281": {
+   "th": "คาร์ลอส เนโต้",
+   "source": "soccerway"
+  },
+  "268182": {
+   "th": "แอร์ทอน",
+   "source": "soccerway",
+   "note": "Soccerway full: แอร์ทอน ติราบาสซี่"
+  },
+  "619826": {
+   "th": "เยสเปอร์ นีโฮล์ม",
+   "source": "soccerway"
+  },
+  "1846648": {
+   "th": "ลูคัส กรอสซี",
+   "source": "soccerway"
+  },
+  "1428664": {
+   "th": "นิค เทย์เลอร์",
+   "source": "soccerway",
+   "note": "from Soccerway player page (PT Prachuap)"
+  },
+  "1517639": {
+   "th": "เร ทาจิกาวะ",
+   "source": "soccerway"
+  },
+  "1021342": {
+   "th": "ไทล์สัน",
+   "source": "soccerway",
+   "note": "Soccerway full: ไทล์สัน ปินโต กอนซัลเวส"
+  },
+  "526453": {
+   "th": "อี จอง ฮยอพ",
+   "source": "soccerway"
+  },
+  "498455": {
+   "th": "ตาอัว",
+   "source": "soccerway"
+  },
+  "166422": {
+   "th": "แอนดรอส ทาวน์เซนด์",
+   "source": "soccerway"
+  },
+  "477493": {
+   "th": "เอ็ดการ์",
+   "source": "soccerway",
+   "note": "Soccerway full: เอ็ดการ์ เมนเดซ"
+  },
+  "1175815": {
+   "th": "กาเบรียล เบอร์นาร์ด",
+   "source": "soccerway"
+  },
+  "500483": {
+   "th": "รามอน",
+   "source": "soccerway",
+   "note": "Soccerway full: รามอน เมสกิต้า"
+  },
+  "1355329": {
+   "th": "เนลสัน ออร์จิ",
+   "source": "soccerway"
+  },
+  "1054738": {
+   "th": "ยูกะ วาตานาเบะ",
+   "source": "soccerway"
+  },
+  "1240678": {
+   "th": "ริคาร์โด คาร์โดโซ",
+   "source": "soccerway"
+  },
+  "1028583": {
+   "th": "กาเบรียล เดวิส",
+   "source": "soccerway"
+  },
+  "307808": {
+   "th": "คิม จีมิน",
+   "source": "soccerway"
+  },
+  "34577": {
+   "th": "กิลแบร์โต มาเชน่า",
+   "source": "soccerway"
+  },
+  "1227392": {
+   "th": "ไคโอ โรซา",
+   "source": "soccerway",
+   "note": "Soccerway full: ไคโอ โรซา อัลเวส (written surname-first)"
+  },
+  "640121": {
+   "th": "เซกู กัสซาม่า",
+   "source": "soccerway"
+  },
+  "1246161": {
+   "th": "แดเนียล ติง",
+   "source": "soccerway"
+  },
+  "497658": {
+   "th": "เจสซี่ เคอร์แรน",
+   "source": "soccerway"
+  },
+  "638612": {
+   "th": "ไซ ฟาน แวร์เมสเกอร์เคน",
+   "source": "soccerway"
+  },
+  "410656": {
+   "th": "ปาโบล อินซัว",
+   "source": "soccerway"
+  },
+  "213729": {
+   "th": "โจนาธาน วิเอร่า",
+   "source": "soccerway"
+  },
+  "292262": {
+   "th": "โรเก้ เมซ่า",
+   "source": "soccerway"
+  },
+  "207119": {
+   "th": "โรเบิร์ต ซูลจ์",
+   "source": "soccerway"
+  },
+  "802220": {
+   "th": "สก็อตต์ อัลลาร์ไดซ์",
+   "source": "soccerway"
+  },
+  "484906": {
+   "th": "ตาน่า",
+   "source": "soccerway"
+  },
+  "970086": {
+   "th": "ราฟาเอล บิลู",
+   "source": "soccerway"
+  },
+  "395510": {
+   "th": "บรูโน่ เมนเดส",
+   "source": "soccerway"
+  },
+  "690154": {
+   "th": "จอร์แดน เกเล่",
+   "source": "soccerway"
+  },
+  "642508": {
+   "th": "เอ็นจีวา ราโคโตฮาริมาลาลา",
+   "source": "soccerway"
+  },
+  "1901991": {
+   "th": "สุรดิษ ปาเต๊ะ",
+   "source": "soccerway",
+   "note": "from Soccerway player page"
+  },
+  "197122": {
+   "th": "ฮิโรมิชิ คาตาโนะ",
+   "source": "soccerway"
+  },
+  "250982": {
+   "th": "สเตฟาน เซบารา",
+   "source": "soccerway"
+  },
+  "1613127": {
+   "th": "เลโอนาร์โด จุสติเนียโน",
+   "source": "soccerway"
+  },
+  "1659459": {
+   "th": "ไมรอน",
+   "source": "soccerway",
+   "note": "Soccerway full: ไมรอน มาร์เกส"
+  },
+  "1640263": {
+   "th": "ลาร่า",
+   "source": "soccerway",
+   "note": "Soccerway full: อันโตนิโอ ลาร่า"
+  },
+  "495028": {
+   "th": "ชูเอา อฟอนโซ",
+   "source": "soccerway"
+  },
+  "1173462": {
+   "th": "บรูโน่ ไลเต้",
+   "source": "soccerway"
+  },
+  "1789194": {
+   "th": "คูตินโญ",
+   "source": "soccerway",
+   "note": "Soccerway full: คูตินโญ ไมอา"
+  },
+  "753589": {
+   "th": "เรนาน กอร์เน่",
+   "source": "soccerway"
+  },
+  "1630734": {
+   "th": "ฮง-กยู ยอ",
+   "source": "soccerway",
+   "note": "Soccerway writes ยอ ฮง-กยู (Korean order); re-ordered to match FotMob"
+  },
+  "1444045": {
+   "th": "เจา เฟลิเป้",
+   "source": "soccerway"
+  },
+  "947498": {
+   "th": "คริสเตียน มาเกอรูซาน",
+   "source": "soccerway"
+  },
+  "1636572": {
+   "th": "โบเรช",
+   "source": "soccerway",
+   "note": "Soccerway full: กีแยร์เม โบเรช (Guilherme Borech)"
+  },
+  "1122605": {
+   "th": "แอนเดอร์สัน",
+   "source": "soccerway",
+   "note": "Soccerway full: แอนเดอร์สัน นาสซิเมนโต้"
+  },
+  "1233721": {
+   "th": "ไอแซค ฮอนนี",
+   "source": "soccerway"
+  },
+  "1186987": {
+   "th": "ฮิคารุ มัตซึอิ",
+   "source": "soccerway"
+  },
+  "1403700": {
+   "th": "แพทริค วัลเวอร์เด้",
+   "source": "soccerway"
+  },
+  "1837032": {
+   "th": "เมอร์มอซ",
+   "source": "soccerway",
+   "note": "Soccerway full: อเล็กซ์ เมอร์มอซ"
+  },
+  "1831837": {
+   "th": "เดย์วิสัน",
+   "source": "soccerway",
+   "note": "Soccerway gives only เดย์วิสัน (no Fernandes)"
+  },
+  "1242755": {
+   "th": "มาฮามาดู ดูคูเร",
+   "source": "soccerway"
+  },
+  "793251": {
+   "th": "ยาน วิคเตอร์",
+   "source": "soccerway"
+  },
+  "1000014": {
+   "th": "เคลาดิโอ",
+   "source": "soccerway"
+  },
+  "637673": {
+   "th": "ลุคคัส บาร์เรโต้",
+   "source": "soccerway"
+  },
+  "1450702": {
+   "th": "มูริโล่ ซูซ่า",
+   "source": "soccerway"
+  },
+  "1114636": {
+   "th": "นาธาน",
+   "source": "soccerway",
+   "note": "Soccerway full: นาธาน ปาลาฟอซ"
+  },
+  "1227363": {
+   "th": "กุสตาโว อาปิส",
+   "source": "soccerway"
+  },
+  "951847": {
+   "th": "รวน",
+   "source": "soccerway",
+   "note": "Soccerway full: รวน ซิลเวร่า"
+  },
+  "470813": {
+   "th": "เจฟเฟอร์สัน",
+   "source": "soccerway"
+  },
+  "750041": {
+   "th": "ไคเก้",
+   "source": "soccerway",
+   "note": "Soccerway full: ไคเก้ ซานโตส"
+  },
+  "863940": {
+   "th": "ไฆเม่ จิรัลโด้",
+   "source": "soccerway"
+  },
+  "848084": {
+   "th": "จอง แทวุก",
+   "source": "soccerway"
+  },
+  "1946160": {
+   "th": "ปาโบล ดิอาส",
+   "source": "soccerway"
+  },
+  "182393": {
+   "th": "สุมัญญา ปุริสาย",
+   "source": "soccerway",
+   "note": "from Soccerway player page; Goal TH also writes สุมัญญา"
+  },
+  "1614861": {
+   "th": "โรแบร์โต้ เมเนเซส",
+   "source": "soccerway",
+   "note": "Soccerway gives full name (Roberto Menezes) rather than the nickname Robertinho"
+  },
+  "716423": {
+   "th": "เทรนต์ บูฮาเจียร์",
+   "source": "soccerway"
+  },
+  "1011523": {
+   "th": "อิตสึกิ เอโนโมโตะ",
+   "source": "soccerway"
+  },
+  "268284": {
+   "th": "เคลวิน",
+   "source": "soccerway",
+   "note": "Soccerway full: เคลวิน โอลิเวียร่า"
+  },
+  "1257605": {
+   "th": "จูลิโอ วิตอร์",
+   "source": "soccerway"
+  },
+  "867883": {
+   "th": "วิลเลี่ยน ลิร่า",
+   "source": "soccerway"
+  }
+ }
+}
