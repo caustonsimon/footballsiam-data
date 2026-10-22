@@ -104,6 +104,29 @@ POS_LABEL = {"GK": "Goalkeeper", "DF": "Defender", "MF": "Midfielder", "FW": "Fo
 # Country names as the site writes them (FotMob mostly agrees)
 NAT_FIX = {"Korea Republic": "South Korea", "Côte d'Ivoire": "Ivory Coast"}
 
+# Thai-script names for foreign players, keyed by FotMob id. The Thai League
+# registry only holds these players in English, so the spelling comes from
+# Thai media (Siamsport, Matichon, PPTV, Ballthai) and otherwise
+# th.soccerway.com's Port squad page. Checked 22 Oct 2026. A stored name_th
+# that differs (Simon's own edit) is never overwritten by this table.
+THAI_NAMES_FOREIGN: dict[int, str] = {
+    187347:  "ไมเคิล ฟาลเคสการ์ด",     # Falkesgaard - PPTV, Soccerway
+    799669:  "อัสนาวี มังกูอาลัม",      # Asnawi - Soccerway (Goal TH: อัสนาวี)
+    1515510: "มาเธอุส ลินส์",          # Matheus Lins - PPTV, Ballthai, Soccerway
+    1262918: "มาร์เซล สกาเลเซ",         # Marcel Scalese - Soccerway
+    166471:  "เอริค สเวียตเชนโก้",      # Sviatchenko - Soccerway
+    696369:  "โนโบรุ ชิมูระ",          # Noboru Shimura - Soccerway
+    638768:  "คาร์ลอส จาโตบา",         # Carlos Jatobá - Siamsport, Matichon
+    1101463: "เอสซัม อัล ซูบี",         # Issam Al Sabhi - Soccerway, Bankeela (to confirm)
+    1457947: "รวน ริเบย์โร",           # Ruan Ribeiro - Soccerway (to confirm)
+    1101035: "บรูโน โมเรรา",           # Bruno - Soccerway, Bankeela
+    1132869: "กาก้า เมนเดส",           # Kaká Mendes - Soccerway
+    776568:  "รุย คอสต้า",             # Rui Costa - Soccerway
+    1198549: "ลูคัส โตคันตินส์",        # Lucas Tocantins - Siamsport, Ballthai
+}
+
+FOTMOB_PHOTO = "https://images.fotmob.com/image_resources/playerimages/{}.png"
+
 CLUB_NAME_FIX = {  # FotMob opponent names -> house names
     "BG Pathum United": "Pathum United", "Port FC": "Port", "Ratchaburi FC": "Ratchaburi",
     "Chonburi FC": "Chonburi", "Prachuap FC": "Prachuap", "Rayong FC": "Rayong",
@@ -508,6 +531,11 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
         dob = iso_date(m.get("dateOfBirth"))
         reg, reg_how = reg_by.get(int(m["id"]), (None, ""))
         name_th = ""
+        stored_th = str(((hit or {}).get("meta") or {}).get("name_th") or "").strip()
+        if not (reg and has_thai(reg.get("full_name"))):
+            name_th = stored_th or THAI_NAMES_FOREIGN.get(int(m["id"]), "")
+            if name_th and name_th != stored_th:
+                meta["name_th"] = name_th
         if reg:
             # The league registry is authoritative for DOB and nationality.
             meta["tl_player_id"] = str(reg["id"])
@@ -563,7 +591,11 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
         st = season["players"].get(int(m["id"]), {"total": None, "by_comp": {}})
 
         # -- official photo (Thai League registration) -----------------------
-        if wp_id and tl and reg and reg.get("photo"):
+        photo_src = (reg or {}).get("photo") or ""
+        if wp_id and not photo_src and not ((hit or {}).get("featured_media")):
+            photo_src = FOTMOB_PHOTO.format(int(m["id"]))  # fallback: FotMob headshot
+        if wp_id and photo_src and (tl or photo_src.startswith("https://images.fotmob.com")):
+            reg = dict(reg or {}, photo=photo_src)
             old_src = str(((hit or {}).get("meta") or {}).get("tl_photo_src") or "")
             if old_src != reg["photo"]:
                 try:
@@ -656,7 +688,7 @@ def main() -> int:
     log.info("FootyStats TL1 players: %d", len(fs_rows))
     wp_players = list(wp.iter_all_players(
         fields="id,title,acf.footystats_id,acf.current_club,acf.nationality,meta.birthday,"
-               "meta.fotmob_id,meta.fs_known_as,meta.last_confirmed_club,meta.tl_photo_src"))
+               "meta.fotmob_id,meta.fs_known_as,meta.last_confirmed_club,meta.tl_photo_src,meta.name_th,featured_media"))
     log.info("WP players: %d", len(wp_players))
 
     report: dict[str, Any] = {}
