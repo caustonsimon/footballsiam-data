@@ -38,16 +38,21 @@ function fs_hub_age( $dob ) {
 	} catch ( Exception $e ) { return ''; }
 }
 
-function fs_hub_matches( $cid, $type ) {
+function fs_hub_matches( $cid, $type, $names = array() ) {
 	// This season only, every competition (own query: Snippet 146's getter
-	// caps at 40 posts across all seasons).
+	// caps at 40 posts across all seasons). Thai League 3 fixtures carry club
+	// NAMES, not club ids (22 Oct 2026): $names lists every spelling the
+	// fixtures use for this club (stored FootyStats name + Snippet 153's
+	// corrected one).
+	$who = $names
+		? array( 'relation' => 'OR', array( 'key' => 'home_team_name', 'value' => $names, 'compare' => 'IN' ), array( 'key' => 'away_team_name', 'value' => $names, 'compare' => 'IN' ) )
+		: array( 'relation' => 'OR',
+			array( 'key' => 'home_team', 'value' => (string) $cid ), array( 'key' => 'away_team', 'value' => (string) $cid ),
+			array( 'key' => 'home_team', 'value' => '"' . $cid . '"', 'compare' => 'LIKE' ), array( 'key' => 'away_team', 'value' => '"' . $cid . '"', 'compare' => 'LIKE' ) );
 	$ids = get_posts( array(
 		'post_type' => 'matches', 'post_status' => 'publish', 'posts_per_page' => -1, 'fields' => 'ids', 'no_found_rows' => true,
 		'meta_query' => array( 'relation' => 'AND',
-			array( 'key' => 'season', 'value' => array( '2026/2027', '2026/27' ), 'compare' => 'IN' ),
-			array( 'relation' => 'OR',
-				array( 'key' => 'home_team', 'value' => (string) $cid ), array( 'key' => 'away_team', 'value' => (string) $cid ),
-				array( 'key' => 'home_team', 'value' => '"' . $cid . '"', 'compare' => 'LIKE' ), array( 'key' => 'away_team', 'value' => '"' . $cid . '"', 'compare' => 'LIKE' ) ) ),
+			array( 'key' => 'season', 'value' => array( '2026/2027', '2026/27' ), 'compare' => 'IN' ), $who ),
 	) );
 	$rows = array();
 	foreach ( $ids as $pid ) {
@@ -73,9 +78,17 @@ function fs_hub_matches( $cid, $type ) {
 	usort( $rows, function ( $x, $y ) use ( $type ) { return $type === 'fixtures' ? $x['ts'] - $y['ts'] : $y['ts'] - $x['ts']; } );
 	$out  = array();
 	foreach ( $rows as $m ) {
+		if ( $names ) {
+			$home   = in_array( (string) $m['hname'], $names, true ) || ( (int) $m['hid'] === (int) $cid );
+			$opp    = $home ? $m['aname'] : $m['hname'];
+			$opp_id = $home ? $m['aid'] : $m['hid'];
+			if ( ! $opp_id ) $opp_id = fs_hub_club_id_by_name( $opp );
+			if ( $opp_id && ! $opp ) $opp = get_the_title( $opp_id );
+		} else {
 		$home  = ( (int) $m['hid'] === (int) $cid );
 		$opp_id = $home ? $m['aid'] : $m['hid'];
 		$opp    = $opp_id ? get_the_title( $opp_id ) : ( $home ? $m['aname'] : $m['hname'] );
+		}
 		$comp   = $m['comp'];
 		$round  = '';
 		$terms  = wp_get_post_terms( $m['ID'], 'competition', array( 'fields' => 'slugs' ) );
@@ -83,7 +96,7 @@ function fs_hub_matches( $cid, $type ) {
 		if ( $slug === 'thai-fa-cup' && function_exists( 'fs_facup_round_label' ) ) {
 			$round = fs_facup_round_label( $m['mw'], false );
 		} elseif ( is_numeric( $m['mw'] ) && $m['mw'] > 0 ) {
-			$round = ( in_array( $slug, array( 'thai-league-1', 'thai-league-2' ), true ) ? 'Matchweek ' : 'Matchday ' ) . $m['mw'];
+			$round = ( ( in_array( $slug, array( 'thai-league-1', 'thai-league-2' ), true ) || strpos( $slug, 't3_' ) === 0 ) ? 'Matchweek ' : 'Matchday ' ) . $m['mw'];
 		}
 		$res = '';
 		if ( $type === 'results' && $m['hs'] !== '' ) {
@@ -125,6 +138,36 @@ function fs_hub_table( $cid, $slug = 'thai-league-1' ) {
 	return $t;
 }
 
+/** Regional Thai League 3 table from the region's own results, by club name
+ *  (fs_build_table does not filter T3 regions when raw FootyStats data is
+ *  stored, and T3 fixtures carry names rather than club ids). */
+function fs_hub_name_table( $slug, $names ) {
+	$ids = get_posts( array(
+		'post_type' => 'matches', 'post_status' => 'publish', 'posts_per_page' => -1, 'fields' => 'ids', 'no_found_rows' => true,
+		'tax_query' => array( array( 'taxonomy' => 'competition', 'field' => 'slug', 'terms' => array( $slug ) ) ),
+		'meta_query' => array( array( 'key' => 'season', 'value' => array( '2026/2027', '2026/27' ), 'compare' => 'IN' ) ),
+	) );
+	$t = array();
+	foreach ( $ids as $pid ) {
+		$hn = (string) get_post_meta( $pid, 'home_team_name', true ); $an = (string) get_post_meta( $pid, 'away_team_name', true );
+		if ( $hn === '' || $an === '' ) continue;
+		foreach ( array( $hn, $an ) as $n ) if ( ! isset( $t[ $n ] ) ) $t[ $n ] = array( 'name' => $n, 'id' => fs_hub_club_id_by_name( $n ), 'p' => 0, 'w' => 0, 'd' => 0, 'l' => 0, 'gf' => 0, 'ga' => 0, 'pts' => 0 );
+		$hs = get_post_meta( $pid, 'home_score', true ); $as = get_post_meta( $pid, 'away_score', true );
+		if ( $hs === '' || $hs === null || $hs === false || $as === '' || $as === null ) continue;
+		$hs = (int) $hs; $as = (int) $as;
+		foreach ( array( array( $hn, $hs, $as ), array( $an, $as, $hs ) ) as $x ) {
+			$r = &$t[ $x[0] ]; $r['p']++; $r['gf'] += $x[1]; $r['ga'] += $x[2];
+			if ( $x[1] > $x[2] ) { $r['w']++; $r['pts'] += 3; } elseif ( $x[1] === $x[2] ) { $r['d']++; $r['pts']++; } else $r['l']++;
+			unset( $r );
+		}
+	}
+	$t = array_values( $t );
+	usort( $t, function ( $a, $b ) { return ( $b['pts'] - $a['pts'] ) ?: ( ( $b['gf'] - $b['ga'] ) - ( $a['gf'] - $a['ga'] ) ) ?: ( $b['gf'] - $a['gf'] ); } );
+	foreach ( $t as $i => &$r ) { $r['pos'] = $i + 1; $r['gd'] = $r['gf'] - $r['ga']; $r['me'] = in_array( $r['name'], $names, true ); }
+	unset( $r );
+	return $t;
+}
+
 function fs_hub_data( $cid ) {
 	$raw = get_post_meta( $cid, 'fs_club_hub_json', true );
 	$hub = $raw ? json_decode( $raw, true ) : null;
@@ -133,6 +176,8 @@ function fs_hub_data( $cid ) {
 	$f = function ( $k ) use ( $cid ) { return function_exists( 'get_field' ) ? get_field( $k, $cid ) : get_post_meta( $cid, $k, true ); };
 	$logo = get_the_post_thumbnail_url( $cid, 'full' );
 	if ( ! $logo && function_exists( 'fs_get_club_logo' ) ) $logo = fs_get_club_logo( $cid );
+	if ( ! $logo && ! empty( $hub['logo'] ) ) $logo = $hub['logo']; // Thai League registry crest (T3)
+	$names = ! empty( $hub['match_names'] ) ? array_values( array_unique( array_merge( (array) $hub['match_names'], array( get_the_title( $cid ) ) ) ) ) : array();
 	$coach_pid = (int) get_post_meta( $cid, 'head_coach_post_id', true );
 
 	foreach ( $hub['squad'] as &$p ) {
@@ -140,22 +185,23 @@ function fs_hub_data( $cid ) {
 		$p['age']   = fs_hub_age( $p['dob'] );
 		$photo      = $p['wp_id'] ? get_the_post_thumbnail_url( $p['wp_id'], 'medium' ) : '';
 		if ( ! $photo && $p['wp_id'] && function_exists( 'get_field' ) ) $photo = get_field( 'player_photo_url', $p['wp_id'] );
+		if ( ! $photo && ! empty( $p['photo_src'] ) ) $photo = $p['photo_src'];
 		$p['photo'] = $photo ?: '';
 	}
 	unset( $p );
 
 	return array(
 		'cid' => $cid, 'name' => get_the_title( $cid ), 'logo' => $logo,
-		'nickname' => $f( 'club_nickname' ), 'stadium' => $f( 'stadium_name' ),
+		'nickname' => $f( 'club_nickname' ), 'stadium' => $f( 'stadium_name' ) ?: ( isset( $hub['venue'] ) ? $hub['venue'] : '' ),
 		'capacity' => $f( 'capacity' ), 'city' => $f( 'city' ), 'founded' => $f( 'founded_year' ),
 		'owner' => $f( 'owner' ), 'last_finish' => $f( 'last_season_finish' ),
 		'coach' => $f( 'head_coach' ),
 		'coach_url' => ( $coach_pid && get_post_type( $coach_pid ) === 'head_coach' ) ? get_permalink( $coach_pid ) : '',
 		'hub' => $hub,
-		'fixtures' => fs_hub_matches( $cid, 'fixtures' ),
-		'results' => fs_hub_matches( $cid, 'results' ),
+		'fixtures' => fs_hub_matches( $cid, 'fixtures', $names ),
+		'results' => fs_hub_matches( $cid, 'results', $names ),
 		'league' => ! empty( $hub['league'] ) ? $hub['league'] : 'Thai League 1',
-		'table' => fs_hub_table( $cid, ! empty( $hub['league_slug'] ) ? $hub['league_slug'] : 'thai-league-1' ),
+		'table' => $names ? fs_hub_name_table( $hub['league_slug'], $names ) : fs_hub_table( $cid, ! empty( $hub['league_slug'] ) ? $hub['league_slug'] : 'thai-league-1' ),
 		'tours_url' => home_url( '/football-siam-tours/' ),
 	);
 }
@@ -176,6 +222,7 @@ function fs_hub_comp_short( $c ) {
 		'Thai League 1' => 'Thai League 1', 'Thai League 2' => 'Thai League 2', 'AFC Champions League Elite' => 'ACL Elite',
 		'AFC Champions League Two' => 'ACL Two', 'ASEAN Club Championship' => 'ASEAN Club Champ.',
 		'Thai FA Cup' => 'FA Cup', 'Thai League Cup' => 'League Cup',
+		'Thai League North' => 'Thai League 3 North', 'Thai League Central' => 'Thai League 3 Central',
 	);
 	return isset( $map[ $c ] ) ? $map[ $c ] : $c;
 }
@@ -244,6 +291,7 @@ function fs_hub_render( $d ) {
 	$has_tiles = false; foreach ( $tiles as $T ) if ( $T[1] !== null ) $has_tiles = true;
 	$has_rating = false; foreach ( $sq as $p ) if ( ! empty( $p['stats']['rating'] ) ) $has_rating = true;
 	$has_ast = false; foreach ( $sq as $p ) if ( ! empty( $p['stats']['assists'] ) ) $has_ast = true;
+	if ( ! empty( $hub['no_assists'] ) ) $has_ast = false;
 
 	// groups
 	$groups = array( 'GK' => 'Goalkeepers', 'DF' => 'Defenders', 'MF' => 'Midfielders', 'FW' => 'Forwards' );
@@ -255,7 +303,7 @@ function fs_hub_render( $d ) {
 	$comps = array();
 	foreach ( $sq as $p ) foreach ( array_keys( (array) $p['by_comp'] ) as $c ) $comps[ $c ] = true;
 	$comp_order = array( 'Thai League 1', 'Thai League 2', 'AFC Champions League Elite', 'AFC Champions League Two', 'ASEAN Club Championship', 'Thai FA Cup', 'Thai League Cup' );
-	$comps = array_values( array_filter( $comp_order, function ( $c ) use ( $comps ) { return isset( $comps[ $c ] ); } ) );
+	$comps = array_values( array_unique( array_merge( isset( $comps[ $d['league'] ] ) ? array( $d['league'] ) : array(), array_filter( $comp_order, function ( $c ) use ( $comps ) { return isset( $comps[ $c ] ); } ), array_keys( $comps ) ) ) );
 
 	$next = $fix ? $fix[0] : null; $last = $res ? $res[0] : null;
 	$season = $hub['season'];
@@ -553,7 +601,7 @@ function fs_hub_render( $d ) {
 	usort( $ranked, function ( $a, $b ) { $x = $a['stats']['goals'] + $a['stats']['assists']; $y = $b['stats']['goals'] + $b['stats']['assists']; return $y - $x ?: $b['stats']['goals'] - $a['stats']['goals']; } );
 	$ranked = array_slice( $ranked, 0, 10 ); $mx = $ranked ? $ranked[0]['stats']['goals'] + $ranked[0]['stats']['assists'] : 1;
   ?>
-  <div class="fsh-card fsh-chart"><h4>Goal involvements</h4>
+  <div class="fsh-card fsh-chart"><h4><?php echo $has_ast ? 'Goal involvements' : 'Goals'; ?></h4>
    <div class="k"><span><i style="background:#0A3B25"></i>Goals</span><span><i style="background:#e3c567"></i>Assists</span></div>
    <?php foreach ( $ranked as $p ) : $g = $p['stats']['goals']; $a = $p['stats']['assists']; ?>
     <div class="fsh-hb"><div class="n"><?php echo $e( $p['name'] ); ?></div><div class="tr"><i style="width:<?php echo 100 * $g / $mx; ?>%;background:#0A3B25"></i><i style="width:<?php echo 100 * $a / $mx; ?>%;background:#e3c567"></i></div><div class="v"><?php echo $g + $a; ?></div></div>
@@ -562,7 +610,7 @@ function fs_hub_render( $d ) {
   <?php
 	$mins = array_values( array_filter( $sq, function ( $p ) { return $p['stats'] && $p['stats']['mins'] > 0; } ) );
 	usort( $mins, function ( $a, $b ) { return $b['stats']['mins'] - $a['stats']['mins']; } );
-	$mins = array_slice( $mins, 0, 10 ); $poss = max( 1, 90 * count( $mt ) );
+	$mins = array_slice( $mins, 0, 10 ); $poss = max( 1, 90 * ( $mt ? count( $mt ) : count( $res ) ) );
   ?>
   <div class="fsh-card fsh-chart"><h4>Share of minutes played</h4>
    <div class="k"><span><i style="background:#0A3B25"></i>Minutes, % of the <?php echo (int) $poss; ?> available</span></div>
@@ -616,7 +664,7 @@ function fs_hub_render( $d ) {
   <?php $q = rawurlencode( trim( ( $d['stadium'] ?: $d['name'] ) . ( $d['city'] ? ', ' . $d['city'] : '' ) ) ); ?>
   <div class="fsh-card" style="overflow:hidden;min-height:300px"><iframe title="Stadium map" width="100%" height="320" loading="lazy" style="border:0;display:block" src="https://maps.google.com/maps?q=<?php echo $q; ?>&t=m&z=15&output=embed"></iframe></div>
  </div>
- <div class="fsh-src">Squad, player and team stats: FotMob, updated <?php echo $e( $upd ); ?> (Bangkok). Results, fixtures and table: Football Siam.</div>
+ <div class="fsh-src"><?php echo ( isset( $hub['source'] ) && $hub['source'] === 'Thai League' ) ? 'Squad, photos and player stats: Thai League registration' : 'Squad, player and team stats: FotMob'; ?>, updated <?php echo $e( $upd ); ?> (Bangkok). Results, fixtures and table: Football Siam.</div>
 </section>
 </div>
 
@@ -662,7 +710,7 @@ function fs_hub_render( $d ) {
 add_filter( 'template_include', function ( $tpl ) {
 	if ( is_admin() || ! is_singular( 'club' ) ) return $tpl;
 	$cid = get_queried_object_id();
-	if ( ! in_array( (int) $cid, fs_club_hub_enabled(), true ) ) return $tpl;
+	if ( ! in_array( (int) $cid, fs_club_hub_enabled(), true ) && strpos( (string) get_post_meta( $cid, 'fs_club_hub_json', true ), '"source": "Thai League"' ) === false ) return $tpl;
 	if ( isset( $_GET['fs_oldclub'] ) ) return $tpl; // ?fs_oldclub=1 shows the previous page
 	$d = fs_hub_data( $cid );
 	if ( ! $d ) return $tpl; // no FotMob feed yet: keep the old page

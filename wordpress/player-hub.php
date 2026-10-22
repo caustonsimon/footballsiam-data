@@ -44,6 +44,7 @@ function fsp_source_has( $club ) {
 	if ( ! $club ) return $out;
 	$hub = json_decode( (string) get_post_meta( $club, 'fs_club_hub_json', true ), true );
 	if ( ! is_array( $hub ) || empty( $hub['squad'] ) ) return $out;
+	if ( ! empty( $hub['no_assists'] ) ) $out['ast'] = false; // Thai League registry (T3)
 	$a = false; $r = false;
 	foreach ( $hub['squad'] as $q ) { if ( ! empty( $q['stats']['assists'] ) ) $a = true; if ( ! empty( $q['stats']['rating'] ) ) $r = true; }
 	return array( 'ast' => $a, 'rate' => $r );
@@ -54,6 +55,7 @@ function fsp_data( $pid ) {
 	$h = $raw ? json_decode( $raw, true ) : null;
 	if ( ! is_array( $h ) || empty( $h['name'] ) ) return null;
 	$photo = get_the_post_thumbnail_url( $pid, 'full' );
+	if ( ! $photo && function_exists( 'get_field' ) ) $photo = (string) get_field( 'player_photo_url', $pid ); // T3: registry photo URL
 	$club = (int) ( $h['wp_club'] ?? 0 );
 	return array(
 		'h' => $h,
@@ -70,6 +72,8 @@ function fsp_render( $d ) {
 	$s = $h['season'] ?: array( 'apps' => 0, 'starts' => 0, 'mins' => 0, 'goals' => 0, 'assists' => 0, 'yellow' => 0, 'red' => 0, 'rating' => null );
 	$bc = $h['by_comp'] ?: array();
 	$gk = ( $h['pos'] ?? '' ) === 'GK';
+	$reg_only = ( $h['source'] ?? '' ) === 'Thai League'; // T3: registry totals, no match data
+	if ( ! empty( $h['no_assists'] ) ) $d['src']['ast'] = false;
 	$ast = ! empty( $d['src']['ast'] ) || ! isset( $d['src'] );
 	$rate = ! empty( $d['src']['rate'] ) || ! isset( $d['src'] );
 	$age = fsp_age( $h['dob'] ?? '' );
@@ -231,7 +235,7 @@ function fsp_render( $d ) {
 
 <nav class="fsp-nav"><div class="fsp-wrap">
  <a href="#fsp-season">Season</a><?php if ( ! empty( $deep['groups'] ) ) : ?><a href="#fsp-stats">Stats</a><?php endif; ?>
- <a href="#fsp-log">Match log</a><a href="#fsp-career">Career</a>
+ <?php if ( ! $reg_only ) : ?><a href="#fsp-log">Match log</a><a href="#fsp-career">Career</a><?php endif; ?>
 </div></nav>
 
 <div class="fsp-wrap">
@@ -324,6 +328,7 @@ function fsp_render( $d ) {
 </section>
 <?php endif; ?>
 
+<?php if ( ! $reg_only ) : ?>
 <section class="fsp-sec" id="fsp-log">
  <h2 class="fsp-h2">Match log</h2><div class="fsp-rule"></div>
  <?php $played = array_values( array_filter( $matches, function ( $m ) { return ! empty( $m['played'] ) || ! empty( $m['bench'] ); } ) ); ?>
@@ -369,6 +374,9 @@ function fsp_render( $d ) {
  </div>
  <div class="fsp-src">Name in Thai, date of birth, nationality and photo: Thai League registration. Match data, ratings and stats: FotMob (Opta). Updated <?php echo $e( $h['updated'] ); ?> Bangkok time.</div>
 </section>
+<?php else : ?>
+<div class="fsp-src">Name in Thai, date of birth, nationality, photo and season figures: Thai League registration. Updated <?php echo $e( $h['updated'] ); ?> Bangkok time.</div>
+<?php endif; ?>
 </div>
 
 <script>

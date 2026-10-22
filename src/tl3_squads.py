@@ -424,6 +424,7 @@ def run_club(c: T3Club, wp: WPClient, reg: Registry, team: dict[str, Any] | None
                 "club": c.title, "wp_club": wp_club, "league": league, "season_label": SEASON_LABEL,
                 "season": total, "by_comp": by_comp, "matches": [], "deep": {}, "shots": [], "career": [],
                 "intl": [], "trophies": [], "next": None, "injury": None, "captain": False,
+                "contract_end": None, "positions": [], "primary_position": None,
                 "updated": dt.datetime.now(dt.timezone(dt.timedelta(hours=7))).strftime("%Y-%m-%d %H:%M"),
             }
             wp.update_player(wp_id, meta={"fs_player_hub_json": json.dumps(ph, ensure_ascii=False)})
