@@ -237,6 +237,13 @@ function fs_hub_render( $d ) {
 		array( 'Corners per game', $avg( 'Corners' ), 1, '' ),
 	);
 
+	// FotMob has no xG/shot data or match ratings for some leagues (Thai League 2):
+	// hide those blocks rather than draw rows of zeros.
+	$has_xg = false; $has_shots = false;
+	foreach ( $lg as $m ) { if ( isset( $m['stats']['Expected goals (xG)'] ) ) $has_xg = true; if ( isset( $m['stats']['Total shots'] ) ) $has_shots = true; }
+	$has_tiles = false; foreach ( $tiles as $T ) if ( $T[1] !== null ) $has_tiles = true;
+	$has_rating = false; foreach ( $sq as $p ) if ( ! empty( $p['stats']['rating'] ) ) $has_rating = true;
+
 	// groups
 	$groups = array( 'GK' => 'Goalkeepers', 'DF' => 'Defenders', 'MF' => 'Midfielders', 'FW' => 'Forwards' );
 	$by = array();
@@ -340,6 +347,7 @@ function fs_hub_render( $d ) {
 .fsh-t tr:nth-child(even) td{background:#f9f9f9}
 .fsh-t td a{font-weight:900;color:var(--ink);text-decoration:none}
 .fsh-t td.z{color:#bbb}
+.fsh-t.norate th:last-child,.fsh-t.norate td:last-child{display:none}
 .fsh-t td.best{background:rgba(227,197,103,.35)!important;font-weight:900}
 .fsh-chart{padding:20px}
 .fsh-chart h4{margin:0 0 4px;font-size:13px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--ink)}
@@ -497,8 +505,8 @@ function fs_hub_render( $d ) {
  <h2 class="fsh-h2">Player stats</h2><div class="fsh-rule"></div>
  <div class="fsh-tools"><label for="fsh-comp">Competition</label>
   <select id="fsh-comp"><option value="">All competitions</option><?php foreach ( $comps as $c ) echo '<option value="' . $e( $c ) . '">' . $e( $c ) . '</option>'; ?></select>
-  <span style="font-size:12px;color:var(--mu)">Click a column to sort. Ratings are FotMob match ratings, averaged.</span></div>
- <div class="fsh-card fsh-tw"><table class="fsh-t" id="fsh-t"><thead><tr>
+  <span style="font-size:12px;color:var(--mu)">Click a column to sort.<?php echo $has_rating ? ' Ratings are FotMob match ratings, averaged.' : ''; ?></span></div>
+ <div class="fsh-card fsh-tw"><table class="fsh-t<?php echo $has_rating ? '' : ' norate'; ?>" id="fsh-t"><thead><tr>
   <th data-k="number">#</th><th class="l" data-k="name" data-s="1">Player</th><th data-k="posn">Pos</th><th class="l" data-k="nat" data-s="1">Nat</th><th data-k="age">Age</th>
   <th data-k="apps">Apps</th><th data-k="starts">Starts</th><th data-k="mins" class="on">Mins</th><th data-k="goals">Goals</th><th data-k="assists">Ast</th><th data-k="ga">G+A</th>
   <th data-k="yellow">YC</th><th data-k="red">RC</th><th data-k="rating">Rating</th></tr></thead><tbody></tbody></table></div>
@@ -506,11 +514,16 @@ function fs_hub_render( $d ) {
 
 <section class="fsh-sec" id="fsh-team">
  <h2 class="fsh-h2">Team stats</h2><div class="fsh-rule"></div>
+ <?php if ( $has_tiles ) : ?>
  <p class="fsh-sub"><?php echo $e( $league ); ?>, per game, from <?php echo count( $lg ); ?> matches.</p>
  <div class="fsh-g6" style="margin-bottom:18px">
  <?php foreach ( $tiles as $T ) : if ( $T[1] === null ) continue; ?><div class="fsh-card fsh-tile"><b><?php echo $e( number_format( $T[1], $T[2] ) . $T[3] ); ?></b><span><?php echo $e( $T[0] ); ?></span></div><?php endforeach; ?>
  </div>
+ <?php else : ?>
+ <p class="fsh-sub"><?php echo $e( $season ); ?>, all competitions.</p>
+ <?php endif; ?>
  <div class="fsh-g2">
+  <?php if ( $has_xg ) : ?>
   <div class="fsh-card fsh-chart"><h4>Goals v expected goals, by league match</h4>
    <div class="k"><span><i style="background:#0A3B25"></i>Goals</span><span><i style="background:#e3c567"></i>xG</span></div>
    <?php $mx = 0.5; foreach ( $lg as $m ) $mx = max( $mx, (float) $m['gf'], (float) ( $m['stats']['Expected goals (xG)'] ?? 0 ) ); ?>
@@ -521,6 +534,7 @@ function fs_hub_render( $d ) {
     </div><div class="fsh-bl"><?php echo $e( ( $m['home'] ? '' : '@ ' ) . $m['opp'] ); ?></div></div>
    <?php endforeach; ?></div>
   </div>
+  <?php endif; if ( $has_shots ) : ?>
   <div class="fsh-card fsh-chart"><h4>Shots and shots on target, by league match</h4>
    <div class="k"><span><i style="background:#0A3B25"></i>Shots</span><span><i style="background:#e3c567"></i>On target</span></div>
    <?php $mx = 1; foreach ( $lg as $m ) $mx = max( $mx, (float) ( $m['stats']['Total shots'] ?? 0 ) ); ?>
@@ -531,6 +545,7 @@ function fs_hub_render( $d ) {
     </div><div class="fsh-bl"><?php echo $e( ( $m['home'] ? '' : '@ ' ) . $m['opp'] ); ?></div></div>
    <?php endforeach; ?></div>
   </div>
+  <?php endif; ?>
   <?php
 	$ranked = array_values( array_filter( $sq, function ( $p ) { return $p['stats'] && ( $p['stats']['goals'] + $p['stats']['assists'] ) > 0; } ) );
 	usort( $ranked, function ( $a, $b ) { $x = $a['stats']['goals'] + $a['stats']['assists']; $y = $b['stats']['goals'] + $b['stats']['assists']; return $y - $x ?: $b['stats']['goals'] - $a['stats']['goals']; } );

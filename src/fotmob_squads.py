@@ -519,10 +519,26 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                     wp_hit = None
                 how = f"footystats dob {one[0]}"
             elif len(ok) > 1:
-                rep["review"].append({"fotmob": name, "fotmob_id": m["id"], "why":
-                                      "several FootyStats players share this date of birth",
-                                      "candidates": [c[2].get("known_as") for c in ok]})
-                continue
+                names_ok = [c[2].get("known_as") or c[2].get("full_name") or "" for c in ok]
+                dup = all(strict_name(names_ok[0], n) >= 0.8 for n in names_ok[1:])
+                if dup:
+                    # FootyStats holds the same player twice (Pobsayai /
+                    # Popsayai, 22 Oct 2026): use the entry that already has a
+                    # site page, else go on without a FootyStats id.
+                    linked = [c for c in ok if str(c[2]["id"]) in by_fsid
+                              and int(by_fsid[str(c[2]["id"])]["id"]) not in used_wp]
+                    if len(linked) == 1:
+                        fs_id = int(linked[0][2]["id"])
+                        wp_hit = by_fsid[str(fs_id)]
+                        how = "footystats duplicate entry, the one with a page"
+                    rep["review"].append({"fotmob": name, "fotmob_id": m["id"], "why":
+                                          "FootyStats lists this player twice (handled)",
+                                          "candidates": names_ok})
+                else:
+                    rep["review"].append({"fotmob": name, "fotmob_id": m["id"], "why":
+                                          "several FootyStats players share this date of birth",
+                                          "candidates": names_ok})
+                    continue
 
         if not wp_hit:
             cands = []
@@ -533,8 +549,14 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                 if not rel:
                     continue
                 t = (p.get("title") or {}).get("rendered", "")
-                sc = name_score(name, t)
-                if sc >= (0.5 if rel == "exact" else 0.65):
+                # Site-wide, a shared birthday is common (3,000+ pages), so the
+                # name must agree strictly: romanisation variants pass
+                # (Prachya Fatsuphap / Prachaya Fadsupap), different people
+                # sharing a birthday do not (Pongrawit Jantawong / Pongsil
+                # Tana, T2 dry run 22 Oct 2026). Word order is ignored.
+                srt = lambda s: " ".join(sorted(s.lower().replace("-", " ").split()))
+                sc = max(strict_name(name, t), strict_name(srt(name), srt(t)))
+                if sc >= (0.75 if rel == "exact" else 0.82):
                     cands.append((sc, p))
             cands.sort(key=lambda x: -x[0])
             one = pick_one(name, [(c[1], title_of(c[1])) for c in cands]) if cands else None
