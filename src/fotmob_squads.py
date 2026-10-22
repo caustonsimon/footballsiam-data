@@ -194,6 +194,29 @@ def name_score(a: str, b: str) -> float:
     return max(overlap, whole, best_tok if best_tok >= 0.8 else 0.0)
 
 
+def strict_name(a: str, b: str) -> float:
+    """Whole-name similarity, for breaking ties between candidates that both
+    pass name_score() (which forgives single-token matches: 'Nontharat' v
+    'Nonthawat'). 1.0 only for the same name once accents/case are gone."""
+    na, nb = norm(a), norm(b)
+    if not na or not nb:
+        return 0.0
+    if na == nb or sorted(na.split()) == sorted(nb.split()):
+        return 1.0
+    return difflib.SequenceMatcher(None, na, nb).ratio()
+
+
+def pick_one(name: str, cands: list[tuple[Any, str]]) -> Any | None:
+    """cands: (item, candidate_name). The single clear best by strict_name(),
+    or None when it is still a genuine tie."""
+    if len(cands) == 1:
+        return cands[0][0]
+    ranked = sorted(((strict_name(name, n), i, it) for i, (it, n) in enumerate(cands)), key=lambda x: -x[0])
+    if ranked and ranked[0][0] >= 0.85 and ranked[0][0] - ranked[1][0] >= 0.1:
+        return ranked[0][2]
+    return None
+
+
 def dob_relation(a: dt.date | None, b: dt.date | None) -> str | None:
     """'exact', 'near' (+-1 day: timezone of FootyStats' unix birthday) or
     'swap' (day/month transposed). None if unrelated."""
@@ -398,7 +421,10 @@ def match_registry(squad: list[dict[str, Any]], regs: list[dict[str, Any]]) -> d
 
 def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
              wp_players: list[dict[str, Any]], report: dict[str, Any],
-             tl: ThaiLeague | None = None) -> None:
+             tl: ThaiLeague | None = None, claimed: set[int] | None = None) -> None:
+    # claimed: player pages already given to a squad player in this run (any
+    # club). Never matched twice, never cleared as a leaver by a later club.
+    claimed = claimed if claimed is not None else set()
     fm_id, wp_club, fs_club = FOTMOB_TEAMS[key]
     tj = fm.team(fm_id)
     club_title = wp.get_club_title(wp_club)
@@ -419,7 +445,8 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
 
     rep = report.setdefault(key, {"club": club_title, "matched": [], "created": [],
                                   "review": [], "left": [], "coach_fotmob": coach})
-    used_wp: set[int] = set()
+    used_wp = claimed
+    title_of = lambda p: (p.get("title") or {}).get("rendered", "")
     plan: list[tuple[dict[str, Any], dict[str, Any] | None, str, int | None]] = []
 
     for m in squad:
@@ -438,10 +465,13 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                     sc = max(name_score(name, nm), name_score(name, r.get("full_name") or ""))
                     cands.append((rel, sc, r))
             ok = [c for c in cands if c[0] == "exact" or c[1] >= 0.55]
-            if len(ok) == 1:
-                fs_id = int(ok[0][2]["id"])
+            one = pick_one(name, [(c, c[2].get("known_as") or c[2].get("full_name") or "") for c in ok]) if ok else None
+            if one:
+                fs_id = int(one[2]["id"])
                 wp_hit = by_fsid.get(str(fs_id))
-                how = f"footystats dob {ok[0][0]}"
+                if wp_hit and int(wp_hit["id"]) in used_wp:
+                    wp_hit = None
+                how = f"footystats dob {one[0]}"
             elif len(ok) > 1:
                 rep["review"].append({"fotmob": name, "fotmob_id": m["id"], "why":
                                       "several FootyStats players share this date of birth",
@@ -451,6 +481,8 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
         if not wp_hit:
             cands = []
             for p in wp_players:
+                if int(p["id"]) in used_wp:
+                    continue
                 rel = dob_relation(dob, unix_to_date((p.get("meta") or {}).get("birthday")))
                 if not rel:
                     continue
@@ -459,8 +491,11 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                 if sc >= (0.5 if rel == "exact" else 0.65):
                     cands.append((sc, p))
             cands.sort(key=lambda x: -x[0])
-            if len(cands) == 1 or (len(cands) > 1 and cands[0][0] - cands[1][0] >= 0.25):
-                wp_hit = cands[0][1]
+            one = pick_one(name, [(c[1], title_of(c[1])) for c in cands]) if cands else None
+            if len(cands) > 1 and cands[0][0] - cands[1][0] >= 0.25:
+                one = cands[0][1]
+            if one:
+                wp_hit = one
                 how = "site dob+name"
             elif cands:
                 rep["review"].append({"fotmob": name, "fotmob_id": m["id"], "why":
@@ -485,14 +520,37 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                 if sc >= 0.8:
                     cands.append((sc, p))
             cands.sort(key=lambda x: -x[0])
-            if len(cands) == 1 or (len(cands) > 1 and cands[0][0] - cands[1][0] >= 0.15):
-                wp_hit = cands[0][1]
+            one = pick_one(name, [(c[1], title_of(c[1])) for c in cands]) if cands else None
+            if one:
+                wp_hit = one
                 site_dob = unix_to_date((wp_hit.get("meta") or {}).get("birthday"))
                 how = f"same club + name (site DOB {site_dob}, FotMob {dob})"
             elif cands:
                 rep["review"].append({"fotmob": name, "fotmob_id": m["id"], "why":
                                       "two player pages at this club fit the name",
                                       "candidates": [(c[1]["id"], (c[1].get("title") or {}).get("rendered")) for c in cands]})
+                continue
+
+        if not wp_hit:
+            # f. the same name exactly anywhere on the site (moved club; DOB
+            #    missing or agreeing), so a transfer never makes a duplicate.
+            cands = []
+            for p in wp_players:
+                if int(p["id"]) in used_wp:
+                    continue
+                names = [title_of(p), str((p.get("meta") or {}).get("fs_known_as") or "")]
+                if not any(n and strict_name(name, n) == 1.0 for n in names):
+                    continue
+                sdob = unix_to_date((p.get("meta") or {}).get("birthday"))
+                if sdob and dob and not dob_relation(dob, sdob):
+                    continue
+                cands.append(p)
+            if len(cands) == 1:
+                wp_hit = cands[0]
+                how = "exact name on site (club changed)"
+            elif len(cands) > 1:
+                rep["review"].append({"fotmob": name, "fotmob_id": m["id"], "why": "several pages carry this exact name",
+                                      "candidates": [(c["id"], title_of(c)) for c in cands]})
                 continue
 
         if wp_hit and int(wp_hit["id"]) in used_wp:
@@ -556,10 +614,15 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
             hacf = hit.get("acf") or {}
             hmeta = hit.get("meta") or {}
             old_nat = str(hacf.get("nationality") or "").strip()
-            if nat and (not old_nat or (reg and old_nat != nat)):
+            # The site's nationality is never overwritten (Simon's call per
+            # player: registry passports are quota registrations, not always
+            # the sporting nationality). Blank -> filled; differences reported.
+            if nat and not old_nat:
                 acf["nationality"] = nat
-                if old_nat and old_nat != nat:
-                    rep.setdefault("nationality_fixed", []).append({"player": m["name"], "was": old_nat, "now": nat})
+            elif old_nat and nat and old_nat != nat:
+                rep.setdefault("nationality_differs", []).append({"player": m["name"], "site": old_nat, "registry_or_fotmob": nat})
+            if old_nat:
+                nat = old_nat
             if dob and (reg or not str(hmeta.get("birthday") or "").strip()):
                 meta["birthday"] = str(int(dt.datetime(dob.year, dob.month, dob.day,
                                                        tzinfo=dt.timezone.utc).timestamp()))
@@ -645,7 +708,7 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
 
     # -- leavers -------------------------------------------------------------
     for p in wp_players:
-        if club_id_of((p.get("acf") or {}).get("current_club")) == wp_club and int(p["id"]) not in used_wp \
+        if club_id_of((p.get("acf") or {}).get("current_club")) == wp_club and int(p["id"]) not in claimed \
                 and int(p["id"]) not in {h["wp_id"] for h in hub_squad if h["wp_id"]}:
             wp.update_player(int(p["id"]), acf={"current_club": None}, meta={"fs_player_hub_json": ""})
             rep["left"].append({"wp": int(p["id"]), "site": (p.get("title") or {}).get("rendered", "")})
@@ -692,10 +755,13 @@ def main() -> int:
     log.info("WP players: %d", len(wp_players))
 
     report: dict[str, Any] = {}
+    claimed: set[int] = set()
+    # Shared across clubs: a page claimed by one club is never matched again
+    # and never cleared as a leaver by a club that runs later.
     try:
         for k in keys:
             try:
-                run_club(k, wp, fm, fs_rows, wp_players, report, tl)
+                run_club(k, wp, fm, fs_rows, wp_players, report, tl, claimed)
             except WPHostChallengeError:
                 raise
             except Exception as exc:  # noqa: BLE001 - one club must not stop the rest
