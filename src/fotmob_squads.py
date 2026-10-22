@@ -45,6 +45,7 @@ import datetime as dt
 import difflib
 import json
 import logging
+import re
 import sys
 import time
 import unicodedata
@@ -483,7 +484,13 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
             coach = (g["members"] or [{}])[0].get("name")
             continue
         for m in g["members"]:
-            squad.append({**m, "_pos": GROUP_POS.get(g["title"], "")})
+            # FotMob sometimes leaves a stray Thai mark in a Latin name
+            # ("ฺBisrun Semuso", Songkhla, 22 Oct 2026): keep Latin names Latin.
+            nm = str(m.get("name") or "")
+            cleaned = re.sub(r"[฀-๿]", "", nm).strip()
+            if re.search(r"[A-Za-z]{2}", cleaned):
+                nm = cleaned
+            squad.append({**m, "name": nm or m.get("name"), "_pos": GROUP_POS.get(g["title"], "")})
 
     by_fotmob = {str((p.get("meta") or {}).get("fotmob_id") or ""): p for p in wp_players}
     by_fsid = {str((p.get("acf") or {}).get("footystats_id") or ""): p for p in wp_players}
