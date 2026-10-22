@@ -102,7 +102,8 @@ GROUP_POS = {"keepers": "GK", "defenders": "DF", "midfielders": "MF", "attackers
 POS_LABEL = {"GK": "Goalkeeper", "DF": "Defender", "MF": "Midfielder", "FW": "Forward"}
 
 # Country names as the site writes them (FotMob mostly agrees)
-NAT_FIX = {"Korea Republic": "South Korea", "Côte d'Ivoire": "Ivory Coast"}
+NAT_FIX = {"Korea Republic": "South Korea", "Côte d'Ivoire": "Ivory Coast",
+           "United Kingdom": "England"}  # Simon, 22 Oct 2026
 
 # Thai-script names for foreign players, keyed by FotMob id. The Thai League
 # registry only holds these players in English, so the spelling comes from

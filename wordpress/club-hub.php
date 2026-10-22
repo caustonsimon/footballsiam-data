@@ -19,7 +19,9 @@
 if ( ! function_exists( 'fs_club_hub_enabled' ) ) {
 
 function fs_club_hub_enabled() {
-	return array( 7937 ); // Port
+	// Every Thai League 1 club (rolled out 22 Oct 2026). A club with no FotMob
+	// feed yet keeps its old page.
+	return array( 7937, 7934, 7929, 7928, 7933, 7930, 7931, 7938, 7939, 7942, 7961, 7959, 7941, 7935, 7940, 7953 );
 }
 
 /* ------------------------------------------------------------------------
