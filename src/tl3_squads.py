@@ -149,6 +149,14 @@ T3_CLUBS: list[T3Club] = [
     T3Club(96, 9828, 'Thonburi United', 't3_west', ['Thonburi University', 'Thonburi United']),
 ]
 
+# Thai-script names for registered players the registry holds only in English
+# (foreign players), keyed by registry player id. Football Siam
+# transliterations; a name_th on the page wins.
+try:
+    THAI_NAMES_T3: dict[str, str] = json.loads((Path(__file__).resolve().parent / "data" / "thai_names_t3.json").read_text())["names"]
+except FileNotFoundError:
+    THAI_NAMES_T3 = {}
+
 LOWER = {"da", "de", "do", "dos", "das", "van", "von", "der", "den", "di", "del", "la", "le", "bin", "al"}
 
 
@@ -198,8 +206,12 @@ def nice_name(s: str) -> str:
     s = clean_latin(s)
     if not s:
         return s
-    if s != s.upper() and s != s.lower():
-        return s
+    words = s.split()
+    s = " ".join(w for i, w in enumerate(words) if i == 0 or w.lower() != words[i - 1].lower())  # "Kennedy Kennedy"
+    letters = [ch for ch in s if ch.isalpha()]
+    if letters and sum(ch.isupper() for ch in letters) / len(letters) < 0.6 and s != s.lower():
+        # already mixed case as written ("Zaw Min Tun"); fix stray all-caps words ("George Kehinde OLATUNDE")
+        return " ".join(w.title() if len(w) > 3 and w.isupper() else w for w in s.split())
     out = []
     for i, w in enumerate(s.lower().split()):
         if i and w in LOWER:
@@ -289,6 +301,7 @@ def run_club(c: T3Club, wp: WPClient, reg: Registry, team: dict[str, Any] | None
         rid = str(r["id"])
         name_en = nice_name(r.get("full_name_en") or "")
         name_th = " ".join(str(r.get("full_name") or "").split()) if has_thai(r.get("full_name")) else ""
+        name_th = name_th or THAI_NAMES_T3.get(rid, "")
         dob = iso_date(r.get("birth_date"))
         raw_nat = ((r.get("nationality") or {}).get("name") or "").strip()
         nat = NAT_FIX.get(raw_nat, raw_nat)
