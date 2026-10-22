@@ -1,0 +1,55 @@
+name: tl3-squads
+
+# Thai League 3 squads + club hub feeds from the Thai League registry
+# (src/tl3_squads.py). Added 22 Oct 2026. Manual runs only until the first
+# live run is checked; then a daily schedule after the FotMob squads run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      club:
+        description: 'Registry club id, club title, or all'
+        type: string
+        default: all
+      dry_run:
+        description: 'Dry run (no writes to WordPress)'
+        type: boolean
+        default: true
+
+concurrency:
+  group: tl3-squads
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  squads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Build T3 squads
+        working-directory: src
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          INPUT_CLUB: ${{ inputs.club }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          ARGS=(--club "${INPUT_CLUB:-all}")
+          [ "$INPUT_DRY_RUN" = "true" ] || ARGS+=(--live)
+          python tl3_squads.py "${ARGS[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t3-report
+          path: src/out/
+          if-no-files-found: ignore
