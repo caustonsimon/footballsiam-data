@@ -19,9 +19,10 @@
 if ( ! function_exists( 'fs_club_hub_enabled' ) ) {
 
 function fs_club_hub_enabled() {
-	// Every Thai League 1 club (rolled out 22 Oct 2026). A club with no FotMob
-	// feed yet keeps its old page.
-	return array( 7937, 7934, 7929, 7928, 7933, 7930, 7931, 7938, 7939, 7942, 7961, 7959, 7941, 7935, 7940, 7953 );
+	// Every Thai League 1 club (rolled out 22 Oct 2026) and every Thai League 2
+	// club (22 Oct 2026). A club with no FotMob feed yet keeps its old page.
+	return array( 7937, 7934, 7929, 7928, 7933, 7930, 7931, 7938, 7939, 7942, 7961, 7959, 7941, 7935, 7940, 7953,
+		7956, 7951, 7954, 7945, 7932, 7952, 7958, 7949, 7955, 7960, 7948, 7947, 7936, 9792, 13879, 7944, 7943, 9862 );
 }
 
 /* ------------------------------------------------------------------------
@@ -82,7 +83,7 @@ function fs_hub_matches( $cid, $type ) {
 		if ( $slug === 'thai-fa-cup' && function_exists( 'fs_facup_round_label' ) ) {
 			$round = fs_facup_round_label( $m['mw'], false );
 		} elseif ( is_numeric( $m['mw'] ) && $m['mw'] > 0 ) {
-			$round = ( $slug === 'thai-league-1' ? 'Matchweek ' : 'Matchday ' ) . $m['mw'];
+			$round = ( in_array( $slug, array( 'thai-league-1', 'thai-league-2' ), true ) ? 'Matchweek ' : 'Matchday ' ) . $m['mw'];
 		}
 		$res = '';
 		if ( $type === 'results' && $m['hs'] !== '' ) {
@@ -109,9 +110,9 @@ function fs_hub_club_id_by_name( $name ) {
 	return isset( $map[ $name ] ) ? $map[ $name ] : 0;
 }
 
-function fs_hub_table( $cid ) {
+function fs_hub_table( $cid, $slug = 'thai-league-1' ) {
 	if ( ! function_exists( 'fs_build_table' ) ) return array();
-	$t = fs_build_table( 'thai-league-1' );
+	$t = fs_build_table( $slug );
 	if ( ! is_array( $t ) ) return array();
 	$t = array_values( $t );
 	usort( $t, function ( $a, $b ) {
@@ -153,7 +154,8 @@ function fs_hub_data( $cid ) {
 		'hub' => $hub,
 		'fixtures' => fs_hub_matches( $cid, 'fixtures' ),
 		'results' => fs_hub_matches( $cid, 'results' ),
-		'table' => fs_hub_table( $cid ),
+		'league' => ! empty( $hub['league'] ) ? $hub['league'] : 'Thai League 1',
+		'table' => fs_hub_table( $cid, ! empty( $hub['league_slug'] ) ? $hub['league_slug'] : 'thai-league-1' ),
 		'tours_url' => home_url( '/football-siam-tours/' ),
 	);
 }
@@ -171,7 +173,7 @@ function fs_hub_date( $ts, $fmt = 'D j M' ) {
 
 function fs_hub_comp_short( $c ) {
 	$map = array(
-		'Thai League 1' => 'Thai League 1', 'AFC Champions League Elite' => 'ACL Elite',
+		'Thai League 1' => 'Thai League 1', 'Thai League 2' => 'Thai League 2', 'AFC Champions League Elite' => 'ACL Elite',
 		'AFC Champions League Two' => 'ACL Two', 'ASEAN Club Championship' => 'ASEAN Club Champ.',
 		'Thai FA Cup' => 'FA Cup', 'Thai League Cup' => 'League Cup',
 	);
@@ -220,7 +222,8 @@ function fs_hub_render( $d ) {
 	);
 
 	// league averages from FotMob team stats
-	$lg = array_values( array_filter( $mt, function ( $m ) { return $m['comp'] === 'Thai League 1'; } ) );
+	$league = $d['league'];
+	$lg = array_values( array_filter( $mt, function ( $m ) use ( $league ) { return $m['comp'] === $league; } ) );
 	$avg = function ( $k ) use ( $lg ) {
 		$v = array(); foreach ( $lg as $m ) if ( isset( $m['stats'][ $k ] ) && $m['stats'][ $k ] !== '' ) $v[] = (float) $m['stats'][ $k ];
 		return $v ? array_sum( $v ) / count( $v ) : null;
@@ -243,7 +246,7 @@ function fs_hub_render( $d ) {
 
 	$comps = array();
 	foreach ( $sq as $p ) foreach ( array_keys( (array) $p['by_comp'] ) as $c ) $comps[ $c ] = true;
-	$comp_order = array( 'Thai League 1', 'AFC Champions League Elite', 'AFC Champions League Two', 'ASEAN Club Championship', 'Thai FA Cup', 'Thai League Cup' );
+	$comp_order = array( 'Thai League 1', 'Thai League 2', 'AFC Champions League Elite', 'AFC Champions League Two', 'ASEAN Club Championship', 'Thai FA Cup', 'Thai League Cup' );
 	$comps = array_values( array_filter( $comp_order, function ( $c ) use ( $comps ) { return isset( $comps[ $c ] ); } ) );
 
 	$next = $fix ? $fix[0] : null; $last = $res ? $res[0] : null;
@@ -404,7 +407,7 @@ function fs_hub_render( $d ) {
  <div class="fsh-hero-in">
   <div class="fsh-crest"><?php if ( $d['logo'] ) : ?><img src="<?php echo $e( $d['logo'] ); ?>" alt="<?php echo $e( $d['name'] ); ?>"><?php endif; ?></div>
   <div>
-   <div class="fsh-kick">Thai League 1 · <?php echo $e( $season ); ?></div>
+   <div class="fsh-kick"><?php echo $e( $league ); ?> · <?php echo $e( $season ); ?></div>
    <h1 class="fsh-h1"><?php echo $e( $d['name'] ); ?></h1>
    <div class="fsh-meta">
     <?php if ( $d['coach'] ) : ?><span><b>Head coach</b><?php echo $d['coach_url'] ? '<a href="' . $e( $d['coach_url'] ) . '" style="color:#fff">' . $e( $d['coach'] ) . '</a>' : $e( $d['coach'] ); ?></span><?php endif; ?>
@@ -415,7 +418,7 @@ function fs_hub_render( $d ) {
   </div>
   <div class="fsh-pos">
    <?php if ( $me ) : ?>
-   <div><div class="n"><?php echo $e( $ord( $me['pos'] ) ); ?></div><div class="l">in Thai League 1</div>
+   <div><div class="n"><?php echo $e( $ord( $me['pos'] ) ); ?></div><div class="l">in <?php echo $e( $league ); ?></div>
    <div class="pts"><b><?php echo (int) $me['pts']; ?></b> pts · <?php echo (int) $me['p']; ?> played · GD <?php echo ( $me['gd'] > 0 ? '+' : '' ) . (int) $me['gd']; ?></div></div>
    <?php endif; ?>
    <div class="fsh-form" title="Last five, all competitions">
@@ -503,7 +506,7 @@ function fs_hub_render( $d ) {
 
 <section class="fsh-sec" id="fsh-team">
  <h2 class="fsh-h2">Team stats</h2><div class="fsh-rule"></div>
- <p class="fsh-sub">Thai League 1, per game, from <?php echo count( $lg ); ?> matches.</p>
+ <p class="fsh-sub"><?php echo $e( $league ); ?>, per game, from <?php echo count( $lg ); ?> matches.</p>
  <div class="fsh-g6" style="margin-bottom:18px">
  <?php foreach ( $tiles as $T ) : if ( $T[1] === null ) continue; ?><div class="fsh-card fsh-tile"><b><?php echo $e( number_format( $T[1], $T[2] ) . $T[3] ); ?></b><span><?php echo $e( $T[0] ); ?></span></div><?php endforeach; ?>
  </div>
@@ -575,7 +578,7 @@ function fs_hub_render( $d ) {
 </section>
 
 <section class="fsh-sec" id="fsh-table">
- <h2 class="fsh-h2">Thai League 1 table</h2><div class="fsh-rule"></div>
+ <h2 class="fsh-h2"><?php echo $e( $league ); ?> table</h2><div class="fsh-rule"></div>
  <?php if ( $d['table'] ) : ?>
  <div class="fsh-card" style="overflow:hidden"><table class="fsh-tbl"><thead><tr><th>Pos</th><th style="text-align:left">Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>
  <?php foreach ( $d['table'] as $r ) : ?>

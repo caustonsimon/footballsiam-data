@@ -57,7 +57,7 @@ function fsp_render( $d ) {
 	$bc = $h['by_comp'] ?: array();
 	$gk = ( $h['pos'] ?? '' ) === 'GK';
 	$age = fsp_age( $h['dob'] ?? '' );
-	$order = array( 'Thai League 1', 'AFC Champions League Elite', 'AFC Champions League Two', 'ASEAN Club Championship', 'Thai FA Cup', 'Thai League Cup' );
+	$order = array( 'Thai League 1', 'Thai League 2', 'AFC Champions League Elite', 'AFC Champions League Two', 'ASEAN Club Championship', 'Thai FA Cup', 'Thai League Cup' );
 	uksort( $bc, function ( $a, $b ) use ( $order ) { $x = array_search( $a, $order ); $y = array_search( $b, $order ); return ( $x === false ? 99 : $x ) - ( $y === false ? 99 : $y ); } );
 	$matches = $h['matches'] ?? array();
 	$rated = array_reverse( array_values( array_filter( $matches, function ( $m ) { return ! empty( $m['rating'] ); } ) ) );

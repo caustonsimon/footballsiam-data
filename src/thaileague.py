@@ -26,6 +26,12 @@ TL_CLUB_IDS: dict[str, int] = {
     "ratchaburi": 109, "chiangrai-united": 26, "chonburi": 18, "prachuap": 107,
     "rayong": 31, "uthai-thani": 114, "sisaket-united": 100, "rasisalai-united": 196,
     "lamphun-warrior": 45, "sukhothai": 108, "ayutthaya-united": 128, "pattani": 82,
+    # Thai League 2 (tournament-team-public/?tournament=226, 22 Oct 2026)
+    "muangthong-united": 106, "nakhon-ratchasima": 50, "kanchanaburi": 180,
+    "nong-bua-pitchaya": 119, "police-tero": 94, "chainat": 111, "khon-kaen-united": 48,
+    "mahasarakham": 63, "phrae-united": 42, "chiangmai-united": 127, "pattaya-united": 77,
+    "songkhla": 182, "chanthaburi": 23, "nakhon-pathom": 19, "kasetsart": 126,
+    "uttaradit": 47, "satun": 1158, "muang-loei-united": 102,
 }
 
 

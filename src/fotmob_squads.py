@@ -65,6 +65,7 @@ FM_BASE = "https://www.fotmob.com/api/data"
 SEASON_LABEL = "2026/27"
 SEASON_START = dt.date(2026, 8, 15)   # excludes pre-season (President's Cup, July/Aug)
 TL1_FS_SEASON = 17367
+TL2_FS_SEASON = 17896
 
 # key -> (FotMob team id, WP club post id, FootyStats team id)
 FOTMOB_TEAMS: dict[str, tuple[int, int, int]] = {
@@ -84,7 +85,39 @@ FOTMOB_TEAMS: dict[str, tuple[int, int, int]] = {
     "sukhothai":        (584943, 7935, 1172),
     "ayutthaya-united": (1110271, 7940, 9898),
     "pattani":          (585115, 7953, 666944),
+    # Thai League 2 (added 22 Oct 2026). FotMob league 9498; Thai League
+    # registry tournament 226.
+    "khon-kaen-united":   (626802, 7956, 8384),
+    "chanthaburi":        (1513932, 7951, 21948),
+    "phrae-united":       (578228, 7954, 9889),
+    "chainat":            (309016, 7945, 1189),
+    "nakhon-ratchasima":  (554037, 7932, 1188),
+    "nakhon-pathom":      (165252, 7952, 8381),
+    "pattaya-united":     (1513934, 7958, 688234),
+    "chiangmai-united":   (1016183, 7949, 9886),
+    "songkhla":           (309017, 7955, 21927),
+    "mahasarakham":       (1696880, 7960, 678797),
+    "kasetsart":          (615409, 7948, 8372),
+    "nong-bua-pitchaya":  (626806, 7947, 8371),
+    "muangthong-united":  (165251, 7936, 1174),
+    "uttaradit":          (584948, 9792, 666933),
+    "muang-loei-united":  (1814820, 13879, 666943),
+    "police-tero":        (165244, 7944, 1187),
+    "kanchanaburi":       (1513933, 7943, 688585),
+    "satun":              (585112, 9862, 1023811),
 }
+
+T2_KEYS = {
+    "khon-kaen-united", "chanthaburi", "phrae-united", "chainat", "nakhon-ratchasima",
+    "nakhon-pathom", "pattaya-united", "chiangmai-united", "songkhla", "mahasarakham",
+    "kasetsart", "nong-bua-pitchaya", "muangthong-united", "uttaradit", "muang-loei-united",
+    "police-tero", "kanchanaburi", "satun",
+}
+
+
+def league_of(key: str) -> tuple[str, str]:
+    """(house name, competition slug) of the club's league."""
+    return ("Thai League 2", "thai-league-2") if key in T2_KEYS else ("Thai League 1", "thai-league-1")
 
 # FotMob competition names -> house names (sponsor / "FC" stripped)
 COMP_NAMES = {
@@ -737,6 +770,7 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
 
     hub = {
         "club": club_title, "wp_club": wp_club, "fotmob_team_id": fm_id,
+        "league": league_of(key)[0], "league_slug": league_of(key)[1],
         "season": SEASON_LABEL, "updated": dt.datetime.now(
             dt.timezone(dt.timedelta(hours=7))).strftime("%Y-%m-%d %H:%M"),
         "source": "FotMob", "squad": hub_squad, "team": season["team"],
@@ -752,13 +786,21 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--club", default="port", help="key from FOTMOB_TEAMS, or 'all'")
+    ap.add_argument("--club", default="port",
+                    help="key from FOTMOB_TEAMS, or 't1', 't2', 'all' (T1 then T2)")
     ap.add_argument("--live", action="store_true")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-7s %(message)s",
                         datefmt="%H:%M:%S")
 
-    keys = list(FOTMOB_TEAMS) if args.club == "all" else [args.club]
+    if args.club == "all":
+        keys = list(FOTMOB_TEAMS)
+    elif args.club == "t1":
+        keys = [k for k in FOTMOB_TEAMS if k not in T2_KEYS]
+    elif args.club == "t2":
+        keys = [k for k in FOTMOB_TEAMS if k in T2_KEYS]
+    else:
+        keys = [args.club]
     for k in keys:
         if k not in FOTMOB_TEAMS:
             log.error("unknown club %s", k)
@@ -769,8 +811,12 @@ def main() -> int:
     fm = FotMob()
     tl = ThaiLeague()
     log.info("Mode: %s", "LIVE" if args.live else "DRY RUN")
-    fs_rows = fs.get_league_players(TL1_FS_SEASON)
-    log.info("FootyStats TL1 players: %d", len(fs_rows))
+    fs_rows = []
+    if any(k not in T2_KEYS for k in keys):
+        fs_rows += fs.get_league_players(TL1_FS_SEASON)
+    if any(k in T2_KEYS for k in keys):
+        fs_rows += fs.get_league_players(TL2_FS_SEASON)
+    log.info("FootyStats players (TL1/TL2 as needed): %d", len(fs_rows))
     wp_players = list(wp.iter_all_players(
         fields="id,title,acf.footystats_id,acf.current_club,acf.nationality,meta.birthday,"
                "meta.fotmob_id,meta.fs_known_as,meta.last_confirmed_club,meta.tl_photo_src,meta.name_th,featured_media"))

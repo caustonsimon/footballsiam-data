@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       club:
-        description: 'Club key (port, buriram-united, ...) or all'
+        description: 'Club key (port, khon-kaen-united, ...), t1, t2 or all'
         type: string
         default: port
       dry_run:
@@ -51,7 +51,7 @@ jobs:
             ARGS+=(--club "${INPUT_CLUB:-port}")
             [ "$INPUT_DRY_RUN" = "true" ] || ARGS+=(--live)
           else
-            # scheduled: every Thai League 1 club (rolled out 22 Oct 2026)
+            # scheduled: every Thai League 1 and Thai League 2 club (T2 added 22 Oct 2026)
             ARGS+=(--club all --live)
           fi
           python fotmob_squads.py "${ARGS[@]}"
