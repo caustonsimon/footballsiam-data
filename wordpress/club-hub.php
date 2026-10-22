@@ -243,6 +243,7 @@ function fs_hub_render( $d ) {
 	foreach ( $lg as $m ) { if ( isset( $m['stats']['Expected goals (xG)'] ) ) $has_xg = true; if ( isset( $m['stats']['Total shots'] ) ) $has_shots = true; }
 	$has_tiles = false; foreach ( $tiles as $T ) if ( $T[1] !== null ) $has_tiles = true;
 	$has_rating = false; foreach ( $sq as $p ) if ( ! empty( $p['stats']['rating'] ) ) $has_rating = true;
+	$has_ast = false; foreach ( $sq as $p ) if ( ! empty( $p['stats']['assists'] ) ) $has_ast = true;
 
 	// groups
 	$groups = array( 'GK' => 'Goalkeepers', 'DF' => 'Defenders', 'MF' => 'Midfielders', 'FW' => 'Forwards' );
@@ -348,6 +349,7 @@ function fs_hub_render( $d ) {
 .fsh-t td a{font-weight:900;color:var(--ink);text-decoration:none}
 .fsh-t td.z{color:#bbb}
 .fsh-t.norate th:last-child,.fsh-t.norate td:last-child{display:none}
+.fsh-t.noast th:nth-child(10),.fsh-t.noast td:nth-child(10),.fsh-t.noast th:nth-child(11),.fsh-t.noast td:nth-child(11){display:none}
 .fsh-t td.best{background:rgba(227,197,103,.35)!important;font-weight:900}
 .fsh-chart{padding:20px}
 .fsh-chart h4{margin:0 0 4px;font-size:13px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--ink)}
@@ -492,7 +494,7 @@ function fs_hub_render( $d ) {
      <?php if ( ! empty( $p['name_th'] ) ) : ?><div class="fsh-pth" lang="th"><?php echo $e( $p['name_th'] ); ?></div><?php endif; ?>
      <div class="fsh-pm"><?php echo $e( implode( ' · ', array_filter( array( $p['nat'], $p['age'] ? $p['age'] . ' yrs' : '', $p['height'] ? $p['height'] . ' cm' : '' ) ) ) ); ?></div>
      <?php if ( $p['injury'] ) : ?><div class="fsh-inj">Injured</div><?php endif; ?>
-     <div class="fsh-ps"><?php if ( $s && $s['apps'] ) : ?><span><b><?php echo (int) $s['apps']; ?></b> apps</span><span><b><?php echo (int) $s['mins']; ?></b> mins</span><?php if ( $gk !== 'GK' ) : ?><span><b><?php echo (int) $s['goals']; ?></b> G</span><span><b><?php echo (int) $s['assists']; ?></b> A</span><?php endif; else : ?><span>No appearances yet</span><?php endif; ?></div>
+     <div class="fsh-ps"><?php if ( $s && $s['apps'] ) : ?><span><b><?php echo (int) $s['apps']; ?></b> apps</span><span><b><?php echo (int) $s['mins']; ?></b> mins</span><?php if ( $gk !== 'GK' ) : ?><span><b><?php echo (int) $s['goals']; ?></b> G</span><?php if ( $has_ast ) : ?><span><b><?php echo (int) $s['assists']; ?></b> A</span><?php endif; ?><?php endif; else : ?><span>No appearances yet</span><?php endif; ?></div>
     </div>
     <?php if ( $r ) : ?><div class="fsh-rt<?php echo $r >= 7.3 ? ' top' : ( $r >= 7 ? ' hi' : '' ); ?>"><?php echo $e( number_format( $r, 2 ) ); ?></div><?php endif; ?>
    </a>
@@ -506,7 +508,7 @@ function fs_hub_render( $d ) {
  <div class="fsh-tools"><label for="fsh-comp">Competition</label>
   <select id="fsh-comp"><option value="">All competitions</option><?php foreach ( $comps as $c ) echo '<option value="' . $e( $c ) . '">' . $e( $c ) . '</option>'; ?></select>
   <span style="font-size:12px;color:var(--mu)">Click a column to sort.<?php echo $has_rating ? ' Ratings are FotMob match ratings, averaged.' : ''; ?></span></div>
- <div class="fsh-card fsh-tw"><table class="fsh-t<?php echo $has_rating ? '' : ' norate'; ?>" id="fsh-t"><thead><tr>
+ <div class="fsh-card fsh-tw"><table class="fsh-t<?php echo ( $has_rating ? '' : ' norate' ) . ( $has_ast ? '' : ' noast' ); ?>" id="fsh-t"><thead><tr>
   <th data-k="number">#</th><th class="l" data-k="name" data-s="1">Player</th><th data-k="posn">Pos</th><th class="l" data-k="nat" data-s="1">Nat</th><th data-k="age">Age</th>
   <th data-k="apps">Apps</th><th data-k="starts">Starts</th><th data-k="mins" class="on">Mins</th><th data-k="goals">Goals</th><th data-k="assists">Ast</th><th data-k="ga">G+A</th>
   <th data-k="yellow">YC</th><th data-k="red">RC</th><th data-k="rating">Rating</th></tr></thead><tbody></tbody></table></div>
