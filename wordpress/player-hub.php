@@ -36,6 +36,19 @@ function fsp_comp_short( $c ) {
 	return isset( $m[ $c ] ) ? $m[ $c ] : $c;
 }
 
+/** Does the source record assists / ratings for this player's league? Judged on
+ *  the whole club squad (FotMob has neither for Thai League 2), so a T1 player
+ *  with no assists yet still shows his 0. */
+function fsp_source_has( $club ) {
+	$out = array( 'ast' => true, 'rate' => true );
+	if ( ! $club ) return $out;
+	$hub = json_decode( (string) get_post_meta( $club, 'fs_club_hub_json', true ), true );
+	if ( ! is_array( $hub ) || empty( $hub['squad'] ) ) return $out;
+	$a = false; $r = false;
+	foreach ( $hub['squad'] as $q ) { if ( ! empty( $q['stats']['assists'] ) ) $a = true; if ( ! empty( $q['stats']['rating'] ) ) $r = true; }
+	return array( 'ast' => $a, 'rate' => $r );
+}
+
 function fsp_data( $pid ) {
 	$raw = get_post_meta( $pid, 'fs_player_hub_json', true );
 	$h = $raw ? json_decode( $raw, true ) : null;
@@ -47,6 +60,7 @@ function fsp_data( $pid ) {
 		'photo' => $photo ?: '',
 		'club_url' => $club ? get_permalink( $club ) : '',
 		'club_logo' => ( $club && function_exists( 'fs_get_club_logo' ) ) ? fs_get_club_logo( $club ) : '',
+		'src' => fsp_source_has( $club ),
 	);
 }
 
@@ -56,6 +70,8 @@ function fsp_render( $d ) {
 	$s = $h['season'] ?: array( 'apps' => 0, 'starts' => 0, 'mins' => 0, 'goals' => 0, 'assists' => 0, 'yellow' => 0, 'red' => 0, 'rating' => null );
 	$bc = $h['by_comp'] ?: array();
 	$gk = ( $h['pos'] ?? '' ) === 'GK';
+	$ast = ! empty( $d['src']['ast'] ) || ! isset( $d['src'] );
+	$rate = ! empty( $d['src']['rate'] ) || ! isset( $d['src'] );
 	$age = fsp_age( $h['dob'] ?? '' );
 	$order = array( 'Thai League 1', 'Thai League 2', 'AFC Champions League Elite', 'AFC Champions League Two', 'ASEAN Club Championship', 'Thai FA Cup', 'Thai League Cup' );
 	uksort( $bc, function ( $a, $b ) use ( $order ) { $x = array_search( $a, $order ); $y = array_search( $b, $order ); return ( $x === false ? 99 : $x ) - ( $y === false ? 99 : $y ); } );
@@ -67,6 +83,7 @@ function fsp_render( $d ) {
 	$hero_tiles = $gk
 		? array( array( 'Apps', $s['apps'] ), array( 'Starts', $s['starts'] ), array( 'Minutes', $s['mins'] ), array( 'Rating', $s['rating'] ? number_format( $s['rating'], 2 ) : '–' ) )
 		: array( array( 'Apps', $s['apps'] ), array( 'Goals', $s['goals'] ), array( 'Assists', $s['assists'] ), array( 'Minutes', $s['mins'] ), array( 'Rating', $s['rating'] ? number_format( $s['rating'], 2 ) : '–' ) );
+	$hero_tiles = array_values( array_filter( $hero_tiles, function ( $t ) use ( $ast, $rate ) { return ! ( ( $t[0] === 'Assists' && ! $ast ) || ( $t[0] === 'Rating' && ! $rate ) ); } ) );
 	$facts = array_filter( array(
 		'Nationality' => $h['nat'] ?? '',
 		'Age' => $age ? $age . ( ! empty( $h['dob'] ) ? ' (' . fsp_fdate( $h['dob'] ) . ')' : '' ) : '',
@@ -223,14 +240,14 @@ function fsp_render( $d ) {
  <h2 class="fsp-h2"><?php echo $e( $h['season_label'] ); ?> season</h2><div class="fsp-rule"></div>
  <div class="fsp-g2">
   <div>
-   <div class="fsp-card fsp-tw"><table class="fsp-t"><thead><tr><th class="l">Competition</th><th>Apps</th><th>Starts</th><th>Mins</th><?php if ( ! $gk ) : ?><th>Goals</th><th>Ast</th><?php endif; ?><th>YC</th><th>RC</th><th>Rating</th></tr></thead><tbody>
+   <div class="fsp-card fsp-tw"><table class="fsp-t"><thead><tr><th class="l">Competition</th><th>Apps</th><th>Starts</th><th>Mins</th><?php if ( ! $gk ) : ?><th>Goals</th><?php if ( $ast ) : ?><th>Ast</th><?php endif; endif; ?><th>YC</th><th>RC</th><?php if ( $rate ) : ?><th>Rating</th><?php endif; ?></tr></thead><tbody>
    <?php foreach ( $bc as $c => $b ) : ?>
     <tr><td class="l"><b><?php echo $e( $c ); ?></b></td><td><?php echo (int) $b['apps']; ?></td><td><?php echo (int) $b['starts']; ?></td><td><?php echo (int) $b['mins']; ?></td>
-    <?php if ( ! $gk ) : ?><td class="<?php echo $b['goals'] ? '' : 'z'; ?>"><?php echo (int) $b['goals']; ?></td><td class="<?php echo $b['assists'] ? '' : 'z'; ?>"><?php echo (int) $b['assists']; ?></td><?php endif; ?>
-    <td class="<?php echo $b['yellow'] ? '' : 'z'; ?>"><?php echo (int) $b['yellow']; ?></td><td class="<?php echo $b['red'] ? '' : 'z'; ?>"><?php echo (int) $b['red']; ?></td><td><?php echo $b['rating'] ? $e( number_format( $b['rating'], 2 ) ) : '–'; ?></td></tr>
+    <?php if ( ! $gk ) : ?><td class="<?php echo $b['goals'] ? '' : 'z'; ?>"><?php echo (int) $b['goals']; ?></td><?php if ( $ast ) : ?><td class="<?php echo $b['assists'] ? '' : 'z'; ?>"><?php echo (int) $b['assists']; ?></td><?php endif; endif; ?>
+    <td class="<?php echo $b['yellow'] ? '' : 'z'; ?>"><?php echo (int) $b['yellow']; ?></td><td class="<?php echo $b['red'] ? '' : 'z'; ?>"><?php echo (int) $b['red']; ?></td><?php if ( $rate ) : ?><td><?php echo $b['rating'] ? $e( number_format( $b['rating'], 2 ) ) : '–'; ?></td><?php endif; ?></tr>
    <?php endforeach; ?>
     <tr class="tot"><td class="l">All competitions</td><td><?php echo (int) $s['apps']; ?></td><td><?php echo (int) $s['starts']; ?></td><td><?php echo (int) $s['mins']; ?></td>
-    <?php if ( ! $gk ) : ?><td><?php echo (int) $s['goals']; ?></td><td><?php echo (int) $s['assists']; ?></td><?php endif; ?><td><?php echo (int) $s['yellow']; ?></td><td><?php echo (int) $s['red']; ?></td><td><?php echo $s['rating'] ? $e( number_format( $s['rating'], 2 ) ) : '–'; ?></td></tr>
+    <?php if ( ! $gk ) : ?><td><?php echo (int) $s['goals']; ?></td><?php if ( $ast ) : ?><td><?php echo (int) $s['assists']; ?></td><?php endif; endif; ?><td><?php echo (int) $s['yellow']; ?></td><td><?php echo (int) $s['red']; ?></td><?php if ( $rate ) : ?><td><?php echo $s['rating'] ? $e( number_format( $s['rating'], 2 ) ) : '–'; ?></td><?php endif; ?></tr>
    </tbody></table></div>
    <?php if ( empty( $bc ) ) echo '<p class="fsp-sub" style="margin-top:12px">No first-team appearances yet this season.</p>'; ?>
    <?php if ( $rated ) : ?>
@@ -311,15 +328,15 @@ function fsp_render( $d ) {
  <h2 class="fsp-h2">Match log</h2><div class="fsp-rule"></div>
  <?php $played = array_values( array_filter( $matches, function ( $m ) { return ! empty( $m['played'] ) || ! empty( $m['bench'] ); } ) ); ?>
  <?php if ( ! $played ) : ?><p class="fsp-sub" style="margin:0">No matches yet this season.</p><?php else : ?>
- <div class="fsp-card fsp-tw"><table class="fsp-t" style="min-width:640px"><thead><tr><th class="l">Date</th><th class="l">Match</th><th>Result</th><th>Mins</th><?php if ( ! $gk ) : ?><th>G</th><th>A</th><?php endif; ?><th>Cards</th><th>Rating</th></tr></thead><tbody>
+ <div class="fsp-card fsp-tw"><table class="fsp-t" style="min-width:640px"><thead><tr><th class="l">Date</th><th class="l">Match</th><th>Result</th><th>Mins</th><?php if ( ! $gk ) : ?><th>G</th><?php if ( $ast ) : ?><th>A</th><?php endif; endif; ?><th>Cards</th><?php if ( $rate ) : ?><th>Rating</th><?php endif; ?></tr></thead><tbody>
  <?php foreach ( $played as $m ) : $r = $m['rating']; ?>
   <tr><td class="l" style="white-space:nowrap"><?php echo $e( fsp_fdate( $m['date'], 'j M' ) ); ?></td>
    <td class="l"><b><?php echo $e( ( $m['home'] ? 'v ' : 'at ' ) . $m['opp'] ); ?></b><?php if ( $m['team'] !== $h['club'] ) echo '<span class="fsp-intl">' . $e( $m['team'] ) . '</span>'; ?><br><span style="font-size:11px;color:#767676"><?php echo $e( fsp_comp_short( $m['comp'] ) ); ?></span></td>
    <td><?php if ( $m['res'] ) : ?><span class="fsp-res fsp-<?php echo $e( $m['res'] ); ?>"><?php echo $e( $m['res'] . ' ' . $m['gf'] . '-' . $m['ga'] ); ?></span><?php endif; ?></td>
    <td><?php echo ! empty( $m['played'] ) ? (int) $m['mins'] . "'" : '<span style="color:#999;font-size:11px">Unused</span>'; ?></td>
-   <?php if ( ! $gk ) : ?><td class="<?php echo $m['g'] ? '' : 'z'; ?>"><?php echo (int) $m['g']; ?></td><td class="<?php echo $m['a'] ? '' : 'z'; ?>"><?php echo (int) $m['a']; ?></td><?php endif; ?>
+   <?php if ( ! $gk ) : ?><td class="<?php echo $m['g'] ? '' : 'z'; ?>"><?php echo (int) $m['g']; ?></td><?php if ( $ast ) : ?><td class="<?php echo $m['a'] ? '' : 'z'; ?>"><?php echo (int) $m['a']; ?></td><?php endif; endif; ?>
    <td><?php echo str_repeat( '<span class="fsp-card-y"></span> ', (int) $m['yc'] ) . str_repeat( '<span class="fsp-card-r"></span>', (int) $m['rc'] ); ?></td>
-   <td><?php if ( $r ) : ?><span class="fsp-rt<?php echo $r >= 7.5 ? ' top' : ( $r >= 7 ? ' hi' : '' ); ?>"><?php echo $e( number_format( $r, 1 ) ); ?></span><?php echo ! empty( $m['potm'] ) ? ' <span title="Player of the match" style="color:#c9a227">★</span>' : ''; ?><?php else : ?>–<?php endif; ?></td></tr>
+   <?php if ( $rate ) : ?><td><?php if ( $r ) : ?><span class="fsp-rt<?php echo $r >= 7.5 ? ' top' : ( $r >= 7 ? ' hi' : '' ); ?>"><?php echo $e( number_format( $r, 1 ) ); ?></span><?php echo ! empty( $m['potm'] ) ? ' <span title="Player of the match" style="color:#c9a227">★</span>' : ''; ?><?php else : ?>–<?php endif; ?></td><?php endif; ?></tr>
  <?php endforeach; ?></tbody></table></div>
  <?php endif; ?>
 </section>
