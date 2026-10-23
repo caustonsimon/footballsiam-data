@@ -1,0 +1,890 @@
+{
+ "_note": "ASEAN top-flight clubs, 24 Oct 2026. FootyStats -> FotMob matched by fixture dates (every club 1:1, all fixtures agree). FS 137 'Kelantan' is a stale duplicate id of Kelantan Red Warrior. wp = club post id once created.",
+ "clubs": [
+  {
+   "name": "Persija Jakarta",
+   "fotmob": "165191",
+   "fs_ids": [
+    1542
+   ],
+   "fs_name": "Persatuan Sepak Bola Indonesia Jakarta",
+   "fm_name": "Persija Jakarta",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165191.png",
+   "wp": 41224
+  },
+  {
+   "name": "Dewa United",
+   "fotmob": "585860",
+   "fs_ids": [
+    706876
+   ],
+   "fs_name": "Dewa United FC",
+   "fm_name": "Dewa United FC",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/585860.png",
+   "wp": 41225
+  },
+  {
+   "name": "Madura United",
+   "fotmob": "165199",
+   "fs_ids": [
+    1541
+   ],
+   "fs_name": "Madura United FC",
+   "fm_name": "Madura United",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165199.png",
+   "wp": 41226
+  },
+  {
+   "name": "Bali United",
+   "fotmob": "185751",
+   "fs_ids": [
+    1539
+   ],
+   "fs_name": "Bali United Pusam FC",
+   "fm_name": "Bali United FC",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/185751.png",
+   "wp": 41227
+  },
+  {
+   "name": "Persita",
+   "fotmob": "165206",
+   "fs_ids": [
+    7887
+   ],
+   "fs_name": "Persatuan Sepak Bola Indonesia Tangerang",
+   "fm_name": "Persita",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165206.png",
+   "wp": 41228
+  },
+  {
+   "name": "Persib Bandung",
+   "fotmob": "165196",
+   "fs_ids": [
+    1532
+   ],
+   "fs_name": "Persatuan Sepak Bola Indonesia Bandung",
+   "fm_name": "Persib Bandung",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165196.png",
+   "wp": 41229
+  },
+  {
+   "name": "Bhayangkara",
+   "fotmob": "185749",
+   "fs_ids": [
+    1535
+   ],
+   "fs_name": "Bhayangkara Surabaya United",
+   "fm_name": "Bhayangkara Presisi Indonesia FC",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/185749.png",
+   "wp": 41230
+  },
+  {
+   "name": "Persik Kediri",
+   "fotmob": "165197",
+   "fs_ids": [
+    7908
+   ],
+   "fs_name": "Persatuan Sepakbola Indonesia Kediri",
+   "fm_name": "Persik",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165197.png",
+   "wp": 41231
+  },
+  {
+   "name": "Persebaya Surabaya",
+   "fotmob": "930525",
+   "fs_ids": [
+    7039
+   ],
+   "fs_name": "Persatuan Sepak Bola Surabaya",
+   "fm_name": "Persebaya Surabaya",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/930525.png",
+   "wp": 41232
+  },
+  {
+   "name": "PSM Makassar",
+   "fotmob": "165198",
+   "fs_ids": [
+    1528
+   ],
+   "fs_name": "Persatuan Sepakbola Makassar",
+   "fm_name": "PSM Makassar",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165198.png",
+   "wp": 41233
+  },
+  {
+   "name": "Java United",
+   "fotmob": "1665351",
+   "fs_ids": [
+    1028658
+   ],
+   "fs_name": "Maluku Utara United FC",
+   "fm_name": "Java United F.C.",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/1665351.png",
+   "wp": 41234
+  },
+  {
+   "name": "Arema",
+   "fotmob": "165200",
+   "fs_ids": [
+    1538
+   ],
+   "fs_name": "Arema FC",
+   "fm_name": "Arema",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165200.png",
+   "wp": 41235
+  },
+  {
+   "name": "Borneo Samarinda",
+   "fotmob": "585858",
+   "fs_ids": [
+    1536
+   ],
+   "fs_name": "Borneo FC",
+   "fm_name": "Borneo Samarinda",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/585858.png",
+   "wp": 41236
+  },
+  {
+   "name": "Garudayaksa",
+   "fotmob": "1118023",
+   "fs_ids": [
+    1582237
+   ],
+   "fs_name": "Garudayaksa FC",
+   "fm_name": "Garudayaksa FC",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/1118023.png",
+   "wp": 41237
+  },
+  {
+   "name": "PSS Sleman",
+   "fotmob": "585847",
+   "fs_ids": [
+    7886
+   ],
+   "fs_name": "Persatuan Sepakbola Sleman",
+   "fm_name": "PSS Sleman",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/585847.png",
+   "wp": 41238
+  },
+  {
+   "name": "Isenmulang Kalteng",
+   "fotmob": "2132560",
+   "fs_ids": [
+    1308189
+   ],
+   "fs_name": "Adhyaksa FC",
+   "fm_name": "Isenmulang Kalteng",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/2132560.png",
+   "wp": 41239
+  },
+  {
+   "name": "PSIM Yogyakarta",
+   "fotmob": "585850",
+   "fs_ids": [
+    7876
+   ],
+   "fs_name": "PSIM Yogyakarta",
+   "fm_name": "PSIM Yogyakarta",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/585850.png",
+   "wp": 41240
+  },
+  {
+   "name": "Persijap Jepara",
+   "fotmob": "165194",
+   "fs_ids": [
+    7903
+   ],
+   "fs_name": "Perserikatan Sepak Bola Indonesia Jepara",
+   "fm_name": "Persijap Jepara",
+   "league": "Indonesian Super League",
+   "league_slug": "indonesian-super-league",
+   "country": "Indonesia",
+   "league_term": 262,
+   "fs_season": 17539,
+   "fm_league": 8983,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165194.png",
+   "wp": 41241
+  },
+  {
+   "name": "Johor Darul Ta'zim",
+   "fotmob": "165228",
+   "fs_ids": [
+    138
+   ],
+   "fs_name": "Johor Darul Ta'zim FC",
+   "fm_name": "Johor Darul Ta'zim",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165228.png",
+   "wp": 41242
+  },
+  {
+   "name": "Selangor",
+   "fotmob": "165223",
+   "fs_ids": [
+    140
+   ],
+   "fs_name": "Persatuan Bolasepak Selangor",
+   "fm_name": "Selangor",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165223.png",
+   "wp": 41243
+  },
+  {
+   "name": "Kuching City",
+   "fotmob": "1114226",
+   "fs_ids": [
+    678756
+   ],
+   "fs_name": "Kuching FA",
+   "fm_name": "Kuching City",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/1114226.png",
+   "wp": 41244
+  },
+  {
+   "name": "DPMM",
+   "fotmob": "165158",
+   "fs_ids": [
+    1511
+   ],
+   "fs_name": "Brunei Duli Pengiran Muda Mahkota FC",
+   "fm_name": "Brunei DPMM",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165158.png",
+   "wp": 41245
+  },
+  {
+   "name": "Sabah",
+   "fotmob": "242698",
+   "fs_ids": [
+    9463
+   ],
+   "fs_name": "Persatuan Bola Sepak Sabah",
+   "fm_name": "Sabah",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/242698.png",
+   "wp": 41246
+  },
+  {
+   "name": "Melaka",
+   "fotmob": "1783730",
+   "fs_ids": [
+    963632
+   ],
+   "fs_name": "Melaka FC",
+   "fm_name": "Melaka FC",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/1783730.png",
+   "wp": 41247
+  },
+  {
+   "name": "Kuala Lumpur City",
+   "fotmob": "191752",
+   "fs_ids": [
+    5614
+   ],
+   "fs_name": "Kuala Lumpur FA",
+   "fm_name": "Kuala Lumpur City",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/191752.png",
+   "wp": 41248
+  },
+  {
+   "name": "Terengganu",
+   "fotmob": "165229",
+   "fs_ids": [
+    139
+   ],
+   "fs_name": "Persatuan Bola Sepak Negeri Terengganu",
+   "fm_name": "Terengganu",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165229.png",
+   "wp": 41249
+  },
+  {
+   "name": "Star City",
+   "fotmob": "1783759",
+   "fs_ids": [
+    751811
+   ],
+   "fs_name": "Imigresen FC",
+   "fm_name": "Star City",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/1783759.png",
+   "wp": 41250
+  },
+  {
+   "name": "Penang",
+   "fotmob": "165232",
+   "fs_ids": [
+    133
+   ],
+   "fs_name": "Penang FA",
+   "fm_name": "Penang",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165232.png",
+   "wp": 41251
+  },
+  {
+   "name": "Negeri Sembilan",
+   "fotmob": "165222",
+   "fs_ids": [
+    5613
+   ],
+   "fs_name": "Negeri Sembilan FA",
+   "fm_name": "Negeri Sembilan",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/165222.png",
+   "wp": 41252
+  },
+  {
+   "name": "Kelantan Red Warrior",
+   "fotmob": "2127190",
+   "fs_ids": [
+    1878614,
+    137
+   ],
+   "fs_name": "Kelantan Red Warrior",
+   "fm_name": "Kelantan Red Warrior",
+   "league": "Malaysia Super League",
+   "league_slug": "malaysia-super-league",
+   "country": "Malaysia",
+   "league_term": 263,
+   "fs_season": 17400,
+   "fm_league": 8985,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/2127190.png",
+   "wp": 41253
+  },
+  {
+   "name": "Geylang International",
+   "fotmob": "67380",
+   "fs_ids": [
+    1515
+   ],
+   "fs_name": "Geylang International FC",
+   "fm_name": "Geylang International FC",
+   "league": "Singapore Premier League",
+   "league_slug": "singapore-premier-league",
+   "country": "Singapore",
+   "league_term": 264,
+   "fs_season": 17437,
+   "fm_league": 461,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/67380.png",
+   "wp": 41254
+  },
+  {
+   "name": "Tampines Rovers",
+   "fotmob": "67386",
+   "fs_ids": [
+    1513
+   ],
+   "fs_name": "Tampines Rovers FC",
+   "fm_name": "Tampines Rovers FC",
+   "league": "Singapore Premier League",
+   "league_slug": "singapore-premier-league",
+   "country": "Singapore",
+   "league_term": 264,
+   "fs_season": 17437,
+   "fm_league": 461,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/67386.png",
+   "wp": 41255
+  },
+  {
+   "name": "Lion City Sailors",
+   "fotmob": "67366",
+   "fs_ids": [
+    1514
+   ],
+   "fs_name": "Home United FC",
+   "fm_name": "Lion City Sailors FC",
+   "league": "Singapore Premier League",
+   "league_slug": "singapore-premier-league",
+   "country": "Singapore",
+   "league_term": 264,
+   "fs_season": 17437,
+   "fm_league": 461,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/67366.png",
+   "wp": 41256
+  },
+  {
+   "name": "Jurong",
+   "fotmob": "67377",
+   "fs_ids": [
+    1517
+   ],
+   "fs_name": "Albirex Niigata FC Singapore",
+   "fm_name": "FC Jurong",
+   "league": "Singapore Premier League",
+   "league_slug": "singapore-premier-league",
+   "country": "Singapore",
+   "league_term": 264,
+   "fs_season": 17437,
+   "fm_league": 461,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/67377.png",
+   "wp": 41257
+  },
+  {
+   "name": "Tanjong Pagar United",
+   "fotmob": "243800",
+   "fs_ids": [
+    1521
+   ],
+   "fs_name": "Tanjong Pagar United FC",
+   "fm_name": "Tanjong Pagar United FC",
+   "league": "Singapore Premier League",
+   "league_slug": "singapore-premier-league",
+   "country": "Singapore",
+   "league_term": 264,
+   "fs_season": 17437,
+   "fm_league": 461,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/243800.png",
+   "wp": 41258
+  },
+  {
+   "name": "Balestier Khalsa",
+   "fotmob": "67378",
+   "fs_ids": [
+    1510
+   ],
+   "fs_name": "Balestier Khalsa FC",
+   "fm_name": "Balestier Khalsa FC",
+   "league": "Singapore Premier League",
+   "league_slug": "singapore-premier-league",
+   "country": "Singapore",
+   "league_term": 264,
+   "fs_season": 17437,
+   "fm_league": 461,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/67378.png",
+   "wp": 41259
+  },
+  {
+   "name": "Hougang United",
+   "fotmob": "67383",
+   "fs_ids": [
+    1509
+   ],
+   "fs_name": "Hougang United FC",
+   "fm_name": "Hougang United FC",
+   "league": "Singapore Premier League",
+   "league_slug": "singapore-premier-league",
+   "country": "Singapore",
+   "league_term": 264,
+   "fs_season": 17437,
+   "fm_league": 461,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/67383.png",
+   "wp": 41260
+  },
+  {
+   "name": "Young Lions",
+   "fotmob": "67381",
+   "fs_ids": [
+    1512
+   ],
+   "fs_name": "Young Lions",
+   "fm_name": "Young Lions",
+   "league": "Singapore Premier League",
+   "league_slug": "singapore-premier-league",
+   "country": "Singapore",
+   "league_term": 264,
+   "fs_season": 17437,
+   "fm_league": 461,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/67381.png",
+   "wp": 41261
+  },
+  {
+   "name": "Song Lam Nghe An",
+   "fotmob": "179221",
+   "fs_ids": [
+    3998
+   ],
+   "fs_name": "Song Lam Nghe An",
+   "fm_name": "Song Lam Nghe An",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/179221.png",
+   "wp": 41262
+  },
+  {
+   "name": "Ninh Binh",
+   "fotmob": "1235223",
+   "fs_ids": [
+    8136
+   ],
+   "fs_name": "Phu Dong",
+   "fm_name": "Ninh Bình Club",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/1235223.png",
+   "wp": 41263
+  },
+  {
+   "name": "Cong An Hanoi",
+   "fotmob": "614354",
+   "fs_ids": [
+    4025
+   ],
+   "fs_name": "Công An Nhân Dân",
+   "fm_name": "Công An Hà Nội",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/614354.png",
+   "wp": 41264
+  },
+  {
+   "name": "Nam Dinh",
+   "fotmob": "109375",
+   "fs_ids": [
+    4019
+   ],
+   "fs_name": "DPM Nam Dinh FC",
+   "fm_name": "Nam Định",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/109375.png",
+   "wp": 41265
+  },
+  {
+   "name": "Thanh Hoa",
+   "fotmob": "179226",
+   "fs_ids": [
+    4003
+   ],
+   "fs_name": "FLC Thanh Hoa",
+   "fm_name": "Thanh Hòa FC",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/179226.png",
+   "wp": 41266
+  },
+  {
+   "name": "Hong Linh Ha Tinh",
+   "fotmob": "1123220",
+   "fs_ids": [
+    7047
+   ],
+   "fs_name": "Hà Nội B",
+   "fm_name": "Hong Linh Ha Tinh",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/1123220.png",
+   "wp": 41267
+  },
+  {
+   "name": "Cong An Ho Chi Minh City",
+   "fotmob": "179228",
+   "fs_ids": [
+    3999
+   ],
+   "fs_name": "Ho Chi Minh City FC",
+   "fm_name": "Cong An Ho Chí Minh City",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/179228.png",
+   "wp": 41268
+  },
+  {
+   "name": "Hai Phong",
+   "fotmob": "179222",
+   "fs_ids": [
+    4004
+   ],
+   "fs_name": "Hai Phong FC",
+   "fm_name": "Hải Phòng",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/179222.png",
+   "wp": 41269
+  },
+  {
+   "name": "Hanoi",
+   "fotmob": "179219",
+   "fs_ids": [
+    4006
+   ],
+   "fs_name": "Ha Noi FC",
+   "fm_name": "Ha Nội FC",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/179219.png",
+   "wp": 41270
+  },
+  {
+   "name": "Bac Ninh",
+   "fotmob": "1801359",
+   "fs_ids": [
+    1139863
+   ],
+   "fs_name": "Bắc Ninh FC",
+   "fm_name": "Bac Ninh",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/1801359.png",
+   "wp": 41271
+  },
+  {
+   "name": "Viettel",
+   "fotmob": "743070",
+   "fs_ids": [
+    4020
+   ],
+   "fs_name": "Viettel FC",
+   "fm_name": "Viettel",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/743070.png",
+   "wp": 41272
+  },
+  {
+   "name": "Hoang Anh Gia Lai",
+   "fotmob": "179227",
+   "fs_ids": [
+    4008
+   ],
+   "fs_name": "Hoang Anh Gia Lai",
+   "fm_name": "Hoàng Anh Gia Lai",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/179227.png",
+   "wp": 41273
+  },
+  {
+   "name": "Da Nang",
+   "fotmob": "179220",
+   "fs_ids": [
+    4005
+   ],
+   "fs_name": "SHB Da Nang FC",
+   "fm_name": "Da Nẵng",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/179220.png",
+   "wp": 41274
+  },
+  {
+   "name": "Dong Nai",
+   "fotmob": "614353",
+   "fs_ids": [
+    4018
+   ],
+   "fs_name": "Bình Phước",
+   "fm_name": "Trường Tươi Đồng Nai",
+   "league": "V.League 1",
+   "league_slug": "v-league-1",
+   "country": "Vietnam",
+   "league_term": 265,
+   "fs_season": 17693,
+   "fm_league": 9088,
+   "logo": "https://images.fotmob.com/image_resources/logo/teamlogo/614353.png",
+   "wp": 41275
+  }
+ ]
+}

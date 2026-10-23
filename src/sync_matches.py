@@ -113,6 +113,21 @@ CLUB_MAP_TL2: dict[int, int] = {
 # Used by Part B (club reassignment) as the set of "clubs we track".
 CLUB_MAP: dict[int, int] = {**CLUB_MAP_TL1, **CLUB_MAP_TL2}
 
+# -- Added 2026-10-24: ASEAN top flights (Indonesia, Malaysia, Singapore,
+# Vietnam). 52 club posts, created 24 Oct; FootyStats -> FotMob paired by
+# fixture dates, every club 1:1 (data/asean_clubs.json). Kept OUT of
+# CLUB_MAP on purpose: CLUB_MAP drives the weekly current_club reassignment
+# for Thai players. The AFC / ASEAN Club Championship feeds add it below so
+# those fixtures link to the new pages too.
+import json as _json  # noqa: E402
+ASEAN_CLUBS: list[dict[str, Any]] = _json.loads(
+    (Path(__file__).resolve().parent / "data" / "asean_clubs.json").read_text(encoding="utf-8"))["clubs"]
+CLUB_MAP_ASEAN: dict[int, int] = {fs: c["wp"] for c in ASEAN_CLUBS for fs in c["fs_ids"] if c.get("wp")}
+
+
+def _asean_map(season: int) -> dict[int, int]:
+    return {fs: c["wp"] for c in ASEAN_CLUBS if c["fs_season"] == season for fs in c["fs_ids"]}
+
 # FootyStats team id -> WP `national_team` post id. Deliberately separate
 # from CLUB_MAP: national sides (Thailand, Cambodia, Laos etc. playing as
 # countries, not their domestic clubs) get their own CPT (Code Snippet 160)
@@ -231,14 +246,14 @@ LEAGUES: list[dict[str, Any]] = [
     {
         "name": "AFC Champions League Elite",
         "season_id": 17381,          # FootyStats: "Asia AFC Champions League"
-        "club_map": CLUB_MAP,
+        "club_map": {**CLUB_MAP, **CLUB_MAP_ASEAN},
         "taxonomies": {"competition": [120], "categories": [173], "season": [SEASON_TERM_ID]},
         "require_full_club_map": False,
     },
     {
         "name": "AFC Champions League Two",
         "season_id": 17205,          # FootyStats: "Asia AFC Cup"
-        "club_map": CLUB_MAP,
+        "club_map": {**CLUB_MAP, **CLUB_MAP_ASEAN},
         "taxonomies": {"competition": [121], "categories": [177], "season": [SEASON_TERM_ID]},
         "require_full_club_map": False,
     },
@@ -346,7 +361,7 @@ LEAGUES: list[dict[str, Any]] = [
     {
         "name": "ASEAN Club Championship",
         "season_id": 17970,          # FootyStats: "Asia ASEAN Club Championship", 2026/27
-        "club_map": {**CLUB_MAP, 9481: 28792},   # + Svay Rieng (Cambodian club post)
+        "club_map": {**CLUB_MAP, **CLUB_MAP_ASEAN, 9481: 28792},   # + Svay Rieng (Cambodian club post)
         "taxonomies": {"competition": [122], "categories": [235], "season": [SEASON_TERM_ID]},
         "require_full_club_map": False,
         # FootyStats still carries several clubs under old/sponsor names;
@@ -411,6 +426,36 @@ LEAGUES: list[dict[str, Any]] = [
             "Nonthaburi FC": "Nonthaburi",
             "FC Mahasarakham": "Mahasarakham",             # 1026375, not Mahasarakham SBT
         },
+    },
+    # -- Added 2026-10-24: ASEAN top flights, full club maps (all 52 clubs
+    # have pages). Competition / category terms created the same day.
+    {
+        "name": "Indonesian Super League",
+        "season_id": 17539,
+        "club_map": _asean_map(17539),
+        "taxonomies": {"competition": [254], "categories": [258], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": True,
+    },
+    {
+        "name": "Malaysia Super League",
+        "season_id": 17400,
+        "club_map": _asean_map(17400),
+        "taxonomies": {"competition": [255], "categories": [259], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": True,
+    },
+    {
+        "name": "Singapore Premier League",
+        "season_id": 17437,
+        "club_map": _asean_map(17437),
+        "taxonomies": {"competition": [256], "categories": [260], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": True,
+    },
+    {
+        "name": "V.League 1",
+        "season_id": 17693,
+        "club_map": _asean_map(17693),
+        "taxonomies": {"competition": [257], "categories": [261], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": True,
     },
 ]
 
