@@ -1,9 +1,14 @@
 name: photo-cutout
 
 # Player photos -> transparent cut-outs (src/photo_cutout.py), added 23 Oct
-# 2026. Daily at 06:30 Bangkok, after the T1/T2 (04:10) and T3 (05:40) squad
-# syncs, so new players' photos are cleaned the same morning. Already-cut
-# photos are skipped without downloading.
+# 2026. Daily at 06:30 Bangkok, after the squad syncs, so new players' photos
+# are cleaned the same morning.
+#
+# 24 Oct 2026, to save Actions minutes once the first big backlog was done:
+#   - one job, not three (manual runs can still split the work: shards 3);
+#   - photos already checked are remembered between runs (actions/cache), and
+#     a quick count runs first; the heavy background-removal install only
+#     happens when there is something to do.
 
 on:
   schedule:
@@ -18,6 +23,11 @@ on:
         description: 'Max photos per shard (0 = all)'
         type: string
         default: '0'
+      shards:
+        description: 'Split the work across this many parallel jobs (1 for a normal day, 3 for a big backlog)'
+        type: choice
+        default: '1'
+        options: ['1', '2', '3']
 
 concurrency:
   group: photo-cutout
@@ -33,15 +43,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ['0/3', '1/3', '2/3']
+        shard: ${{ fromJSON(inputs.shards == '3' && '["0/3","1/3","2/3"]' || inputs.shards == '2' && '["0/2","1/2"]' || '["0/1"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: pip
-      - run: pip install -r requirements.txt "rembg[cpu]==2.0.86"
+      - run: pip install -r requirements.txt
+      - name: Restore the list of checked photos
+        uses: actions/cache/restore@v4
+        with:
+          path: src/cache
+          key: photo-checked-${{ strategy.job-index }}-${{ github.run_id }}
+          restore-keys: photo-checked-${{ strategy.job-index }}-
+      - name: Count photos still to check
+        id: count
+        working-directory: src
+        env:
+          FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
+          WP_APP_USERNAME: ${{ secrets.WP_APP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: python photo_cutout.py --count --shard "${{ matrix.shard }}"
+      - name: Install background removal
+        if: steps.count.outputs.pending != '0'
+        run: pip install "rembg[cpu]==2.0.86"
       - name: Cut out photos
+        if: steps.count.outputs.pending != '0'
         working-directory: src
         env:
           FOOTYSTATS_API_KEY: ${{ secrets.FOOTYSTATS_API_KEY }}
@@ -54,8 +82,14 @@ jobs:
           ARGS=(--shard "${{ matrix.shard }}" --limit "${INPUT_LIMIT:-0}")
           [ "${INPUT_DRY_RUN:-false}" = "true" ] || ARGS+=(--live)
           python photo_cutout.py "${ARGS[@]}"
+      - name: Save the list of checked photos
+        if: always() && steps.count.outputs.pending != '0'
+        uses: actions/cache/save@v4
+        with:
+          path: src/cache
+          key: photo-checked-${{ strategy.job-index }}-${{ github.run_id }}
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.count.outputs.pending != '0'
         with:
           name: cutouts-${{ strategy.job-index }}
           path: src/out/cutouts/

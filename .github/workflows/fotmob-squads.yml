@@ -55,8 +55,9 @@ jobs:
             ARGS+=(--club all --live)
           fi
           python fotmob_squads.py "${ARGS[@]}"
-          # scheduled: then the ASEAN top flights (added 24 Oct 2026)
-          if [ "$EVENT_NAME" != "workflow_dispatch" ]; then
+          # scheduled: then the ASEAN top flights (added 24 Oct 2026), Mondays
+          # and Thursdays only, to save Actions minutes
+          if [ "$EVENT_NAME" != "workflow_dispatch" ] && [[ "$(TZ=Asia/Bangkok date +%u)" =~ ^(1|4)$ ]]; then
             python fotmob_squads.py --club asean --live
           fi
       - uses: actions/upload-artifact@v4

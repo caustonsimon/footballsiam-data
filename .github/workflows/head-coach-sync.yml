@@ -21,7 +21,8 @@ name: head-coach-sync
 
 on:
   schedule:
-    - cron: '0 * * * *'    # hourly, on the hour
+    - cron: '10 22 * * *'   # 05:10 Bangkok daily (was hourly until 24 Oct 2026: the one-time
+                            # coach-id catch-up is done, and hourly cost ~3,600 Actions minutes a month)
   workflow_dispatch:
     inputs:
       live:

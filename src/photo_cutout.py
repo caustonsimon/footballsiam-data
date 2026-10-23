@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
+import os
 import logging
 import re
 import sys
@@ -69,6 +71,8 @@ def main() -> int:
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--count", action="store_true",
+                    help="only count photos still to check (no downloads, no rembg); writes pending=N to $GITHUB_OUTPUT")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
     si, sn = (int(x) for x in args.shard.split("/"))
@@ -87,6 +91,25 @@ def main() -> int:
                                                        "_fields": "id,source_url"})
         for m in wp._json_or_raise(r, "media batch"):
             media_url[int(m["id"])] = m["source_url"]
+
+    # Photos already checked (found transparent, or cut out) are remembered
+    # between runs (actions/cache), so a quiet day costs a minute, not an hour.
+    seen_f = Path("cache/photo_checked.json")
+    seen: set[str] = set(json.loads(seen_f.read_text())) if seen_f.exists() else set()
+    todo = [p for p in players if (u := current_photo(p, media_url)) and "-cutout" not in u and u not in seen]
+    log.info("photos still to check: %d (remembered as checked: %d)", len(todo), len(seen))
+    if args.count:
+        gh = os.environ.get("GITHUB_OUTPUT")
+        if gh:
+            with open(gh, "a") as f:
+                f.write(f"pending={len(todo)}\n")
+        return 0
+    players = todo
+
+    def remember(u: str) -> None:
+        seen.add(u)
+        seen_f.parent.mkdir(exist_ok=True)
+        seen_f.write_text(json.dumps(sorted(seen)))
 
     from rembg import new_session
     session = new_session("isnet-general-use")
@@ -108,6 +131,7 @@ def main() -> int:
             im = Image.open(io.BytesIO(r.content))
             if not has_background(im):
                 rep["transparent"] += 1
+                remember(url)
                 continue
             cut = cutout(im, session)
             slug = re.sub(r"[^a-z0-9-]+", "-", str(p.get("slug") or p["id"]).lower()).strip("-") or str(p["id"])
