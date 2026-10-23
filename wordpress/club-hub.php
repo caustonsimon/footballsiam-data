@@ -96,7 +96,7 @@ function fs_hub_matches( $cid, $type, $names = array() ) {
 		if ( $slug === 'thai-fa-cup' && function_exists( 'fs_facup_round_label' ) ) {
 			$round = fs_facup_round_label( $m['mw'], false );
 		} elseif ( is_numeric( $m['mw'] ) && $m['mw'] > 0 ) {
-			$round = ( ( in_array( $slug, array( 'thai-league-1', 'thai-league-2' ), true ) || strpos( $slug, 't3_' ) === 0 ) ? 'Matchweek ' : 'Matchday ' ) . $m['mw'];
+			$round = ( ( in_array( $slug, array( 'thai-league-1', 'thai-league-2', 'indonesian-super-league', 'malaysia-super-league', 'singapore-premier-league', 'v-league-1' ), true ) || strpos( $slug, 't3_' ) === 0 ) ? 'Matchweek ' : 'Matchday ' ) . $m['mw'];
 		}
 		$res = '';
 		if ( $type === 'results' && $m['hs'] !== '' ) {
@@ -710,7 +710,10 @@ function fs_hub_render( $d ) {
 add_filter( 'template_include', function ( $tpl ) {
 	if ( is_admin() || ! is_singular( 'club' ) ) return $tpl;
 	$cid = get_queried_object_id();
-	if ( ! in_array( (int) $cid, fs_club_hub_enabled(), true ) && strpos( (string) get_post_meta( $cid, 'fs_club_hub_json', true ), '"source": "Thai League"' ) === false ) return $tpl;
+	$hubraw = (string) get_post_meta( $cid, 'fs_club_hub_json', true );
+	// ASEAN top-flight clubs (24 Oct 2026) switch on once their FotMob hub JSON exists
+	if ( ! in_array( (int) $cid, fs_club_hub_enabled(), true ) && strpos( $hubraw, '"source": "Thai League"' ) === false
+		&& ! preg_match( '/"league_slug": "(indonesian-super-league|malaysia-super-league|singapore-premier-league|v-league-1)"/', $hubraw ) ) return $tpl;
 	if ( isset( $_GET['fs_oldclub'] ) ) return $tpl; // ?fs_oldclub=1 shows the previous page
 	$d = fs_hub_data( $cid );
 	if ( ! $d ) return $tpl; // no FotMob feed yet: keep the old page

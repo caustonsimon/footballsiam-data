@@ -109,6 +109,21 @@ FOTMOB_TEAMS: dict[str, tuple[int, int, int]] = {
     "satun":              (585112, 9862, 1023811),
 }
 
+# -- ASEAN top flights, added 24 Oct 2026 (data/asean_clubs.json). English
+# names only, no Thai League registry. Key = club page slug style.
+ASEAN_CLUBS = json.loads((Path(__file__).resolve().parent / "data" / "asean_clubs.json")
+                         .read_text(encoding="utf-8"))["clubs"]
+ASEAN_KEYS: dict[str, dict[str, Any]] = {}
+for _c in ASEAN_CLUBS:
+    _k = re.sub(r"[^a-z0-9]+", "-", _c["name"].lower()).strip("-")
+    ASEAN_KEYS[_k] = _c
+    FOTMOB_TEAMS[_k] = (int(_c["fotmob"]), int(_c["wp"]), int(_c["fs_ids"][0]))
+ASEAN_COUNTRIES = {"indonesia": "Indonesia", "malaysia": "Malaysia", "singapore": "Singapore", "vietnam": "Vietnam"}
+# FotMob league id -> house competition name (FotMob calls Singapore's league
+# just "Premier League", so names alone are not safe)
+COMP_BY_ID = {8983: "Indonesian Super League", 8985: "Malaysia Super League",
+              461: "Singapore Premier League", 9088: "V.League 1"}
+
 T2_KEYS = {
     "khon-kaen-united", "chanthaburi", "phrae-united", "chainat", "nakhon-ratchasima",
     "nakhon-pathom", "pattaya-united", "chiangmai-united", "songkhla", "mahasarakham",
@@ -119,6 +134,8 @@ T2_KEYS = {
 
 def league_of(key: str) -> tuple[str, str]:
     """(house name, competition slug) of the club's league."""
+    if key in ASEAN_KEYS:
+        return ASEAN_KEYS[key]["league"], ASEAN_KEYS[key]["league_slug"]
     return ("Thai League 2", "thai-league-2") if key in T2_KEYS else ("Thai League 1", "thai-league-1")
 
 # FotMob competition names -> house names (sponsor / "FC" stripped)
@@ -344,7 +361,7 @@ def _stat_value(groups: Any, key: str) -> Any:
     return None
 
 
-def team_season(fm: FotMob, team_id: int, team_json: dict[str, Any]) -> dict[str, Any]:
+def team_season(fm: FotMob, team_id: int, team_json: dict[str, Any], country: str = "") -> dict[str, Any]:
     """Per-player and team aggregates from every completed competitive match."""
     fixtures = team_json["fixtures"]["allFixtures"]["fixtures"]
     players: dict[int, dict[str, Any]] = {}
@@ -359,7 +376,13 @@ def team_season(fm: FotMob, team_id: int, team_json: dict[str, Any]) -> dict[str
         when = dt.datetime.fromisoformat(st["utcTime"].replace("Z", "+00:00"))
         if when.date() < SEASON_START or when > today:
             continue
-        comp = COMP_NAMES.get(comp_raw, comp_raw)
+        lid = (f.get("tournament") or {}).get("leagueId")
+        if lid in COMP_BY_ID:
+            comp = COMP_BY_ID[lid]
+        elif country and comp_raw in ("FA Cup", "League Cup", "Super Cup", "Cup"):
+            comp = f"{country} {comp_raw}"   # never label a Malaysian FA Cup tie as the Thai one
+        else:
+            comp = COMP_NAMES.get(comp_raw, comp_raw)
         try:
             c = fm.match(int(f["id"]))
         except Exception as exc:  # noqa: BLE001 - one bad match must not stop a club
@@ -681,7 +704,7 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                 rep["review"].append({"fotmob": m["name"], "why": "not found in the Thai League registry"})
 
     # -- season stats ------------------------------------------------------
-    season = team_season(fm, fm_id, tj)
+    season = team_season(fm, fm_id, tj, (ASEAN_KEYS.get(key) or {}).get("country", ""))
 
     # FA Cup totals from the Thai League registry (Simon, 22 Oct 2026): FotMob
     # has no scorers for many early-round ties (Muangthong 8-0 Phrae FC), the
@@ -882,11 +905,15 @@ def main() -> int:
                         datefmt="%H:%M:%S")
 
     if args.club == "all":
-        keys = list(FOTMOB_TEAMS)
+        keys = [k for k in FOTMOB_TEAMS if k not in ASEAN_KEYS]
     elif args.club == "t1":
-        keys = [k for k in FOTMOB_TEAMS if k not in T2_KEYS]
+        keys = [k for k in FOTMOB_TEAMS if k not in T2_KEYS and k not in ASEAN_KEYS]
     elif args.club == "t2":
         keys = [k for k in FOTMOB_TEAMS if k in T2_KEYS]
+    elif args.club in ASEAN_COUNTRIES:
+        keys = [k for k, c in ASEAN_KEYS.items() if c["country"] == ASEAN_COUNTRIES[args.club]]
+    elif args.club == "asean":
+        keys = list(ASEAN_KEYS)
     else:
         keys = [args.club]
     for k in keys:
@@ -900,8 +927,10 @@ def main() -> int:
     tl = ThaiLeague()
     log.info("Mode: %s", "LIVE" if args.live else "DRY RUN")
     fs_rows = []
-    if any(k not in T2_KEYS for k in keys):
+    if any(k not in T2_KEYS and k not in ASEAN_KEYS for k in keys):
         fs_rows += fs.get_league_players(TL1_FS_SEASON)
+    for _s in sorted({ASEAN_KEYS[k]["fs_season"] for k in keys if k in ASEAN_KEYS}):
+        fs_rows += fs.get_league_players(_s)
     if any(k in T2_KEYS for k in keys):
         fs_rows += fs.get_league_players(TL2_FS_SEASON)
     log.info("FootyStats players (TL1/TL2 as needed): %d", len(fs_rows))
