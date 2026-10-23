@@ -518,6 +518,32 @@ def unplayed_status_update(match: dict[str, Any], meta: dict[str, Any]) -> dict[
     return upd
 
 
+_T3_BY_NAME: dict[str, int] | None = None
+
+
+def t3_club_by_name(name: Any) -> int | None:
+    """Thai League 3 club post for a FootyStats team name (23 Oct 2026).
+
+    FootyStats' T3 team ids are not in CLUB_MAP (that map also drives player
+    reassignment, which must stay T1/T2), so T3 sides are tied to their club
+    pages by their exact FootyStats name, using the confirmed name list in
+    tl3_squads.T3_CLUBS (FootyStats spelling + Snippet 153's corrected one).
+    Exact match only, never fuzzy."""
+    global _T3_BY_NAME
+    if _T3_BY_NAME is None:
+        _T3_BY_NAME = {}
+        try:
+            from tl3_squads import T3_CLUBS  # late import: tl3_squads imports this module
+            for c in T3_CLUBS:
+                if c.wp:
+                    for n in [c.title, *c.names]:
+                        _T3_BY_NAME[" ".join(n.lower().split())] = c.wp
+        except Exception:  # noqa: BLE001 - never block a sync over this
+            pass
+    key = " ".join(str(name or "").lower().split())
+    return _T3_BY_NAME.get(key) if key else None
+
+
 def build_create_payload(
     match: dict[str, Any], league: dict[str, Any], wp: WPClient,
     round_index: dict[int, int] | None = None,
@@ -526,8 +552,8 @@ def build_create_payload(
     # T3) being unmapped is the expected case, not an error. sync() already
     # guarantees both sides ARE mapped for require_full_club_map=True
     # leagues before this is ever called, so .get() is safe there too.
-    home_wp = league["club_map"].get(match["homeID"])
-    away_wp = league["club_map"].get(match["awayID"])
+    home_wp = league["club_map"].get(match["homeID"]) or t3_club_by_name(match.get("home_name"))
+    away_wp = league["club_map"].get(match["awayID"]) or t3_club_by_name(match.get("away_name"))
     ymd, kickoff = bangkok_date_time(match["date_unix"])
     overrides = league.get("name_overrides") or {}
     home_raw = str(match.get("home_name", "")).strip()

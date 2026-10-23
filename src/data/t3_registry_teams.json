@@ -1,0 +1,347 @@
+{
+ "175": {
+  "name_en": "PHUKET ANDAMAN FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105705-4d00a20f-906d-4f20-99b8-cc0a61e1a736.png",
+  "stadium_en": "Surakul Stadium"
+ },
+ "1360": {
+  "name_en": "NARA FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260811-095330-5f47841d-183f-45f3-bf6e-c9dd482eab7b.png",
+  "stadium_en": "NARATHIWAT STADIUM"
+ },
+ "89": {
+  "name_en": "RANONG PJ UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260811-095405-385d47da-3205-4639-8c91-18137c99ee0b.png",
+  "stadium_en": "Ranong Stadium"
+ },
+ "1208": {
+  "name_en": "CHUMPHON UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105355-72568e18-e8a5-488d-a689-4c96987c5c5d.jpg",
+  "stadium_en": "THAI NATIONAL SPORTS UNIVERSITY  CHUMPHON CAMPUS STADIUM"
+ },
+ "80": {
+  "name_en": "PSU SURATTHANI CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105355-ff866fff-4cc7-4e13-89bd-b8f3f7093604.jpg",
+  "stadium_en": "Prince of Songkla University, Suratthani Campus"
+ },
+ "1157": {
+  "name_en": "YALA CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105355-972d4278-2072-482b-887d-39a4280bc708.jpg",
+  "stadium_en": "THAI NATIONAL SPORTS UNIVERSITY YALA CAMPUS STADIUM"
+ },
+ "393": {
+  "name_en": "Samui United",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105355-206b3517-1d7c-4a24-a24d-6b44371c1e95.jpg",
+  "stadium_en": "KO SAMUI DISTRICT STADIUM"
+ },
+ "87": {
+  "name_en": "FC YALA",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105355-fc9dde82-b74c-49d0-a7e1-be5d701f1756.jpg",
+  "stadium_en": "Banjaru Stadium"
+ },
+ "90": {
+  "name_en": "NAKHONSI UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105355-2f6c2170-0f7d-4b31-8435-651870fe43e7.jpg",
+  "stadium_en": "Nakhon Si Thammarat Stadium"
+ },
+ "878": {
+  "name_en": "MUANG TRANG UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105355-a976074f-597d-40be-8ccf-932c9cef51e7.jpg",
+  "stadium_en": "MUANGTRANG STADIUM"
+ },
+ "92": {
+  "name_en": "VRN MUANGNONT  FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-b2bf57ab-abbb-466f-8208-1cb2f48dfa4f.jpg",
+  "stadium_en": "Sena Stadium"
+ },
+ "1366": {
+  "name_en": "PHETCHABURI PBRU FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260811-095455-3e428ba6-4c18-4b21-8ff3-cbf570c95042.png",
+  "stadium_en": "PHETCHABURI RAJABHAT UNIVERSITY STADIUM"
+ },
+ "76": {
+  "name_en": "RAJPRACHA",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-153a8c3d-c3ba-423c-a814-93524cb4a3e3.jpg",
+  "stadium_en": "Nonthaburi Stadium"
+ },
+ "66": {
+  "name_en": "HUAHIN CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-ca6a9f10-8b4d-42c7-9944-ee20e84ac624.jpg",
+  "stadium_en": "Hua Hin Municipal Stadium(Khao Takiap Stadium)"
+ },
+ "91": {
+  "name_en": "ROYAL THAI ARMY FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-3376d538-fce8-4563-b4c1-bb2559a17408.jpg",
+  "stadium_en": "Royal Thai Army Stadium"
+ },
+ "62": {
+  "name_en": "ASSUMPTION UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-9ce1e204-3830-47a6-bdb1-8acb7f487765.jpg",
+  "stadium_en": "Wong Prachanukul (Assumption College, Thonburi) Stadium"
+ },
+ "946": {
+  "name_en": "SAMUTSONGKHRAM CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-e71f0521-4ee4-4bc1-8743-ff99166f284c.jpg",
+  "stadium_en": null
+ },
+ "67": {
+  "name_en": "Suphanburi FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-25447e95-6b98-4256-b6b0-766a7cfb4bb9.jpg",
+  "stadium_en": "Suphanburi Provincial Stadium"
+ },
+ "879": {
+  "name_en": "SAMUTSAKHON CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-4f7a0b0d-66f2-4a2d-8687-a1e9e46fcfc1.jpg",
+  "stadium_en": "Thailand National Sports University Samut Sakhon Campus"
+ },
+ "27": {
+  "name_en": "BANGKOK FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-d40fe87d-63fe-44bd-8ddf-e7046d98291d.jpg",
+  "stadium_en": "Chalerm Phrakiat Bang Mod Stadium"
+ },
+ "398": {
+  "name_en": "THAPLUANG UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-eb7cecc5-4d6b-4f45-9868-f2c9added63a.jpg",
+  "stadium_en": "THAPLUANG UNITED JANDED STADIUM"
+ },
+ "96": {
+  "name_en": "THONBURI UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-105136-650f21f2-90a2-473d-8327-af761e084fc1.jpg",
+  "stadium_en": "Thonburi Stadium"
+ },
+ "899": {
+  "name_en": "FLEET UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-208d7ae8-2e4d-4cdc-b357-75fc7890b20d.jpg",
+  "stadium_en": null
+ },
+ "996": {
+  "name_en": "BURAPHA UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-408c6b8c-0b86-4d76-a6c3-a3b097637239.jpg",
+  "stadium_en": "BANBUENG STADIUM"
+ },
+ "112": {
+  "name_en": "NAVY FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-6156ffc6-c9c6-47d3-8058-1f85095ffaf2.jpg",
+  "stadium_en": "Navy Stadium Sattahip"
+ },
+ "129": {
+  "name_en": "CUSTOMS UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-8ac14470-24b4-4408-a0f2-a683f2257731.jpg",
+  "stadium_en": "SCO GROUP STADIUM"
+ },
+ "37": {
+  "name_en": "MARINES FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-5ee99edf-24b1-432e-ac31-f05ab971db0f.jpg",
+  "stadium_en": "Navy Stadium Sattahip"
+ },
+ "74": {
+  "name_en": "PLUAKDAENG UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-98d1056f-34df-4782-ba3f-b7a52f142308.jpg",
+  "stadium_en": "C.K. Stadium"
+ },
+ "36": {
+  "name_en": "CHACHOENGSAO HI-TEK FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-3f187b96-88c6-4869-be61-01d946e7d08d.jpg",
+  "stadium_en": "Chachoengsao Stadium"
+ },
+ "1372": {
+  "name_en": "MNK SC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-39efdd0a-c20f-4a50-a7b6-2d461460c231.jpg",
+  "stadium_en": "RAJAMANGALA UNIVERSITY OF TECHNOLOGY TAWAN-OK STADIUM"
+ },
+ "902": {
+  "name_en": "BFB PATTAYA CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-75d2f60b-cb5a-416f-a13d-7edd3a929927.jpg",
+  "stadium_en": "สนามกีฬาเทศบาลเมืองศรีราชา"
+ },
+ "874": {
+  "name_en": "PADRIEW CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104908-c2371191-9328-4394-91ed-48cfc1264623.jpg",
+  "stadium_en": null
+ },
+ "56": {
+  "name_en": "BANBUENG FOOTBALL CLUB",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104703-9b5e1c3a-4867-4112-8bd4-a5e5fd2635f6.jpg",
+  "stadium_en": "CHANG FOOTBALL PARK"
+ },
+ "1375": {
+  "name_en": "ESAN FIGHTER  FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104635-462ee101-ff4f-4a4b-84dc-4e12c9a6e344.jpg",
+  "stadium_en": "SAT UDONTHANI STADIUM"
+ },
+ "104": {
+  "name_en": "KHONKAEN MORDINDANG FOOTBALL CLUB",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104635-8368d49f-a1ad-493f-a6ee-034bdad6f64e.jpg",
+  "stadium_en": "Khonkaen University Stadium"
+ },
+ "338": {
+  "name_en": "PITCHAYA BUNDIT COLLEGE",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104634-0901ab33-cebe-4749-8b8e-ed6848545469.jpg",
+  "stadium_en": "Pitchaya Stadium"
+ },
+ "562": {
+  "name_en": "KORAT CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104608-408db25b-b066-49ff-b474-1425472fe122.jpg",
+  "stadium_en": null
+ },
+ "335": {
+  "name_en": "UDON BANJAN UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104608-dcad7331-b5af-4347-856f-5f156939e39b.jpg",
+  "stadium_en": "SAT UDONTHANI STADIUM"
+ },
+ "98": {
+  "name_en": "YASOTHON FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104608-7aa89a70-d5de-433f-bb0d-7724466231dd.jpg",
+  "stadium_en": "Yasothon Stadium"
+ },
+ "41": {
+  "name_en": "UBON KRUANAPAT FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104608-22376f43-6fdb-4418-bae7-f2bee8d66f55.jpg",
+  "stadium_en": "UBONRATCHATHANI RAJABHAT UNIVERSITY STADIUM"
+ },
+ "118": {
+  "name_en": "KHON KAEN FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104607-23744c9d-7486-41d1-8e23-960fa118a79c.jpg",
+  "stadium_en": "Khonkaen Stadium"
+ },
+ "929": {
+  "name_en": "THE EASTERN UNIVERSITY OF MANAGEMENT AND TECHNOLOGY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104607-61afebef-f96e-4623-8596-0434fdeb63d1.jpg",
+  "stadium_en": "UMT STADIUM"
+ },
+ "99": {
+  "name_en": "SURIN CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104607-b317e79b-b388-40b9-ad0b-b5cc4ff9121c.jpg",
+  "stadium_en": "Si Narong Stadium"
+ },
+ "426": {
+  "name_en": "ROI-ET PB UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104607-86b4cf4b-3aa2-40b1-a3e2-94a9439f0bec.jpg",
+  "stadium_en": "PRIDE ARENA STADIUM"
+ },
+ "178": {
+  "name_en": "UDON UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104607-f27225eb-608b-4140-b14a-047775de2b11.jpg",
+  "stadium_en": "THAI NATIONAL SPORTS UNIVERSITY UDON THANI CAMPUS STADIUM"
+ },
+ "181": {
+  "name_en": "ROYAL THAI AIR FORCE FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104451-5c01c473-20d1-4078-95ed-8a84828e3f0d.jpg",
+  "stadium_en": "Dhupatemiya Stadium"
+ },
+ "1240": {
+  "name_en": "AYUTTHAYA PK FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-1ba6d3c5-405f-4e45-80cb-06ea23d70d29.jpg",
+  "stadium_en": "RAJAMANGALA UNIVERSITY OF TECHNOLOGY SUVARNABHUMI-HUNTRA"
+ },
+ "295": {
+  "name_en": "BANGKAPI FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-97b06964-ff1a-4bcd-b470-068d93b47773.jpg",
+  "stadium_en": "RAMKHAMHAENG UNIVERSITY STADIUM"
+ },
+ "885": {
+  "name_en": "FUTERA UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-efbf00eb-c065-4103-8cc5-7dd7663e96af.jpg",
+  "stadium_en": "BANGKOK UNIVERSITY STADIUM"
+ },
+ "227": {
+  "name_en": "LOPBURI POMA FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260811-094903-69731a96-87cf-45fd-ae84-1bbc889b358f.png",
+  "stadium_en": "Lopburi Stadium"
+ },
+ "1241": {
+  "name_en": "SINGBURI WARRIORS",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-7f1968d4-d777-48ae-8eca-db6d206ab2bc.jpg",
+  "stadium_en": "SINGHABURI STADIUM"
+ },
+ "55": {
+  "name_en": "PRIME BANGKOK",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-edf980ca-dc53-432c-a699-0ee3ca65113d.jpg",
+  "stadium_en": "RAMKHAMHAENG UNIVERSITY STADIUM"
+ },
+ "73": {
+  "name_en": "KASEMBUNDIT UNIVERSITY FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-e082d678-561d-4929-8de8-504039afc90c.jpg",
+  "stadium_en": "Estádio Kasem"
+ },
+ "24": {
+  "name_en": "ANGTHONG FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-35dbe7c1-03ee-43e3-8978-c723dc9543c7.jpg",
+  "stadium_en": "Angthong Stadium"
+ },
+ "35": {
+  "name_en": "PATHUMTHANI UNIVERSITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-848ccae9-42fc-4387-89dc-00c923acb4b8.jpg",
+  "stadium_en": "Ratchakram Stadium"
+ },
+ "25": {
+  "name_en": "NORTH BANGKOK UNIVERSITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-4da0df59-4e2c-4d3f-af06-a4a0502f00cd.jpg",
+  "stadium_en": "North bangkok university Stadium"
+ },
+ "84": {
+  "name_en": "CHAMCHURI UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104449-8bb9052e-323d-4ad0-ae32-489a530d5da5.jpg",
+  "stadium_en": "Chulalongkorn University Stadium"
+ },
+ "498": {
+  "name_en": "PAKNAMPHO FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104028-85a4cf95-cca2-449d-b003-358ff738a1fb.jpg",
+  "stadium_en": "NAKHONSAWAN SPORT SCHOOL STADIUM"
+ },
+ "1371": {
+  "name_en": "Thailand National Sports University Lampang Campus",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-104028-fd5c2d83-5704-4495-986f-82ce2f94493b.jpg",
+  "stadium_en": null
+ },
+ "508": {
+  "name_en": "CHATTRAKAN CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103831-81ef5fd9-7a7a-4ae3-a2d9-7ebff54ee7fb.jpg",
+  "stadium_en": null
+ },
+ "521": {
+  "name_en": "CHIANGRAI  TSC  FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103831-e0ac29d7-4bfc-4dd0-9bfa-775b3f073f6d.jpg",
+  "stadium_en": "CHIANGRAI STADIUM"
+ },
+ "53": {
+  "name_en": "SINGHA CHIANGRAI CITY",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103831-39b9742a-f27e-4352-b6f0-c0e682dc1a36.jpg",
+  "stadium_en": "Singha Chiangrai Stadium"
+ },
+ "51": {
+  "name_en": "MAEJO UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103831-92abdb1b-e737-4a4b-a97e-4055729fd97a.jpg",
+  "stadium_en": "Maejo University Stadium"
+ },
+ "34": {
+  "name_en": "KAMPHAENGPHET FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103831-b23d600c-d8c1-4e4b-804a-00501546b02c.jpg",
+  "stadium_en": "Kamphengphet Stadium (Chakangraw)"
+ },
+ "39": {
+  "name_en": "PHITSANULOK FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103831-5bb6a6a4-b1f3-409c-8402-3a0247737e41.jpg",
+  "stadium_en": "Phitsanulok Stadium"
+ },
+ "117": {
+  "name_en": "Chiangmai FC",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103523-e2767102-fc17-4537-89b9-c42765d3d778.jpg",
+  "stadium_en": "700th Anniversary Stadium"
+ },
+ "561": {
+  "name_en": "KHELANG UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103523-ab71f94e-da22-4d0b-99ae-3b1db5bbc52e.jpg",
+  "stadium_en": "สนามกีฬามหาวิทยาลัยการกีฬาแห่งชาติ วิทยาเขตลําปาง"
+ },
+ "1215": {
+  "name_en": "PHICHIT UNITED 2025",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103523-596f9d57-227a-43d5-a284-f94dc88739f4.jpg",
+  "stadium_en": "PHICHIT STADIUM"
+ },
+ "49": {
+  "name_en": "NORTHERN NAKHONMAESOT UNITED",
+  "logo": "https://competition.tl.prod.c0d1um.io/media/tournament_team/logo/20260722-103523-02c8015c-dc02-4501-a598-15bd5e1baff1.jpg",
+  "stadium_en": "MAESOT STADIUM"
+ }
+}

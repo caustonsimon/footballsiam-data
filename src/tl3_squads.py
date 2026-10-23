@@ -144,7 +144,7 @@ T3_CLUBS: list[T3Club] = [
     T3Club(91, 13895, 'Royal Thai Army', 't3_west', ['Royal Thai Army', 'Army']),
     T3Club(879, 16059, 'Samutsakhon City', 't3_west', ['Samutsakhon City', 'Samut Sakhon City']),
     T3Club(946, 9784, 'Samutsongkhram City', 't3_west', ['Samutsongkhram City', 'Samut Songkhram City']),
-    T3Club(67, None, 'Suphanburi', 't3_west', ['Suphanburi']),
+    T3Club(67, 38062, 'Suphanburi', 't3_west', ['Suphanburi']),  # club page created 22 Oct 2026
     T3Club(398, 9835, 'Thapluang United', 't3_west', ['Thapluang United', 'Thap Luang United']),
     T3Club(96, 9828, 'Thonburi United', 't3_west', ['Thonburi University', 'Thonburi United']),
 ]
