@@ -39,7 +39,7 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60   # 24 Oct 2026: four ASEAN leagues added
     steps:
       - uses: actions/checkout@v4
 
