@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       club:
-        description: 'Club key (port, khon-kaen-united, ...), t1, t2 or all'
+        description: 'Club key (port, persib-bandung, ...), t1, t2, all, asean, indonesia, malaysia, singapore or vietnam'
         type: string
         default: port
       dry_run:
@@ -27,7 +27,7 @@ permissions:
 jobs:
   squads:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -55,6 +55,10 @@ jobs:
             ARGS+=(--club all --live)
           fi
           python fotmob_squads.py "${ARGS[@]}"
+          # scheduled: then the ASEAN top flights (added 24 Oct 2026)
+          if [ "$EVENT_NAME" != "workflow_dispatch" ]; then
+            python fotmob_squads.py --club asean --live
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
