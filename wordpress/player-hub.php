@@ -72,7 +72,8 @@ function fsp_render( $d ) {
 	$s = $h['season'] ?: array( 'apps' => 0, 'starts' => 0, 'mins' => 0, 'goals' => 0, 'assists' => 0, 'yellow' => 0, 'red' => 0, 'rating' => null );
 	$bc = $h['by_comp'] ?: array();
 	$gk = ( $h['pos'] ?? '' ) === 'GK';
-	$reg_only = ( $h['source'] ?? '' ) === 'Thai League'; // T3: registry totals, no match data
+	$reg_only = in_array( $h['source'] ?? '', array( 'Thai League', 'FootyStats' ), true ); // T3 registry / ASEAN FootyStats totals, no match data
+	$asean = in_array( $h['league'] ?? '', array( 'Indonesian Super League', 'Malaysia Super League', 'Singapore Premier League', 'V.League 1' ), true ); // 24 Oct 2026
 	if ( ! empty( $h['no_assists'] ) ) $d['src']['ast'] = false;
 	$ast = ! empty( $d['src']['ast'] ) || ! isset( $d['src'] );
 	$rate = ! empty( $d['src']['rate'] ) || ! isset( $d['src'] );
@@ -372,10 +373,10 @@ function fsp_render( $d ) {
    <?php endif; ?>
   </div>
  </div>
- <div class="fsp-src">Name in Thai, date of birth, nationality and photo: Thai League registration. Match data, ratings and stats: FotMob (Opta). Updated <?php echo $e( $h['updated'] ); ?> Bangkok time.</div>
+ <div class="fsp-src"><?php echo $asean ? 'Match data and stats: FotMob (Opta).' : 'Name in Thai, date of birth, nationality and photo: Thai League registration. Match data, ratings and stats: FotMob (Opta).'; ?> Updated <?php echo $e( $h['updated'] ); ?> Bangkok time.</div>
 </section>
 <?php else : ?>
-<div class="fsp-src">Name in Thai, date of birth, nationality, photo and season figures: Thai League registration. Updated <?php echo $e( $h['updated'] ); ?> Bangkok time.</div>
+<div class="fsp-src"><?php echo ( $h['source'] ?? '' ) === 'FootyStats' ? 'Date of birth, nationality and season figures: FootyStats.' : 'Name in Thai, date of birth, nationality, photo and season figures: Thai League registration.'; ?> Updated <?php echo $e( $h['updated'] ); ?> Bangkok time.</div>
 <?php endif; ?>
 </div>
 

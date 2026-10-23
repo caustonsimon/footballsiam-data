@@ -65,6 +65,7 @@ log = logging.getLogger("fotmob_squads")
 FM_BASE = "https://www.fotmob.com/api/data"
 SEASON_LABEL = "2026/27"
 SEASON_START = dt.date(2026, 8, 15)   # excludes pre-season (President's Cup, July/Aug)
+ASEAN_SEASON_START = dt.date(2026, 7, 20)   # ASEAN leagues kick off from late July; friendlies are skipped by name
 TL1_FS_SEASON = 17367
 TL2_FS_SEASON = 17896
 FA_CUP_TOURNAMENT = 230   # Thai League registry: Thai FA Cup 2026/27
@@ -362,6 +363,7 @@ def _stat_value(groups: Any, key: str) -> Any:
 
 
 def team_season(fm: FotMob, team_id: int, team_json: dict[str, Any], country: str = "") -> dict[str, Any]:
+    start = ASEAN_SEASON_START if country else SEASON_START
     """Per-player and team aggregates from every completed competitive match."""
     fixtures = team_json["fixtures"]["allFixtures"]["fixtures"]
     players: dict[int, dict[str, Any]] = {}
@@ -374,7 +376,7 @@ def team_season(fm: FotMob, team_id: int, team_json: dict[str, Any], country: st
         if not st.get("finished") or st.get("cancelled") or any(s in comp_raw for s in SKIP_COMPS):
             continue
         when = dt.datetime.fromisoformat(st["utcTime"].replace("Z", "+00:00"))
-        if when.date() < SEASON_START or when > today:
+        if when.date() < start or when > today:
             continue
         lid = (f.get("tournament") or {}).get("leagueId")
         if lid in COMP_BY_ID:
@@ -522,6 +524,10 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
     claimed = claimed if claimed is not None else set()
     fm_id, wp_club, fs_club = FOTMOB_TEAMS[key]
     tj = fm.team(fm_id)
+    if key in ASEAN_KEYS and not (tj.get("squad") or {}).get("squad"):
+        # FotMob has no squad (and no player ids in line-ups) for most
+        # Malaysian and Singaporean clubs: use FootyStats' season rows.
+        return run_club_fs(key, wp, fs_rows, wp_players, report, claimed)
     club_title = wp.get_club_title(wp_club)
     log.info("=== %s (FotMob %s, WP %s) ===", club_title, fm_id, wp_club)
 
@@ -854,6 +860,7 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                     "dob": dob.isoformat() if dob else None,
                     "height": (reg or {}).get("height") or m.get("height"), "weight": (reg or {}).get("weight"),
                     "club": club_title, "wp_club": wp_club, "season_label": SEASON_LABEL,
+                    "league": league_of(key)[0],
                     "season": st["total"], "by_comp": st["by_comp"],
                     "updated": dt.datetime.now(dt.timezone(dt.timedelta(hours=7))).strftime("%Y-%m-%d %H:%M"),
                 })
@@ -891,6 +898,95 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                                   "fotmob_team_id": str(fm_id)})
     rep["squad_size"] = len(hub_squad)
     rep["matches_counted"] = len(season["team"]["matches"])
+    out = Path("out"); out.mkdir(exist_ok=True)
+    (out / f"hub_{key}.json").write_text(json.dumps(hub, ensure_ascii=False, indent=1))
+
+
+def run_club_fs(key: str, wp: WPClient, fs_rows: list[dict[str, Any]], wp_players: list[dict[str, Any]],
+                report: dict[str, Any], claimed: set[int]) -> None:
+    """ASEAN club with no FotMob squad: squad and season figures from the
+    FootyStats league-player rows (players who have appeared this season).
+    Pages are found by footystats_id only (the match sync creates them from
+    line-ups with the same id); a missing one is created. Never by name."""
+    c = ASEAN_KEYS[key]
+    wp_club = int(c["wp"])
+    club_title = wp.get_club_title(wp_club)
+    log.info("=== %s (FootyStats rows, WP %s) ===", club_title, wp_club)
+    rows = [r for r in fs_rows if r.get("club_team_id") in set(c["fs_ids"])
+            and int(r.get("appearances_overall") or 0) > 0]
+    by_fsid = {str((p.get("acf") or {}).get("footystats_id") or ""): p for p in wp_players}
+    rep = report.setdefault(key, {"club": club_title, "matched": [], "created": [], "review": [], "left": []})
+    pos_map = {"goalkeeper": "GK", "defender": "DF", "midfielder": "MF", "forward": "FW"}
+    hub_squad = []
+    seen: set[int] = set()
+    for r in sorted(rows, key=lambda r: -int(r.get("minutes_played_overall") or 0)):
+        fsid = int(r["id"])
+        if fsid in seen:
+            continue
+        seen.add(fsid)
+        name = (r.get("known_as") or r.get("full_name") or "").strip()
+        pos = pos_map.get(str(r.get("position") or "").strip().lower(), "")
+        nat = NAT_FIX.get(r.get("nationality") or "", r.get("nationality") or "")
+        dob = unix_to_date(r.get("birthday"))
+        hit = by_fsid.get(str(fsid))
+        acf: dict[str, Any] = {"current_club": [wp_club]}
+        if pos:
+            acf["position"] = pos
+        if hit and int(hit["id"]) not in claimed:
+            wp_id = int(hit["id"])
+            title = (hit.get("title") or {}).get("rendered", "") or name
+            rep["matched"].append({"site": title, "fotmob": name, "how": "footystats_id"})
+            wp.update_player(wp_id, acf=acf)
+        elif hit:
+            rep["review"].append(f"{name} (fs {fsid}) already claimed by another club this run")
+            continue
+        else:
+            parts = name.split()
+            acf_new = {**acf, "footystats_id": fsid, "first_name": parts[0] if parts else "",
+                       "last_name": " ".join(parts[1:]), "nationality": nat}
+            meta = {"birthday": str(int(r["birthday"]))} if r.get("birthday") else {}
+            resp = wp.create_player({"title": name, "status": "publish", "acf": acf_new, "meta": meta})
+            wp_id = None if wp.dry_run else int(resp["id"])
+            title = name
+            rep["created"].append({"wp": wp_id, "fotmob": name, "footystats_id": fsid})
+        if wp_id:
+            claimed.add(wp_id)
+        st = {"apps": int(r.get("appearances_overall") or 0), "starts": None,
+              "mins": int(r.get("minutes_played_overall") or 0), "goals": int(r.get("goals_overall") or 0),
+              "assists": 0, "yellow": int(r.get("yellow_cards_overall") or 0),
+              "red": int(r.get("red_cards_overall") or 0), "rating": None}
+        by_comp = {c["league"]: st}
+        entry = {"wp_id": wp_id, "fs_id": fsid, "name": title, "number": r.get("shirt_number") or None,
+                 "pos": pos, "pos_label": POS_LABEL.get(pos, ""), "nat": nat, "name_th": "",
+                 "dob": dob.isoformat() if dob else None, "height": None, "weight": None,
+                 "injury": False, "stats": st, "by_comp": by_comp}
+        hub_squad.append(entry)
+        if wp_id:
+            ph = {"source": "FootyStats", "no_assists": True, "name": title, "name_th": "",
+                  "number": entry["number"], "pos": pos, "pos_label": POS_LABEL.get(pos, ""), "nat": nat,
+                  "dob": entry["dob"], "height": None, "weight": None, "foot": None,
+                  "club": club_title, "wp_club": wp_club, "league": c["league"], "season_label": SEASON_LABEL,
+                  "season": st, "by_comp": by_comp, "matches": [], "deep": {}, "shots": [], "career": [],
+                  "intl": [], "trophies": [], "next": None, "injury": None, "captain": False,
+                  "contract_end": None, "positions": [], "primary_position": None,
+                  "updated": dt.datetime.now(dt.timezone(dt.timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")}
+            wp.update_player(wp_id, meta={"fs_player_hub_json": json.dumps(ph, ensure_ascii=False)})
+
+    # leavers: pages on this club that are no longer in its season rows
+    in_squad = {h["wp_id"] for h in hub_squad if h["wp_id"]}
+    for p in wp_players:
+        pid = int(p["id"])
+        if club_id_of((p.get("acf") or {}).get("current_club")) == wp_club and pid not in in_squad and pid not in claimed:
+            wp.update_player(pid, acf={"current_club": None}, meta={"fs_player_hub_json": ""})
+            rep["left"].append({"wp": pid, "site": (p.get("title") or {}).get("rendered", "")})
+
+    hub = {"club": club_title, "wp_club": wp_club, "source": "FootyStats", "no_assists": True,
+           "league": c["league"], "league_slug": c["league_slug"], "season": SEASON_LABEL,
+           "updated": dt.datetime.now(dt.timezone(dt.timedelta(hours=7))).strftime("%Y-%m-%d %H:%M"),
+           "squad": hub_squad, "team": {"by_comp": {}, "matches": []}, "logo": c["logo"]}
+    wp.update_club(wp_club, meta={"fs_club_hub_json": json.dumps(hub, ensure_ascii=False)})
+    rep["squad_size"] = len(hub_squad)
+    rep["matches_counted"] = 0
     out = Path("out"); out.mkdir(exist_ok=True)
     (out / f"hub_{key}.json").write_text(json.dumps(hub, ensure_ascii=False, indent=1))
 

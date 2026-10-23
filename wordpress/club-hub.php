@@ -664,7 +664,7 @@ function fs_hub_render( $d ) {
   <?php $q = rawurlencode( trim( ( $d['stadium'] ?: $d['name'] ) . ( $d['city'] ? ', ' . $d['city'] : '' ) ) ); ?>
   <div class="fsh-card" style="overflow:hidden;min-height:300px"><iframe title="Stadium map" width="100%" height="320" loading="lazy" style="border:0;display:block" src="https://maps.google.com/maps?q=<?php echo $q; ?>&t=m&z=15&output=embed"></iframe></div>
  </div>
- <div class="fsh-src"><?php echo ( isset( $hub['source'] ) && $hub['source'] === 'Thai League' ) ? 'Squad, photos and player stats: Thai League registration' : 'Squad, player and team stats: FotMob'; ?>, updated <?php echo $e( $upd ); ?> (Bangkok). Results, fixtures and table: Football Siam.</div>
+ <div class="fsh-src"><?php $hsrc = isset( $hub['source'] ) ? $hub['source'] : ''; echo $hsrc === 'Thai League' ? 'Squad, photos and player stats: Thai League registration' : ( $hsrc === 'FootyStats' ? 'Squad and player stats: FootyStats' : 'Squad, player and team stats: FotMob' ); ?>, updated <?php echo $e( $upd ); ?> (Bangkok). Results, fixtures and table: Football Siam.</div>
 </section>
 </div>
 
