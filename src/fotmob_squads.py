@@ -177,6 +177,30 @@ CLUB_NAME_FIX = {  # FotMob opponent names -> house names
     "Uthai Thani FC": "Uthai Thani", "Sukhothai FC": "Sukhothai", "Pattani FC": "Pattani",
     "Ayutthaya United FC": "Ayutthaya United", "Lion City Sailors FC": "Lion City Sailors",
     "Kyoto Sanga FC": "Kyoto Sanga",
+
+    # Thai League 2 (FotMob names -> house names, 23 Oct 2026)
+    "Khonkaen United FC": "Khon Kaen United",
+    "Khonkaen United": "Khon Kaen United",
+    "Chainat FC": "Chainat Hornbill",
+    "Chainat": "Chainat Hornbill",
+    "Uttaradit FC": "Uttaradit",
+    "Nong Bua Pitchaya FC": "Nong Bua Pitchaya",
+    "PT Satun FC": "Satun",
+    "PT Satun": "Satun",
+    "Kanchanaburi Power": "Kanchanaburi Power",
+    "Chiangmai United": "Chiangmai United",
+    "Phrae United": "Phrae United",
+    "Nakhon Pathom": "Nakhon Pathom United",
+    "Nakhon Pathom United FC": "Nakhon Pathom United",
+    "Muang Loei United": "Muang Loei United",
+    "Chanthaburi FC": "Chanthaburi",
+    "Pattaya Dolphins United": "Pattaya United",
+    "Pattaya Dolphins United FC": "Pattaya United",
+    "Songkhla United FC": "Songkhla",
+    "Songkhla United": "Songkhla",
+    "Mahasarakham Sam Bai Tao": "Mahasarakham SBT",
+    "Kasetsart": "Kasetsart",
+    "Kasetsart FC": "Kasetsart",
 }
 
 
