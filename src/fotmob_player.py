@@ -65,6 +65,11 @@ COMP_HOUSE = {
     "Champions Cup": "Thailand Champions Cup",
 }
 
+# FotMob league id -> house name for the ASEAN top flights (24 Oct 2026):
+# FotMob's own names ("Super League", "Premier League") are ambiguous
+COMP_BY_ID = {8983: "Indonesian Super League", 8985: "Malaysia Super League",
+              461: "Singapore Premier League", 9088: "V.League 1"}
+
 SKIP_COMPS = ("President's Cup", "Piala Presiden", "Club Friendlies")
 
 
@@ -162,6 +167,8 @@ def build_player_hub(pd: dict[str, Any], season_start: dt.date) -> dict[str, Any
         comp_raw = m.get("leagueName") or ""
         if any(x in comp_raw for x in SKIP_COMPS):
             continue
+        if m.get("leagueId") in COMP_BY_ID:
+            comp_raw = COMP_BY_ID[m["leagueId"]]
         home = bool(m.get("isHomeTeam"))
         gf, ga = (m.get("homeScore"), m.get("awayScore")) if home else (m.get("awayScore"), m.get("homeScore"))
         res = None

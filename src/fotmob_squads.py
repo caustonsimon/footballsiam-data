@@ -65,7 +65,7 @@ log = logging.getLogger("fotmob_squads")
 FM_BASE = "https://www.fotmob.com/api/data"
 SEASON_LABEL = "2026/27"
 SEASON_START = dt.date(2026, 8, 15)   # excludes pre-season (President's Cup, July/Aug)
-ASEAN_SEASON_START = dt.date(2026, 7, 20)   # ASEAN leagues kick off from late July; friendlies are skipped by name
+ASEAN_SEASON_START = dt.date(2026, 8, 15)   # first ASEAN league match: 21 Aug (Malaysia); keeps July internationals out
 TL1_FS_SEASON = 17367
 TL2_FS_SEASON = 17896
 FA_CUP_TOURNAMENT = 230   # Thai League registry: Thai FA Cup 2026/27
@@ -852,7 +852,7 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
         # -- profile page feed (FotMob playerData) -----------------------------
         if wp_id:
             try:
-                ph = build_player_hub(fm.player(int(m["id"])), SEASON_START)
+                ph = build_player_hub(fm.player(int(m["id"])), ASEAN_SEASON_START if key in ASEAN_KEYS else SEASON_START)
                 time.sleep(0.3)
                 ph.update({
                     "name": known or title, "name_th": name_th, "number": m.get("shirtNumber"),
