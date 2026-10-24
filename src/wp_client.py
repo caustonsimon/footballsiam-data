@@ -48,8 +48,10 @@ USER_AGENT = "footballsiam-sync/1.0 (+https://github.com/caustonsimon/footballsi
 # /.well-known/sgcaptcha/ instead of the REST JSON. It is served with a 2xx
 # status, so it has to be detected by body content.
 CHALLENGE_MARKER = b"/.well-known/sgcaptcha/"
-CHALLENGE_RETRIES = 3            # initial try + 2 retries
-CHALLENGE_BACKOFF_SECONDS = 4    # * attempt -> 4s, 8s
+# 24 Oct 2026: SiteGround now throttles bursts (a big write run tripped it
+# for ~3 minutes), so wait it out: 60s, 120s, 180s, 240s (10 min in all).
+CHALLENGE_RETRIES = 5            # initial try + 4 retries
+CHALLENGE_BACKOFF_SECONDS = 60   # * attempt
 
 
 class WPError(RuntimeError):
@@ -104,7 +106,7 @@ class WPClient:
         kwargs.setdefault("timeout", DEFAULT_TIMEOUT)
         kwargs.setdefault("auth", self.auth)
         last_exc: Exception | None = None
-        for attempt in range(1, MAX_RETRIES + 1):
+        for attempt in range(1, max(MAX_RETRIES, CHALLENGE_RETRIES) + 1):
             try:
                 resp = self.session.request(method, url, **kwargs)
             except requests.RequestException as exc:
