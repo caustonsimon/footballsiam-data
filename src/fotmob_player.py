@@ -184,8 +184,9 @@ def build_player_hub(pd: dict[str, Any], season_start: dt.date) -> dict[str, Any
     def entries(key: str) -> list[dict[str, Any]]:
         rows = []
         for e in ((car.get(key) or {}).get("teamEntries") or []):
-            rows.append({"team": house_club(e.get("team")), "from": (e.get("startDate") or "")[:4],
-                         "to": (e.get("endDate") or "")[:4] if e.get("endDate") else None,
+            # FotMob sometimes gives a bare year (an int) instead of a date
+            rows.append({"team": house_club(e.get("team")), "from": str(e.get("startDate") or "")[:4],
+                         "to": str(e.get("endDate"))[:4] if e.get("endDate") else None,
                          "active": bool(e.get("active")), "apps": e.get("appearances"),
                          "goals": e.get("goals"), "loan": e.get("transferType") == "loan"})
         return rows
