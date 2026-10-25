@@ -110,8 +110,9 @@ FOTMOB_TEAMS: dict[str, tuple[int, int, int]] = {
     "satun":              (585112, 9862, 1023811),
 }
 
-# Career spells missing from FotMob, keyed by FotMob player id (Simon's
-# corrections). Each entry: team, from, to, active, apps, goals, loan, country.
+# Hand corrections, keyed by FotMob player id (or "wp:<post id>"): {"career":
+# [spells FotMob is missing: team, from, to, active, apps, goals, loan, country],
+# "contract_end": "YYYY-MM-DD"}. Simon's corrections.
 _ce = Path(__file__).resolve().parent / "data" / "career_overrides.json"
 CAREER_EXTRA: dict[str, list[dict[str, Any]]] = {k: v for k, v in (json.loads(_ce.read_text(encoding="utf-8")) if _ce.exists() else {}).items() if not k.startswith("_")}
 
@@ -859,8 +860,14 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
             try:
                 ph = build_player_hub(fm.player(int(m["id"])), ASEAN_SEASON_START if key in ASEAN_KEYS else SEASON_START)
                 time.sleep(0.3)
-                # career spells FotMob is missing, added by hand (data/career_overrides.json)
-                extra = CAREER_EXTRA.get(str(m["id"])) or []
+                # hand corrections (data/career_overrides.json): missing career
+                # spells, and a contract end date where FotMob has none
+                fix = CAREER_EXTRA.get(str(m["id"])) or CAREER_EXTRA.get(f"wp:{wp_id}") or {}
+                if isinstance(fix, list):
+                    fix = {"career": fix}
+                if fix.get("contract_end") and not ph.get("contract_end"):
+                    ph["contract_end"] = fix["contract_end"]
+                extra = fix.get("career") or []
                 if extra:
                     have = {(c.get("team"), c.get("from")) for c in ph.get("career") or []}
                     ph["career"] = sorted((ph.get("career") or []) + [dict(c) for c in extra if (c.get("team"), c.get("from")) not in have],
