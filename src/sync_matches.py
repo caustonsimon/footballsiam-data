@@ -10,6 +10,9 @@ For Thai League 1 (season_id 17367) and Thai League 2 (season_id 17896):
   * exists + FootyStats status == "complete" + WP home_score still empty
         -> write home_score, away_score, match_week
   * a post that already has a score recorded is NEVER re-scored
+  * from 23:00 Bangkok, a game FootyStats still hasn't scored is taken from
+    FotMob instead (fotmob_fallback.py); if FootyStats later disagrees, the
+    FotMob score stays and score_clash is set (Snippet 205 emails Simon)
 
   Part A - full enrichment (enrich.py): whenever a completed match still has no
   raw_match_data, fetch /match detail and write team stats, home/away_xg and
@@ -74,6 +77,7 @@ _load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from footystats_client import FootyStatsClient, FootyStatsError  # noqa: E402
 from wp_client import WPClient, WPError, WPHostChallengeError  # noqa: E402
+import fotmob_fallback  # noqa: E402
 
 # exit codes: 0 ok, 1 finished with per-item errors, 2 sync aborted (real
 # failure), 3 host anti-bot challenge (WP REST unreachable from this IP - not
@@ -750,6 +754,8 @@ def sync(
         "enriched": 0,
         "enrich_skipped": 0,
         "players_created": 0,
+        "scores_from_fotmob": 0,
+        "score_clash": 0,
         "errors": 0,
     }
 
@@ -757,6 +763,7 @@ def sync(
     # for predictor auto-grading once the whole sync finishes (added
     # 2026-09-17, see _check_and_grade_predictor()).
     t1_updated_mws: set[int] = set()
+    league_of: dict[int, str] = {}
 
     log.info("Indexing existing `matches` posts by footystats_match_id ...")
     index = wp.index_matches_by_footystats_id()
@@ -846,6 +853,7 @@ def sync(
 
             existing = index.get(fs_id)
             status = str(match.get("status", "")).lower()
+            league_of[fs_id] = league["name"]
 
             try:
                 if existing is None:
@@ -897,6 +905,12 @@ def sync(
                             )
                 else:
                     stats["skipped_recorded"] += 1
+                    # A score we took from FotMob (fotmob_fallback.py) is never
+                    # overwritten; if FootyStats now disagrees, flag it for Simon.
+                    if status == "complete" and fotmob_fallback.check_clash(
+                        wp, existing, match, audit=_audit
+                    ):
+                        stats["score_clash"] += 1
                     # A game that has been played clears any old postponed flag.
                     if str(meta.get("match_status") or "").strip() and status == "complete":
                         wp.update_match_meta(existing["id"], {"match_status": ""})
@@ -934,6 +948,21 @@ def sync(
             except (WPError, KeyError) as exc:
                 stats["errors"] += 1
                 log.error("  ERROR on match %s: %s", fs_id, exc)
+
+    # -- FotMob fallback (Simon, 26 Oct 2026) ------------------------------
+    # From 23:00 Bangkok, any of that day's games FootyStats still hasn't
+    # scored is taken from FotMob instead (see fotmob_fallback.py).
+    if not league_filter and not limit:
+        try:
+            for w in fotmob_fallback.run(wp, index, audit=_audit):
+                stats["scores_from_fotmob"] += 1
+                if league_of.get(w["fs_id"]) == "Thai League 1" and str(w["match_week"]).isdigit():
+                    t1_updated_mws.add(int(w["match_week"]))
+        except WPHostChallengeError:
+            raise
+        except Exception as exc:  # never let the fallback break the main sync
+            stats["errors"] += 1
+            log.error("FotMob fallback failed: %s", exc)
 
     if t1_updated_mws and not wp.dry_run:
         _check_and_grade_predictor(wp, t1_updated_mws)
@@ -1327,6 +1356,8 @@ def main(argv: list[str] | None = None) -> int:
     log.info("Summary (%s)", mode)
     log.info("  matches checked        : %d", stats["checked"])
     log.info("  scores updated         : %d", stats["scores_updated"])
+    log.info("  scores from FotMob     : %d", stats["scores_from_fotmob"])
+    log.info("  FotMob/FootyStats clash: %d", stats["score_clash"])
     log.info("  new posts created      : %d", stats["created"])
     log.info("  matches enriched       : %d", stats["enriched"])
     log.info("  enrich skipped (had it): %d", stats["enrich_skipped"])
