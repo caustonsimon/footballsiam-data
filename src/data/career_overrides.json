@@ -1,0 +1,7 @@
+{
+ "_note": "Career spells FotMob is missing, keyed by FotMob player id. Added by hand from Simon's corrections; merged into the player's Career tab by fotmob_squads.py.",
+ "1827992": [
+  {"team": "Los Cabos United", "country": "Mexico", "from": "2025", "to": "2026", "active": false, "apps": null, "goals": null, "loan": false,
+   "_source": "Simon, 25 Oct 2026 (Transfermarkt); Sofascore transfer history: joined 24 Aug 2025 on a free, left for Pattaya United 22 Jul 2026"}
+ ]
+}
