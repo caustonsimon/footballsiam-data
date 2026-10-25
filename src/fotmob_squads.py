@@ -864,7 +864,7 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
                 if extra:
                     have = {(c.get("team"), c.get("from")) for c in ph.get("career") or []}
                     ph["career"] = sorted((ph.get("career") or []) + [dict(c) for c in extra if (c.get("team"), c.get("from")) not in have],
-                                          key=lambda c: (str(c.get("from") or ""), bool(c.get("active"))), reverse=True)
+                                          key=lambda c: (str(c.get("from") or ""), "9999" if c.get("active") else str(c.get("to") or "")), reverse=True)
                 ph.update({
                     "name": known or title, "name_th": name_th, "number": m.get("shirtNumber"),
                     "pos": pos, "pos_label": POS_LABEL.get(pos, ""), "nat": nat,
