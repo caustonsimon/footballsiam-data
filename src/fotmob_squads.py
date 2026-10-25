@@ -110,6 +110,11 @@ FOTMOB_TEAMS: dict[str, tuple[int, int, int]] = {
     "satun":              (585112, 9862, 1023811),
 }
 
+# Career spells missing from FotMob, keyed by FotMob player id (Simon's
+# corrections). Each entry: team, from, to, active, apps, goals, loan, country.
+_ce = Path(__file__).resolve().parent / "data" / "career_overrides.json"
+CAREER_EXTRA: dict[str, list[dict[str, Any]]] = {k: v for k, v in (json.loads(_ce.read_text(encoding="utf-8")) if _ce.exists() else {}).items() if not k.startswith("_")}
+
 # -- ASEAN top flights, added 24 Oct 2026 (data/asean_clubs.json). English
 # names only, no Thai League registry. Key = club page slug style.
 ASEAN_CLUBS = json.loads((Path(__file__).resolve().parent / "data" / "asean_clubs.json")
@@ -854,6 +859,12 @@ def run_club(key: str, wp: WPClient, fm: FotMob, fs_rows: list[dict[str, Any]],
             try:
                 ph = build_player_hub(fm.player(int(m["id"])), ASEAN_SEASON_START if key in ASEAN_KEYS else SEASON_START)
                 time.sleep(0.3)
+                # career spells FotMob is missing, added by hand (data/career_overrides.json)
+                extra = CAREER_EXTRA.get(str(m["id"])) or []
+                if extra:
+                    have = {(c.get("team"), c.get("from")) for c in ph.get("career") or []}
+                    ph["career"] = sorted((ph.get("career") or []) + [dict(c) for c in extra if (c.get("team"), c.get("from")) not in have],
+                                          key=lambda c: (str(c.get("from") or ""), bool(c.get("active"))), reverse=True)
                 ph.update({
                     "name": known or title, "name_th": name_th, "number": m.get("shirtNumber"),
                     "pos": pos, "pos_label": POS_LABEL.get(pos, ""), "nat": nat,
