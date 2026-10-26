@@ -14,8 +14,11 @@ Sources
   Players are matched to site pages by FootyStats ID only (never by name).
 - Nationality: the player page's `nationality` field on footballsiam.com wins over FootyStats,
   so a correction made on the site (e.g. Ben Davis = Thailand, not Singapore) sticks.
+- Club: the player page's `current_club` on footballsiam.com wins over FootyStats' club_team_id,
+  so mid-season transfers show the new club. FootyStats is the fallback when it is empty.
 """
 import datetime as dt
+import html
 import json
 import os
 import sys
@@ -37,22 +40,44 @@ SHORT = {"Pathum United": "Pathum", "Chiangrai United": "Chiangrai", "Bangkok Un
          "Kanchanaburi Power": "Kanchanaburi"}
 
 
+def site_clubs():
+    """WordPress club post id -> club name as the site writes it (house style, no sponsors)."""
+    out, page = {}, 1
+    while True:
+        r = requests.get(f"{SITE}/wp-json/wp/v2/club", headers=UA, timeout=60,
+                         params={"per_page": 100, "page": page, "_fields": "id,title"})
+        r.raise_for_status()
+        for x in r.json():
+            out[int(x["id"])] = html.unescape(x["title"]["rendered"]).strip()
+        if page >= int(r.headers.get("X-WP-TotalPages", 1)):
+            return out
+        page += 1
+
+
 def site_players():
-    """FootyStats id -> {name, link}. Uses the known-as field when set."""
+    """FootyStats id -> {name, link, nat, club}. Uses the known-as field when set.
+    `club` is the player page's current_club (None when the page has none set)."""
+    clubs = site_clubs()
     out, page = {}, 1
     while True:
         r = requests.get(f"{SITE}/wp-json/wp/v2/player", headers=UA, timeout=60, params={
-            "per_page": 100, "page": page, "_fields": "id,title,link,acf.footystats_id,acf.nationality,meta.fs_known_as"})
+            "per_page": 100, "page": page,
+            "_fields": "id,title,link,acf.footystats_id,acf.nationality,acf.current_club,meta.fs_known_as"})
         r.raise_for_status()
         rows = r.json()
         for x in rows:
-            fid = (x.get("acf") or {}).get("footystats_id")
+            acf = x.get("acf") or {}
+            fid = acf.get("footystats_id")
             if not fid:
                 continue
             known = ((x.get("meta") or {}).get("fs_known_as") or "").strip()
-            title = x["title"]["rendered"].replace("&#8217;", "'").replace("&amp;", "&")
-            nat = ((x.get("acf") or {}).get("nationality") or "").strip()
-            out[int(fid)] = {"name": known or title, "link": x["link"], "has_known": bool(known), "nat": nat}
+            title = html.unescape(x["title"]["rendered"])
+            nat = (acf.get("nationality") or "").strip()
+            cc = acf.get("current_club") or []
+            cc = cc if isinstance(cc, list) else [cc]
+            club = next((clubs[int(c)] for c in cc if str(c).isdigit() and int(c) in clubs), None)
+            out[int(fid)] = {"name": known or title, "link": x["link"], "has_known": bool(known),
+                             "nat": nat, "club": club}
         if page >= int(r.headers.get("X-WP-TotalPages", 1)):
             return out
         page += 1
@@ -74,7 +99,7 @@ def build():
     lp = fs.league_players(SEASON)
     max_min = int(lp["minutes_played_overall"].max())
     threshold = min(900, max(180, round(0.4 * max_min)))
-    missing, long_names = [], set()
+    missing, long_names, club_moves = [], set(), set()
 
     def person(pid, fallback, club_id, nat, pos, mins):
         w = wp.get(int(pid))
@@ -83,7 +108,13 @@ def build():
         name = w["name"] if w else fallback
         if w and not w["has_known"] and nat != "Thailand" and len(name.split()) > 2:
             long_names.add(name)
-        return {"name": name, "link": w["link"] if w else None, "club": teams.get(club_id, "?"),
+        # The site's current_club wins: FootyStats files a mid-season mover's whole league
+        # season under one club (e.g. Robert Zulj, Buriram United -> Ratchaburi, Sept 2026).
+        fs_club = teams.get(club_id, "?")
+        club = (w or {}).get("club") or fs_club
+        if club != fs_club:
+            club_moves.add(f"{name}: {fs_club} -> {club}")
+        return {"name": name, "link": w["link"] if w else None, "club": club,
                 "nat": nat, "pos": pos, "mins": int(mins)}
 
     def base(r):
@@ -145,7 +176,7 @@ def build():
         "finishing": [{**base(r), "goals": int(r.goals_overall), "xg": round(float(r.xg), 2)} for _, r in xg.iterrows()],
         "clubs": clubs,
     }
-    return data, missing, sorted(long_names)
+    return data, missing, sorted(long_names), sorted(club_moves)
 
 
 def validate(d):
@@ -163,7 +194,9 @@ def validate(d):
 
 
 def main():
-    data, missing, long_names = build()
+    data, missing, long_names, club_moves = build()
+    if club_moves:
+        print("Club taken from the site's current_club instead of FootyStats:", "; ".join(club_moves))
     if missing:
         print("Players with no footballsiam.com page (shown with FootyStats names):", ", ".join(missing))
     if long_names:
