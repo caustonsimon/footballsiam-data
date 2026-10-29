@@ -332,6 +332,13 @@ def story_line(m):
     return f"{win} beat {lose}"
 
 
+COVER_SHORT = {
+    "AFC Champions League Two": "ACL Two",
+    "AFC Champions League Elite": "ACL Elite",
+    "ASEAN Club Championship": "ASEAN Club Champ.",
+}
+
+
 def day_cover(data, card_date_label, final, label=None):
     """Matchday cover: built ONLY from the games played on the card's own
     date, so Friday, Saturday and Sunday each get a different headline and
@@ -340,6 +347,9 @@ def day_cover(data, card_date_label, final, label=None):
     rnd = round_name(data.get("sub") or data.get("round_label"), data.get("mw"))
     day_name = (card_date_label or "").split()[0] if card_date_label else ""
     today = [m for m in data.get("matches", []) if m.get("date") == card_date_label and m.get("is_scored")]
+    # Cover kickers sit on one 30px line: long continental names overflow
+    # (LAYOUT ERROR on ACL Two, 29 Oct 2026), so the cover uses short forms.
+    league = COVER_SHORT.get(league, league)
     kicker = " · ".join(x for x in (league, rnd, day_name) if x)
     if not today:
         return kicker, f"{rnd} results" if final else f"{rnd} so far", None, None
@@ -352,7 +362,7 @@ def day_cover(data, card_date_label, final, label=None):
     others = n - 1
     lead = f"{best['home']} {big} {best['away']}"
     if final:
-        sub = f"{lead}. The full matchweek and the final table inside."
+        sub = f"{lead}. Every result and the table inside."
     elif others:
         sub = f"{lead}, plus {num(others)} more from {when}. Every result so far, and the table."
     else:
