@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: fs-substack-connector
+    runtime: node
+    plan: free
+    region: singapore
+    branch: substack-connector
+    buildCommand: npm install --omit=dev
+    startCommand: node server.mjs
+    healthCheckPath: /healthz
+    envVars:
+      - key: SUBSTACK_HOST
+        value: footballsiam.substack.com
+      - key: SUBSTACK_USER_ID
+        value: "266411741"
+      - key: MCP_PATH_TOKEN
+        sync: false
+      - key: SUBSTACK_SID
+        sync: false
