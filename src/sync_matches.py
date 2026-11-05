@@ -431,6 +431,57 @@ LEAGUES: list[dict[str, Any]] = [
             "FC Mahasarakham": "Mahasarakham",             # 1026375, not Mahasarakham SBT
         },
     },
+    # -- Added 2026-11-05: Thai League Cup 2026/27. Simon: "it is the one
+    # missing competition for us". Season 17872 already sits in his
+    # FootyStats chosen leagues. Competition term 119 (pre-existing "Thai
+    # League Cup", slug thai-league-cup), category 287 ("Thai League Cup
+    # 2026/27", created 2026-11-05).
+    #
+    # Rounds work exactly as the FA Cup's (rounds_by_roundid): 0 = First
+    # qualification round, 1 = Second qualification round, 2 = Qualification
+    # play-off round (Thai League 2 enters), 3 = First round (Thai League 1
+    # enters), 4 = Second round, 5 = Quarter-final, 6 = Semi-final, 7 =
+    # Final. Same structure as the 2025/26 competition; 2026/27 so far has
+    # 12 / 18 / 16 ties in rounds 0-2, matching it. The site shows the round
+    # name via the "FS Cup round labels v2" snippet. Penalty shoot-outs are
+    # not in FootyStats here either.
+    {
+        "name": "Thai League Cup",
+        "season_id": 17872,          # FootyStats: "Thailand League Cup", 2026/27
+        "club_map": CLUB_MAP,
+        "taxonomies": {"competition": [119], "categories": [287], "season": [SEASON_TERM_ID]},
+        "require_full_club_map": False,
+        "skip_placeholder_teams": True,
+        "rounds_by_roundid": True,
+        # Text-only sides: every team was matched by FootyStats team ID
+        # against the six 2026/27 T3 feeds, then given the name the site's
+        # own T3 fixtures use (src/tl3_squads.py, first name per club), with
+        # FC dropped. "Royal Thai Fleet" (666962, no T3 feed) is FootyStats'
+        # second ID for Fleet United (1878781, T3 East): it beat Pattaya City
+        # in round 1 and Fleet United played round 2, and the registry lists
+        # it as Fleet United's alias. T1/T2 sides use their WP club title.
+        "name_overrides": {
+            "Ayutthaya": "Ayutthaya PK",                   # 8387
+            "Cha Choeng Sao FC": "Chachoengsao Hi-Tek",    # 9909
+            "Hua Hin City": "Huahin City",                 # 688590
+            "Kamphaeng Phet": "Kamphaengphet",             # 9890
+            "Kasem Bundit University": "Kasembundit University",  # 9901
+            "Khonkaen": "Khon Kaen",                       # 8377
+            "Lopburi City": "Lopburi Poma",                # 853157
+            "Marines Eureka": "Marines",                   # 9893
+            "Nakhon Mae Sot United": "Northern Nakhonmaesot United",  # 667002
+            "Nakhon Si Thammarat": "Nakhon Si United",     # 9896
+            "Navy FC": "Navy",                             # 1183
+            "Paet Riew City": "Padriew City",              # 1302965
+            "Pathum Thani University": "Pathumthani University",  # 678764
+            "Royal Thai Fleet": "Fleet United",            # 666962
+            "Samut Sakhon City": "Samutsakhon City",       # 853159
+            "Samut Songkhram City": "Samutsongkhram City", # 1294927
+            "Singbury Warriors": "Singburi Warriors",      # 1577630
+            "Thap Luang United": "Thapluang United",       # 926802
+            "Udon Banchan": "Udon Banjan United",          # 1575467
+        },
+    },
     # -- Added 2026-10-24: ASEAN top flights, full club maps (all 52 clubs
     # have pages). Competition / category terms created the same day.
     {
