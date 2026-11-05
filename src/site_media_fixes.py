@@ -99,10 +99,12 @@ def copy_crests(wp: WPClient, stats: Counter) -> dict[int, str]:
         fname = f"club-crest-{slug}{ext}"
         alt = f"{name} crest"
 
-        # Reuse a copy made on an earlier run (matched by exact filename).
+        # Reuse a copy made on an earlier run. Matched by the attachment's
+        # slug (its filename without extension): the site's media search
+        # does not cover filenames, so a search lookup would miss it.
         existing = None
         resp = wp._request("GET", "wp/v2/media", params={
-            "search": f"club-crest-{slug}", "per_page": 20, "_fields": "id,source_url,alt_text"})
+            "slug": f"club-crest-{slug}", "per_page": 5, "_fields": "id,source_url,alt_text"})
         if resp.ok:
             for m in resp.json():
                 if os.path.basename(urlparse(m["source_url"]).path).startswith(f"club-crest-{slug}."):
@@ -177,10 +179,8 @@ def fill_alt(wp: WPClient, crest_ids: dict[int, str], stats: Counter) -> None:
             n += 1
         log.info("  %s: %d titles", route, n)
 
-    # Crests copied on an earlier run (part 1 skipped or found nothing new).
-    for m in paged(wp, "wp/v2/media", {"search": "club-crest-", "_fields": "id,title,source_url"}):
-        if os.path.basename(urlparse(m["source_url"]).path).startswith("club-crest-"):
-            crest_ids.setdefault(int(m["id"]), re.sub(r"\s+crest$", "", title_of(m)))
+    # Crests copied by part 1 are uploaded with their alt text already set,
+    # so rule b only matters for a crest whose alt was later cleared.
 
     for m in paged(wp, "wp/v2/media", {"media_type": "image", "context": "edit",
                                         "_fields": "id,title,alt_text,post,source_url"}):
