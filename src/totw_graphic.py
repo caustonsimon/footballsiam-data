@@ -115,11 +115,14 @@ def build_html(selection: dict) -> str:
         is_potw = (p["name"] == potw)
         cls = "card potw" if is_potw else "card"
         ribbon = '<div class="ribbon">★ PLAYER OF THE WEEK</div>' if is_potw else ""
+        # Long names (e.g. Rakotoharimalala, MW8) overflow the card at 19px: shrink to fit, never below 14px.
+        n = len(p['name'])
+        name_style = f' style="font-size:{max(14, round(19 * 12 / n, 1))}px;letter-spacing:0"' if n > 12 else ""
         return f'''
     <div class="{cls}">
       {ribbon}
       <img class="shirt" src="{img}" alt="{p['club']}">
-      <div class="name">{p['name']}</div>
+      <div class="name"{name_style}>{p['name']}</div>
       <div class="club">{p['club']}</div>
     </div>'''
 
