@@ -1,11 +1,13 @@
 name: fotmob-squads
 
 # Thai League 1 squads + club hub feeds from FotMob (src/fotmob_squads.py).
-# Daily at 04:10 Bangkok (after the 03:00 match sync), plus manual runs.
+# Weekly, Tuesdays 04:10 Bangkok (after the 03:00 match sync, once the
+# weekend round incl. Monday games is complete), plus manual runs.
+# Daily until 13 Nov 2026; cut to weekly to save Actions minutes.
 
 on:
   schedule:
-    - cron: '10 21 * * *'   # 04:10 Asia/Bangkok
+    - cron: '10 21 * * 1'   # Tuesdays 04:10 Asia/Bangkok
   workflow_dispatch:
     inputs:
       club:
@@ -55,9 +57,9 @@ jobs:
             ARGS+=(--club all --live)
           fi
           python fotmob_squads.py "${ARGS[@]}"
-          # scheduled: then the ASEAN top flights (added 24 Oct 2026), Mondays
-          # and Thursdays only, to save Actions minutes
-          if [ "$EVENT_NAME" != "workflow_dispatch" ] && [[ "$(TZ=Asia/Bangkok date +%u)" =~ ^(1|4)$ ]]; then
+          # scheduled: then the ASEAN top flights (added 24 Oct 2026); every
+          # scheduled run now that the schedule itself is weekly (13 Nov 2026)
+          if [ "$EVENT_NAME" != "workflow_dispatch" ]; then
             python fotmob_squads.py --club asean --live
           fi
       - uses: actions/upload-artifact@v4
