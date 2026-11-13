@@ -6,7 +6,7 @@ name: tl3-squads
 
 on:
   schedule:
-    - cron: '40 22 * * 0,3'   # 05:40 Bangkok, Mondays and Thursdays (daily until 24 Oct 2026; ~75 min a run)
+    - cron: '40 22 * * 0'   # 05:40 Bangkok, Mondays only (Mon+Thu until 13 Nov 2026, daily until 24 Oct 2026; ~75 min a run)
   workflow_dispatch:
     inputs:
       club:
