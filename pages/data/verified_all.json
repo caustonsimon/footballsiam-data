@@ -173,12 +173,12 @@
   "born": null,
   "position": "Defender (centre-back)",
   "club": "Melbourne Victory",
-  "team_level": "Academy",
+  "team_level": "Academy (U21 per Transfermarkt)",
   "league": "Australian youth football",
   "country": "Australia",
   "other_nationality": "Australia / England (flags in caption)",
   "thai_link": "Thai parent (not specified)",
-  "thailand_status": "Thailand U17 (named in the 26-man squad for the AFC U17 Asian Cup 2027 qualifiers, Buriram, Nov 2026)",
+  "thailand_status": "Thailand U17 (2 caps per Transfermarkt; AFC U17 Asian Cup 2027 qualifiers squad, Buriram, Nov 2026)",
   "other_intl": null,
   "tier": "academy",
   "bio": "Martin Watts is a centre-back in the Melbourne Victory academy. He attended Thailand U17 training camps in June and September–October 2026, sharing the captaincy at the first. In October 2026 he was named in Thailand's 26-man U17 squad for the AFC U17 Asian Cup 2027 qualifiers in Buriram.",
@@ -187,10 +187,11 @@
    "https://www.instagram.com/p/DZ43GZsPPEz/",
    "https://www.instagram.com/p/DeMMhNjmrdH/",
    "https://www.goalsiam.com/ballthai/132965/",
-   "https://www.instagram.com/p/De_ep0LP98V/"
+   "https://www.instagram.com/p/De_ep0LP98V/",
+   "https://www.transfermarkt.com/martin-watts/profil/spieler/1625737"
   ],
   "confidence": "low",
-  "notes": "AGE UNVERIFIED: no birth year in captions or found online; U17 camp involvement suggests born 2010–11, so he may be under 15 — confirm before publishing. No Melbourne Victory or FA Thailand confirmation found. Minor: football facts only. 28 Oct 2026: in 26-man U17 squad for Asian Cup qualifiers (8-20 Nov, Buriram; cut to 23) per goalsiam/ballthai and IG De_ep0LP98V."
+  "notes": "AGE UNVERIFIED: no birth year in captions or found online; U17 camp involvement suggests born 2010–11, so he may be under 15 — confirm before publishing. No Melbourne Victory or FA Thailand confirmation found. Minor: football facts only. 28 Oct 2026: in 26-man U17 squad for Asian Cup qualifiers (8-20 Nov, Buriram; cut to 23) per goalsiam/ballthai and IG De_ep0LP98V. 18 Nov 2026: Transfermarkt profile 1625737 now exists: Thailand citizenship, Thailand U17 2 caps, Melbourne Victory U21; still no birth date."
  },
  {
   "key": "mickelson",
@@ -1216,20 +1217,22 @@
   "country": "Thailand",
   "other_nationality": "Morocco",
   "thai_link": "Thai father, from Maha Sarakham; Moroccan mother",
-  "thailand_status": "Thailand U23 (2026 AFC U23 Asian Cup); called up to senior squad for 2026 ASEAN Championship (debut unconfirmed)",
+  "thailand_status": "Senior international (started v Brunei in the 2026 King's Cup semi-final); Thailand U23 (2026 AFC U23 Asian Cup)",
   "other_intl": null,
   "tier": "pro",
-  "bio": "Oussama Thiangkham is a left-back born in Casablanca who came through the Wydad AC and Association Jeunesse Sportive youth systems before joining Prachuap in July 2025. He has a Thai father and a Moroccan mother. He played for Thailand at the 2026 AFC U23 Asian Cup and earned a first senior call-up for the 2026 ASEAN Championship.",
+  "bio": "Oussama Thiangkham is a left-back born in Casablanca who came through the Wydad AC and Association Jeunesse Sportive youth systems before joining Prachuap in July 2025. He has a Thai father and a Moroccan mother. He played for Thailand at the 2026 AFC U23 Asian Cup, was called up to the senior squad for the 2026 ASEAN Championship and started the 6-0 King's Cup semi-final win over Brunei on 14 November 2026.",
   "sources": [
    "https://www.instagram.com/p/DTSwwQ4D9hW/",
    "https://www.instagram.com/p/DWT81I9jy4i/",
    "https://www.instagram.com/p/C_GMruhSyvt/",
    "https://www.transfermarkt.com/oussama-thiangkham/profil/spieler/1425708",
    "https://en.wikipedia.org/wiki/Oussama_Thiangkham",
-   "https://en.thairath.co.th/sport/thaifootball/2945078"
+   "https://en.thairath.co.th/sport/thaifootball/2945078",
+   "https://www.bangkokbiznews.com/news/sport/1260821",
+   "https://www.ysscores.com/en/lineup/84275091/Thailand-vs-Brunei-Darussalam"
   ],
   "confidence": "high",
-  "notes": "Wikipedia records a senior debut as a substitute v Laos (25 Jul 2026) and 7 caps, but Transfermarkt shows only Olympic/U23 caps (4) and a match report lists him on the bench without confirming he came on - verify before stating he is capped. Brother Aymen Thiangkham (CB, 20) is also at Prachuap - possible further profile."
+  "notes": "Wikipedia records a senior debut as a substitute v Laos (25 Jul 2026) and 7 caps, but Transfermarkt shows only Olympic/U23 caps (4) and a match report lists him on the bench without confirming he came on - verify before stating he is capped. Brother Aymen Thiangkham (CB, 20) is also at Prachuap - possible further profile. 18 Nov 2026: in the starting XI v Brunei, King's Cup semi-final, 14 Nov 2026 (bangkokbiznews, ysscores) - senior appearance confirmed. Transfermarkt profile shows 9 caps (last updated Sep 2026)."
  },
  {
   "key": "inoram",
@@ -2904,10 +2907,10 @@
   "country": "Thailand",
   "other_nationality": "Sweden",
   "thai_link": "Thai parent (which parent not confirmed in sources checked)",
-  "thailand_status": "Senior international (12 caps per Transfermarkt; 2024 ASEAN Championship runner-up)",
+  "thailand_status": "Senior international (2024 ASEAN Championship runner-up; scored v Brunei in the 2026 King's Cup semi-final)",
   "other_intl": "Thailand U23",
   "tier": "pro",
-  "bio": "William Weidersjö is a Stockholm-born defensive midfielder who came through Enskede, IFK Haninge and Hammarby before joining Port in January 2022. He moved to Uthai Thani, initially on loan and permanently in July 2024, and started for Thailand at the 2024 ASEAN Championship.",
+  "bio": "William Weidersjö is a Stockholm-born defensive midfielder who came through Enskede, IFK Haninge and Hammarby before joining Port in January 2022. He moved to Uthai Thani, initially on loan and permanently in July 2024, and started for Thailand at the 2024 ASEAN Championship. He headed Thailand's second goal in the 6-0 King's Cup semi-final win over Brunei in Sisaket on 14 November 2026.",
   "sources": [
    "https://www.instagram.com/p/DDrywDfST3e/",
    "https://www.instagram.com/p/DC1glsOySTi/",
@@ -2916,10 +2919,12 @@
    "https://www.instagram.com/p/DBAsLy5y29B/",
    "https://www.instagram.com/p/C_KinkPSVOK/",
    "https://www.transfermarkt.com/william-weidersjo/profil/spieler/523948",
-   "https://en.wikipedia.org/wiki/William_Weidersj%C3%B6"
+   "https://en.wikipedia.org/wiki/William_Weidersj%C3%B6",
+   "https://www.bangkokbiznews.com/news/sport/1260821",
+   "https://www.instagram.com/p/DfvmX_qoVH8/"
   ],
   "confidence": "high",
-  "notes": "Contract with Uthai Thani to Jun 2027. Caps: Transfermarkt 12, Wikipedia infobox 8 (older) - prefer Transfermarkt. Thai name spellings vary (ไวเดอร์เฌอ / เวเดอร์เฌอ)."
+  "notes": "Contract with Uthai Thani to Jun 2027. Caps: Transfermarkt 12, Wikipedia infobox 8 (older) - prefer Transfermarkt. Thai name spellings vary (ไวเดอร์เฌอ / เวเดอร์เฌอ). 18 Nov 2026: started and scored (50', header) v Brunei, King's Cup semi-final 6-0, 14 Nov 2026 (bangkokbiznews). IG DfvmX_qoVH8 says he captained Thailand's senior side, but the captain v Brunei was Suphachok Sarachat, so captaincy not stated. Transfermarkt shows 14 caps / 1 goal (last updated May 2026)."
  },
  {
   "key": "davis",
