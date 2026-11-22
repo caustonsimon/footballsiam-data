@@ -18,11 +18,14 @@ wide. Look at those before posting.
 Slides:
   * cover: the slide the grid shows. Kicker, big scoreline (results),
     headline, sub-line. No table.
-  * fixtures/results: at most 8 matches a slide, home right-aligned, score or
-    kick-off in a green box, away left-aligned, a header per date (and per
-    group on continental cards).
-  * table: 8 rows a slide (9 when that saves a slide, e.g. 18 teams), with
-    Pos, Club, P, GD and Pts only. The full table stays on the website.
+  * fixtures/results: the whole weekend on ONE slide (Simon, 22 Nov 2026:
+    one card is more likely to be shared). Rows shrink to fit; only a round
+    too big even at the smallest row height splits. Home right-aligned,
+    score or kick-off in a green box, away left-aligned, a header per date
+    (and per group on continental cards).
+  * table: the whole table on ONE slide (Simon, 22 Nov 2026), rows shrink to
+    fit 16 teams; Pos, Club, P, GD and Pts only. The full table stays on the
+    website.
 
 Data comes from the same JSON as before (fetched by the calling session, this
 script makes no network calls): fs/v1/social-fixtures-data,
@@ -71,9 +74,12 @@ LEAGUE_LABELS = {
     "afc-champions-league-two": "AFC Champions League Two",
 }
 
-MAX_MATCHES = 8
+MAX_MATCHES = 8          # only used when a round cannot fit one slide
 ROW_H = 96
+ROW_H_MIN = 72           # Simon, 22 Nov 2026: a whole round on one slide, rows shrink to fit
 DATE_H = 58
+DATE_H_MIN = 48
+TABLE_ROW_MIN = 50       # 16-team table on one slide
 BADGE_W, BADGE_H = 150, 64
 NAME_GAP = 24
 NAME_W = W / 2 - BADGE_W / 2 - NAME_GAP - MARGIN_X   # 361px each side
@@ -124,12 +130,22 @@ def name_lines(card, name, font):
 
 # ---- slide builders --------------------------------------------------------------
 def _match_slides(matches, kicker, title, sub_for_page):
-    """Split matches into pages that fit the body, at most 8 a page."""
+    """Simon, 22 Nov 2026: every result of the weekend goes on ONE slide (more
+    likely to be shared). Rows and date headers shrink, down to ROW_H_MIN /
+    DATE_H_MIN, until everything fits. Only if it still cannot fit (a big
+    continental matchday) does it fall back to pages of at most 8.
+    Returns (pages, show_groups, row_h, date_h)."""
     show_groups = len({m.get("group") for m in matches if m.get("group")}) > 1
     key = (lambda m: (m.get("date"), m.get("group"))) if show_groups else (lambda m: m.get("date"))
     probe = fs.Card()
     body_top = fs.data_header(probe, kicker, title, sub_for_page(1, 1))
-    budget = FOOTER_Y - 20 - body_top
+    budget = FOOTER_Y - 20 - body_top - 14
+    heads = len({key(m) for m in matches})
+    n = len(matches)
+    for rh in range(ROW_H, ROW_H_MIN - 1, -2):
+        dh = max(DATE_H_MIN, min(DATE_H, round(rh * 0.6)))
+        if n * rh + heads * dh <= budget:
+            return [matches], show_groups, rh, dh
     pages, cur, used, last = [], [], 0, object()
     for m in matches:
         need = ROW_H + (DATE_H if key(m) != last else 0)
@@ -142,10 +158,12 @@ def _match_slides(matches, kicker, title, sub_for_page):
         last = key(m)
     if cur or not pages:
         pages.append(cur)
-    return pages, show_groups
+    print(f"NOTE: {n} matches do not fit one slide; split over {len(pages)}", file=sys.stderr)
+    return pages, show_groups, ROW_H, DATE_H
 
 
-def draw_matches(card, matches, body_top, show_groups):
+def draw_matches(card, matches, body_top, show_groups, row_h=ROW_H, date_h=DATE_H):
+    ROW_H, DATE_H = row_h, date_h
     f_name = fs.lato_bold(fs.MIN_DATA)
     f_badge = fs.lato_bold(36)
     f_date = fs.lato_bold(30)
@@ -184,8 +202,11 @@ def draw_matches(card, matches, body_top, show_groups):
 
 
 def table_pages(standings):
+    """Simon, 22 Nov 2026: the whole table on ONE slide. Rows shrink to fit
+    (down to TABLE_ROW_MIN, which holds 16 teams). Only a table too long for
+    that is split."""
     n = len(standings)
-    if n <= 9:
+    if n <= 17:
         return [standings]
     per = 9 if n % 9 == 0 and n % 8 != 0 else 8
     return [standings[i:i + per] for i in range(0, n, per)]
@@ -197,8 +218,9 @@ def draw_table(card, rows, body_top, qualify=0, note=None, total=0):
     f_num = fs.lato(fs.MIN_DATA)
     x_pos, x_club = MARGIN_X + 30, MARGIN_X + 82
     cols = [("P", 700), ("GD", 830), ("Pts", CONTENT_R - 30)]
-    y = body_top + 16
-    hh = 54
+    tight = len(rows) > 9          # a full table on one slide: slimmer column header
+    y = body_top + (10 if tight else 16)
+    hh = 46 if tight else 54
     card.text((x_pos, y + hh / 2), "#", f_head, fs.MUTED, anchor="mm")
     card.text((x_club, y + hh / 2), "CLUB", f_head, fs.MUTED, anchor="lm")
     for lbl, x in cols:
@@ -207,7 +229,7 @@ def draw_table(card, rows, body_top, qualify=0, note=None, total=0):
     card.rect([MARGIN_X, y - 2, CONTENT_R, y], fs.HAIRLINE)
     avail = FOOTER_Y - 30 - y - (50 if note else 0)
     rh = min(100, avail // max(len(rows), 1))
-    if rh < 80:
+    if rh < TABLE_ROW_MIN:
         raise fs.LayoutError("too many table rows for one slide")
     for i, t in enumerate(rows):
         pos = int(t.get("pos") or 0)
@@ -217,7 +239,8 @@ def draw_table(card, rows, body_top, qualify=0, note=None, total=0):
             card.rect([0, y, W, y + rh], fs.ROW_ALT)
         mid = y + rh / 2
         if pos == 1:
-            card.d.ellipse([x_pos - 28, mid - 28, x_pos + 28, mid + 28], fill=fs.GOLD)
+            r = min(28, rh // 2 - 3)
+            card.d.ellipse([x_pos - r, mid - r, x_pos + r, mid + r], fill=fs.GOLD)
         card.text((x_pos, mid), str(pos or i + 1), fs.lato_bold(32), fs.GREEN, anchor="mm")
         name = t.get("name", "")
         nf = f_row if card.width(name, f_row) <= 700 - 50 - x_club else fs.fit_one(card, name, fs.lato_bold, 34, 30, 700 - 50 - x_club)
@@ -263,13 +286,13 @@ def add_cover(deck, kicker, headline, sub=None, big=None):
 
 def add_matches(deck, data, kicker, title, sub=None):
     matches = data.get("matches", [])
-    pages, groups = _match_slides(matches, kicker, title, lambda i, n: sub)
+    pages, groups, rh, dh = _match_slides(matches, kicker, title, lambda i, n: sub)
     for i, page in enumerate(pages, 1):
         t = title if len(pages) == 1 else f"{title} ({i} of {len(pages)})"
 
         def build(card, pg, page=page, t=t):
             top = fs.data_header(card, kicker, t, sub)
-            draw_matches(card, page, top, groups)
+            draw_matches(card, page, top, groups, rh, dh)
             fs.footer(card, pg)
         deck.add(build)
 
